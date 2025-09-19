@@ -1,7 +1,7 @@
 import React from 'react';
 
 const IconPage = () => {
-  const faviconPath = '/favicon.svg';
+  const faviconPath = '/favicon.ico';
   const buildingImagePath = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDUwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InNreSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgo8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjODdDRUVCIi8+CjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI0UwRjJGNyIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNDAwIiBmaWxsPSJ1cmwoI3NreSkiLz4KPCEtLSBCdWlsZGluZ3MgLS0+CjxyZWN0IHg9IjQwIiB5PSIxNTAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjNDc1NTY5Ii8+CjxyZWN0IHg9IjE2MCIgeT0iMTIwIiB3aWR0aD0iMTQwIiBoZWlnaHQ9IjIzMCIgZmlsbD0iIzYzNjQ3OCIvPgo8cmVjdCB4PSIzMjAiIHk9IjEwMCIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIyNTAiIGZpbGw9IiM0NzU1NjkiLz4KPCEtLSBXaW5kb3dzIC0tPgo8cmVjdCB4PSI1MCIgeT0iMTcwIiB3aWR0aD0iMjAiIGhlaWdodD0iMzAiIGZpbGw9IiNmZmY3ZWQiLz4KPHJlY3QgeD0iNzUiIHk9IjE3MCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjZmZmN2VkIi8+CjxyZWN0IHg9IjEwMCIgeT0iMTcwIiB3aWR0aD0iMjAiIGhlaWdodD0iMzAiIGZpbGw9IiNmZmY3ZWQiLz4KPHJlY3QgeD0iMTcwIiB5PSIxNDAiIHdpZHRoPSIyNSIgaGVpZ2h0PSI0MCIgZmlsbD0iI2ZmZjdlZCIvPgo8cmVjdCB4PSIyMDAiIHk9IjE0MCIgd2lkdGg9IjI1IiBoZWlnaHQ9IjQwIiBmaWxsPSIjZmZmN2VkIi8+CjxyZWN0IHg9IjIzMCIgeT0iMTQwIiB3aWR0aD0iMjUiIGhlaWdodD0iNDAiIGZpbGw9IiNmZmY3ZWQiLz4KPHJlY3QgeD0iMjYwIiB5PSIxNDAiIHdpZHRoPSIyNSIgaGVpZ2h0PSI0MCIgZmlsbD0iI2ZmZjdlZCIvPgo8cmVjdCB4PSIzMzAiIHk9IjEyMCIgd2lkdGg9IjMwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZmZmN2VkIi8+CjxyZWN0IHg9IjM4MCIgeT0iMTIwIiB3aWR0aD0iMzAiIGhlaWdodD0iNTAiIGZpbGw9IiNmZmY3ZWQiLz4KPCEtLSBTdW4gLS0+CjxjaXJjbGUgY3g9IjQwMCIgY3k9IjgwIiByPSI0MCIgZmlsbD0iI0ZGRDcwMCIvPgo8IS0tIEdyb3VuZCAtLT4KPHJlY3QgeD0iMCIgeT0iMzUwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjM0Y3RTU1Ii8+CjwhLS0gUm9hZCAtLT4KPHJlY3QgeD0iMCIgeT0iMzYwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjNzc3Ii8+CjwhLS0gQ2FycyAtLT4KPHJlY3QgeD0iMjAwIiB5PSIzNzAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIyMCIgZmlsbD0iIzMzNzNkYyIvPgo8cmVjdCB4PSIyNTUiIHk9IjM3MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjNzc3Ii8+CjxyZWN0IHg9IjMxMCIgeT0iMzcwIiB3aWR0aD0iNDAiIGhlaWdodD0iMjAiIGZpbGw9IiNEQzI2MjYiLz4KPHJlY3QgeD0iMzY1IiB5PSIzNzAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIyMCIgZmlsbD0iIzMzNzNkYyIvPgo8L3N2Zz4=';
 
   return (
@@ -24,10 +24,10 @@ const IconPage = () => {
                     <img src={faviconPath} alt="Favicon" className="w-8 h-8" />
                     <div>
                       <p className="text-sm text-gray-600">
-                        <strong>Ruta:</strong> <code className="bg-gray-100 px-2 py-1 rounded">/favicon.svg</code>
+                        <strong>Ruta:</strong> <code className="bg-gray-100 px-2 py-1 rounded">/favicon.ico</code>
                       </p>
                       <p className="text-sm text-gray-600">
-                        <strong>HTML:</strong> <code className="bg-gray-100 px-2 py-1 rounded">&lt;link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" /&gt;</code>
+                        <strong>HTML:</strong> <code className="bg-gray-100 px-2 py-1 rounded">&lt;link rel="icon" href="%PUBLIC_URL%/favicon.ico" type="image/x-icon" /&gt;</code>
                       </p>
                     </div>
                   </div>
@@ -97,8 +97,8 @@ const IconPage = () => {
 
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <span className="font-medium">favicon.svg</span>
-                  <code className="text-sm text-gray-600">/public/favicon.svg</code>
+                  <span className="font-medium">favicon.ico</span>
+                  <code className="text-sm text-gray-600">/public/favicon.ico</code>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                   <span className="font-medium">favicon.ico</span>

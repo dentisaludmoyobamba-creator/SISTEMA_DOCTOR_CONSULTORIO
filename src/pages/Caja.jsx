@@ -3,8 +3,8 @@ import { transacciones as transaccionesData, resumenFinanciero } from '../data/m
 
 const Caja = () => {
   const [activeTab, setActiveTab] = useState('ingresos-egresos');
-  const [transacciones, setTransacciones] = useState(transaccionesData);
-  const [filtroFecha, setFiltroFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [transacciones] = useState(transaccionesData);
+  const [filtroFecha] = useState(new Date().toISOString().split('T')[0]);
 
   // Filtrar transacciones por fecha
   const transaccionesFiltradas = transacciones.filter(t => t.fecha === filtroFecha);
