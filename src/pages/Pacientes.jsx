@@ -4,7 +4,7 @@ import { pacientes as pacientesData } from '../data/mockData';
 const Pacientes = () => {
   const [activeTab, setActiveTab] = useState('mis-pacientes');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pacientes, setPacientes] = useState(pacientesData);
+  const [pacientes] = useState(pacientesData);
 
   // Filtrar pacientes según búsqueda
   const pacientesFiltrados = pacientes.filter(paciente => 

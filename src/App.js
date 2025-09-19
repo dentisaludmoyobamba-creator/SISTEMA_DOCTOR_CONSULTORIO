@@ -12,29 +12,29 @@ import Laboratorio from './pages/Laboratorio';
 import Chat from './pages/Chat';
 import IconPage from './components/IconPage';
 
-// Componente placeholder para páginas no implementadas
-const PlaceholderPage = ({ title, icon }) => {
-  return (
-    <div className="flex h-screen bg-gray-50 pt-16">
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            {icon}
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
-          <p className="text-gray-600 mb-6">
-            Esta sección estará disponible próximamente
-          </p>
-          <div className="bg-white rounded-lg shadow-sm p-6 max-w-md mx-auto">
-            <p className="text-gray-500">
-              Funcionalidad en desarrollo
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Componente placeholder para páginas no implementadas (comentado temporalmente)
+// const PlaceholderPage = ({ title, icon }) => {
+//   return (
+//     <div className="flex h-screen bg-gray-50 pt-16">
+//       <div className="flex-1 flex items-center justify-center">
+//         <div className="text-center">
+//           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+//             {icon}
+//           </div>
+//           <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+//           <p className="text-gray-600 mb-6">
+//             Esta sección estará disponible próximamente
+//           </p>
+//           <div className="bg-white rounded-lg shadow-sm p-6 max-w-md mx-auto">
+//             <p className="text-gray-500">
+//               Funcionalidad en desarrollo
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 
 // Componente protegido que requiere autenticación
 const ProtectedRoute = ({ children, isAuthenticated }) => {
