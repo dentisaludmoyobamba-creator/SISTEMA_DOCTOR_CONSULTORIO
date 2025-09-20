@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMarketingMenuOpen, setIsMarketingMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const marketingMenuRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // Cerrar dropdowns al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (marketingMenuRef.current && !marketingMenuRef.current.contains(event.target)) {
+        setIsMarketingMenuOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const tabs = [
     { id: 'agenda', name: 'Agenda', active: true },
@@ -21,6 +42,13 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   const handleTabClick = (tabId) => {
     onTabChange(tabId);
     navigate(`/${tabId}`);
+    setIsMarketingMenuOpen(false); // Cerrar dropdown de marketing
+    setIsMobileMenuOpen(false); // Cerrar menú móvil
+  };
+
+  const handleMarketingMenuClick = () => {
+    setIsMarketingMenuOpen(!isMarketingMenuOpen);
+    setIsUserMenuOpen(false); // Cerrar menú de usuario si está abierto
   };
 
   const handleSearch = (e) => {
@@ -31,16 +59,150 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
 
   return (
     <nav className="bg-slate-700 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="px-2 sm:px-4 lg:px-6">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-white">Doctocliq</h1>
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+            {/* Botón hamburguesa para móvil */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-1 text-slate-300 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-3 h-3 sm:w-5 sm:h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+            </div>
+            <div className="hidden sm:block flex-shrink-0">
+              <h1 className="text-lg sm:text-xl font-bold text-white">DENTI SALUD</h1>
+              <p className="text-xs text-gray-300">ODONTOLOGÍA</p>
+            </div>
+            <div className="sm:hidden flex-shrink-0">
+              <h1 className="text-sm font-bold text-white">DENTI SALUD</h1>
+            </div>
           </div>
 
           {/* Pestañas de navegación */}
           <div className="hidden md:flex space-x-1">
-            {tabs.map((tab) => (
+            {tabs.slice(0, 3).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-slate-600 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                {tab.name}
+              </button>
+            ))}
+            
+            {/* Dropdown de Marketing */}
+            <div className="relative" ref={marketingMenuRef}>
+              <button
+                onClick={handleMarketingMenuClick}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-1 ${
+                  activeTab.startsWith('marketing') || activeTab.startsWith('segmentaciones') || 
+                  activeTab.startsWith('cumpleanos') || activeTab.startsWith('automatizaciones') ||
+                  activeTab.startsWith('campanas') || activeTab.startsWith('embudo') || activeTab.startsWith('soyla')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                <span>Marketing</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isMarketingMenuOpen && (
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg py-2 z-50">
+                  <button
+                    onClick={() => handleTabClick('segmentaciones')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <span>Segmentaciones</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabClick('cumpleanos')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                      </svg>
+                    </div>
+                    <span>Cumpleaños</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabClick('automatizaciones')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <span>Automatizaciones</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabClick('campanas')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </div>
+                    <span>Campañas</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabClick('embudo-ventas')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 13l-7 7-7-7m14-6l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    <span>Embudo de ventas</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabClick('soyla-ia')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span>Soyla IA</span>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">PRONTO</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Pestañas restantes */}
+            {tabs.slice(4).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
@@ -58,13 +220,13 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
           {/* Lado derecho: búsqueda y usuario */}
           <div className="flex items-center space-x-4">
             {/* Buscador */}
-            <form onSubmit={handleSearch} className="relative">
+            <form onSubmit={handleSearch} className="relative hidden sm:block">
               <input
                 type="text"
                 placeholder="Buscar paciente"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-slate-600 text-white placeholder-slate-400 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-500 w-64"
+                className="bg-slate-600 text-white placeholder-slate-400 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-500 w-48 lg:w-64"
               />
               <button
                 type="submit"
@@ -76,6 +238,13 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
               </button>
             </form>
 
+            {/* Botón de búsqueda para móvil */}
+            <button className="sm:hidden p-2 text-slate-400 hover:text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+
             {/* Notificaciones */}
             <button className="text-slate-400 hover:text-white p-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,13 +253,14 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             </button>
 
             {/* Menú de usuario */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-2 text-sm bg-slate-600 rounded-md px-3 py-2 hover:bg-slate-500 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm bg-slate-600 rounded-md px-2 sm:px-3 py-1 sm:py-2 hover:bg-slate-500 transition-colors"
               >
-                <span>{user?.nombre || 'Usuario'}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="hidden sm:inline">{user?.nombre || 'Usuario'}</span>
+                <span className="sm:hidden">User</span>
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -116,13 +286,13 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             </div>
 
             {/* Selector de consultorio */}
-            <div className="flex items-center space-x-2 text-sm">
-              <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="hidden lg:flex items-center space-x-2 text-xs">
+              <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="text-slate-300">{user?.consultorio || 'Denti Salud'}</span>
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="text-slate-300 text-xs">Moyobamba</span>
+              <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -130,24 +300,50 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
         </div>
       </div>
 
-      {/* Menú móvil */}
-      <div className="md:hidden">
-        <div className="px-2 pt-2 pb-3 space-y-1 bg-slate-800">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab.id)}
-              className={`block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
-                activeTab === tab.id
-                  ? 'bg-slate-600 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-600'
-              }`}
-            >
-              {tab.name}
-            </button>
-          ))}
+      {/* Menú móvil - Solo visible cuando está abierto */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-1 pb-2 space-y-1 bg-slate-800 max-h-64 overflow-y-auto">
+            {/* Solo mostrar las pestañas más importantes en móvil */}
+            {tabs.slice(0, 4).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={`block w-full text-left px-3 py-1.5 rounded-md text-sm font-medium ${
+                  activeTab === tab.id
+                    ? 'bg-slate-600 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                {tab.name}
+              </button>
+            ))}
+            
+            {/* Dropdown compacto de Marketing en móvil */}
+            <div className="border-t border-slate-600 pt-1">
+              <div className="text-xs text-slate-400 px-3 py-1">Marketing</div>
+              <button
+                onClick={() => handleTabClick('embudo-ventas')}
+                className="block w-full text-left px-6 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-600"
+              >
+                Embudo de ventas
+              </button>
+              <button
+                onClick={() => handleTabClick('cumpleanos')}
+                className="block w-full text-left px-6 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-600"
+              >
+                Cumpleaños
+              </button>
+              <button
+                onClick={() => handleTabClick('segmentaciones')}
+                className="block w-full text-left px-6 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-600"
+              >
+                Segmentaciones
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 };

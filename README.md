@@ -1,6 +1,6 @@
-# Sistema Doctor Consultorio - Frontend
+# Denti Salud - Sistema Odontológico
 
-Aplicación web moderna para la gestión de consultorios médicos, inspirada en Doctocliq. Desarrollada con React y TailwindCSS.
+Aplicación web moderna para la gestión de consultorios odontológicos. Sistema completo desarrollado con React y TailwindCSS.
 
 ## 🚀 Características Principales
 
@@ -136,5 +136,5 @@ Este proyecto está en desarrollo activo. Las contribuciones son bienvenidas sig
 
 ---
 
-**Desarrollado para el Consultorio de Moyobamba**  
-*Sistema moderno de gestión médica*
+**Denti Salud - Sistema Odontológico**  
+*Sistema moderno de gestión para consultorios odontológicos*

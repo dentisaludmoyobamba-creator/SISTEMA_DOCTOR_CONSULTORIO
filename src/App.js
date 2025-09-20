@@ -11,6 +11,12 @@ import Inventario from './pages/Inventario';
 import Laboratorio from './pages/Laboratorio';
 import Chat from './pages/Chat';
 import IconPage from './components/IconPage';
+import EmbudoVentas from './pages/EmbudoVentas';
+import Cumpleanos from './pages/Cumpleanos';
+import Segmentaciones from './pages/Segmentaciones';
+import Automatizaciones from './pages/Automatizaciones';
+import Campanas from './pages/Campanas';
+import SoylaIA from './pages/SoylaIA';
 
 // Componente placeholder para páginas no implementadas (comentado temporalmente)
 // const PlaceholderPage = ({ title, icon }) => {
@@ -184,6 +190,61 @@ function AppContent() {
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Chat />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rutas de Marketing */}
+          <Route
+            path="/embudo-ventas"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <EmbudoVentas />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cumpleanos"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Cumpleanos />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/segmentaciones"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Segmentaciones />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/automatizaciones"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Automatizaciones />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/campanas"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Campanas />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/soyla-ia"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <SoylaIA />
               </ProtectedRoute>
             }
           />

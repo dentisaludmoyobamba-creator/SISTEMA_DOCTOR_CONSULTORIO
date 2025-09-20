@@ -124,14 +124,36 @@
 /* Responsive design para móviles */
 @media (max-width: 768px) {
   .calendar-grid {
-    grid-template-columns: 80px repeat(6, minmax(120px, 1fr));
+    grid-template-columns: 60px repeat(6, minmax(100px, 1fr));
+    gap: 1px;
   }
   
   .calendar-time-slot {
-    @apply h-16;
+    @apply h-14;
   }
   
   .appointment-card {
     @apply p-1 text-xs;
+  }
+  
+  /* Mejorar el navbar en móviles */
+  nav {
+    @apply shadow-md;
+  }
+}
+
+/* Diseño para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .calendar-grid {
+    grid-template-columns: 50px repeat(6, minmax(80px, 1fr));
+    gap: 0;
+  }
+  
+  .calendar-time-slot {
+    @apply h-12;
+  }
+  
+  .appointment-card {
+    @apply p-0.5 text-xs;
   }
 }
