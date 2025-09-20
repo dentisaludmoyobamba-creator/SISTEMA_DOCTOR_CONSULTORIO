@@ -1,6 +1,6 @@
 # Denti Salud - Sistema Odontológico
 
-Aplicación web moderna para la gestión de consultorios odontológicos. Sistema completo desarrollado con React y TailwindCSS. (pull requests)
+Aplicación web moderna para la gestión de consultorios odontológicos. Sistema completo desarrollado con React y TailwindCSS.!!
 
 ## 🚀 Características Principales
 
