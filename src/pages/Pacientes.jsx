@@ -48,17 +48,18 @@ const Pacientes = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 pt-16">
+    <div className="flex h-screen bg-gray-50 pt-14 sm:pt-16">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b px-6 py-4">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Pacientes</h1>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2">
+        <div className="bg-white shadow-sm border-b px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-3 sm:space-y-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pacientes</h1>
+            <button className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm sm:text-base">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span>Nuevo Paciente</span>
+              <span className="hidden sm:inline">Nuevo Paciente</span>
+              <span className="sm:hidden">Nuevo</span>
             </button>
           </div>
 
@@ -88,21 +89,21 @@ const Pacientes = () => {
         </div>
 
         {/* Filtros y búsqueda */}
-        <div className="bg-white px-6 py-4 border-b">
-          <div className="flex justify-between items-center">
+        <div className="bg-white px-4 sm:px-6 py-3 sm:py-4 border-b">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-3 lg:space-y-0">
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700 font-medium">Todos los pacientes</span>
-              <span className="text-gray-500">{pacientesFiltrados.length} pacientes</span>
+              <span className="text-sm sm:text-base text-gray-700 font-medium">Todos los pacientes</span>
+              <span className="text-sm text-gray-500">{pacientesFiltrados.length} pacientes</span>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="relative">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="relative flex-1 lg:flex-none">
                 <input
                   type="text"
-                  placeholder="Nombre, apellido, doc., tlf..."
+                  placeholder="Buscar paciente..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full lg:w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
                 <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -120,16 +121,16 @@ const Pacientes = () => {
 
         {/* Tabla de pacientes */}
         <div className="flex-1 overflow-auto bg-white">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-slate-700 text-white sticky top-0">
               <tr>
-                <th className="text-left p-4 font-medium">Paciente</th>
-                <th className="text-left p-4 font-medium">Última cita</th>
-                <th className="text-left p-4 font-medium">Próxima cita</th>
-                <th className="text-left p-4 font-medium">Tarea</th>
-                <th className="text-left p-4 font-medium">Presupuesto</th>
-                <th className="text-left p-4 font-medium">Fuente de captación</th>
-                <th className="text-left p-4 font-medium">Comentario</th>
+                <th className="text-left p-3 sm:p-4 font-medium">Paciente</th>
+                <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Última cita</th>
+                <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Próxima cita</th>
+                <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">Tarea</th>
+                <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">Presupuesto</th>
+                <th className="text-left p-3 sm:p-4 font-medium hidden xl:table-cell">Fuente de captación</th>
+                <th className="text-left p-3 sm:p-4 font-medium hidden xl:table-cell">Comentario</th>
               </tr>
             </thead>
             <tbody>
@@ -141,70 +142,81 @@ const Pacientes = () => {
                   }`}
                 >
                   {/* Paciente */}
-                  <td className="p-4">
+                  <td className="p-3 sm:p-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm sm:text-lg">
                         {paciente.avatar}
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium text-blue-600">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                          <span className="font-medium text-blue-600 truncate">
                             {paciente.nombre} {paciente.apellido}
                           </span>
                           {paciente.etiqueta && (
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${paciente.etiquetaColor}`}>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${paciente.etiquetaColor} flex-shrink-0`}>
                               {paciente.etiqueta}
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs sm:text-sm text-gray-500">
                           DNI: {paciente.documento}
+                        </div>
+                        {/* Información adicional para móviles */}
+                        <div className="sm:hidden mt-1">
+                          <div className="text-xs text-gray-600">
+                            Última: {formatearFecha(paciente.ultimaCita)}
+                          </div>
+                          {paciente.presupuesto > 0 && (
+                            <div className="text-xs text-green-600">
+                              S/ {paciente.presupuesto}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </td>
 
                   {/* Última cita */}
-                  <td className="p-4">
+                  <td className="p-3 sm:p-4 hidden sm:table-cell">
                     <div className="flex items-center space-x-2">
                       {getIconoEstado(paciente.ultimaCita)}
-                      <span className="text-gray-700">
+                      <span className="text-gray-700 text-sm">
                         {formatearFecha(paciente.ultimaCita)}
                       </span>
                     </div>
                   </td>
 
                   {/* Próxima cita */}
-                  <td className="p-4">
-                    <span className="text-gray-700">
+                  <td className="p-3 sm:p-4 hidden md:table-cell">
+                    <span className="text-gray-700 text-sm">
                       {paciente.proximaCita ? formatearFecha(paciente.proximaCita) : '--'}
                     </span>
                   </td>
 
                   {/* Tarea */}
-                  <td className="p-4">
-                    <span className="text-gray-700">
+                  <td className="p-3 sm:p-4 hidden lg:table-cell">
+                    <span className="text-gray-700 text-sm">
                       {paciente.tarea || '--'}
                     </span>
                   </td>
 
                   {/* Presupuesto */}
-                  <td className="p-4">
-                    <span className="text-gray-700">
+                  <td className="p-3 sm:p-4 hidden lg:table-cell">
+                    <span className="text-gray-700 text-sm">
                       {paciente.presupuesto > 0 ? `S/ ${paciente.presupuesto}` : '--'}
                     </span>
                   </td>
 
                   {/* Fuente de captación */}
-                  <td className="p-4">
-                    <span className="text-gray-700">
+                  <td className="p-3 sm:p-4 hidden xl:table-cell">
+                    <span className="text-gray-700 text-sm">
                       {paciente.fuenteCaptacion || '--'}
                     </span>
                   </td>
 
                   {/* Comentario */}
-                  <td className="p-4">
-                    <span className="text-gray-700 truncate max-w-xs block">
+                  <td className="p-3 sm:p-4 hidden xl:table-cell">
+                    <span className="text-gray-700 text-sm truncate max-w-xs block">
                       {paciente.comentario || '--'}
                     </span>
                   </td>

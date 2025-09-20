@@ -74,34 +74,34 @@ const Agenda = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 pt-16">
+    <div className="flex h-screen bg-gray-50 pt-14 sm:pt-16">
       {/* Contenido principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header de la agenda */}
-        <div className="bg-white shadow-sm border-b px-6 py-4">
-          <div className="flex justify-between items-center">
+        <div className="bg-white shadow-sm border-b px-2 sm:px-4 lg:px-6 py-2 sm:py-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Agenda</h1>
+              <p className="text-xs sm:text-sm text-gray-600">
                 Semana del {getCurrentWeekRange()}
               </p>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               {/* Navegación de semana */}
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <button className="p-1 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-sm font-medium">
+                <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs font-medium">
                   Hoy
                 </div>
                 
-                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button className="p-1 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -114,25 +114,26 @@ const Agenda = () => {
                   setEditingCita(null);
                   setShowAppointmentModal(true);
                 }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                className="bg-blue-600 text-white px-2 sm:px-3 py-1 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-1 text-xs sm:text-sm"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span>Nueva Cita</span>
+                <span className="hidden sm:inline">Nueva Cita</span>
+                <span className="sm:hidden">Nueva</span>
               </button>
 
               {/* Opciones adicionales */}
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md" title="Configuración">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <button className="p-1 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md" title="Configuración">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </button>
                 
-                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md" title="Más opciones">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button className="p-1 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md" title="Más opciones">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                   </svg>
                 </button>
@@ -142,7 +143,7 @@ const Agenda = () => {
         </div>
 
         {/* Calendario */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-1 sm:p-2 lg:p-4 xl:p-6 overflow-auto">
           <CalendarGrid
             citas={citas}
             filtroDoctor={filtroDoctor}
@@ -156,13 +157,15 @@ const Agenda = () => {
       </div>
 
       {/* Sidebar */}
-      <Sidebar
-        filtroDoctor={filtroDoctor}
-        setFiltroDoctor={setFiltroDoctor}
-        filtroEstado={filtroEstado}
-        setFiltroEstado={setFiltroEstado}
-        onAddDoctor={handleAddDoctor}
-      />
+      <div className="hidden lg:block">
+        <Sidebar
+          filtroDoctor={filtroDoctor}
+          setFiltroDoctor={setFiltroDoctor}
+          filtroEstado={filtroEstado}
+          setFiltroEstado={setFiltroEstado}
+          onAddDoctor={handleAddDoctor}
+        />
+      </div>
 
       {/* Modales */}
       <AppointmentModal

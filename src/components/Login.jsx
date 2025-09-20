@@ -48,9 +48,19 @@ const Login = ({ onLogin }) => {
         {/* Contenido del panel izquierdo */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-4">Doctocliq</h1>
-            <p className="text-xl text-gray-200 mb-6">
-              Sistema integral de gestión médica
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold">DENTI SALUD</h1>
+                <p className="text-sm text-gray-300">ODONTOLOGÍA</p>
+              </div>
+            </div>
+            <p className="text-lg sm:text-xl text-gray-200 mb-6">
+              Sistema integral de gestión odontológica
             </p>
             <p className="text-gray-300 leading-relaxed">
               Gestiona tu consultorio de manera eficiente con nuestro sistema completo 
@@ -94,8 +104,18 @@ const Login = ({ onLogin }) => {
         <div className="w-full max-w-md">
           {/* Logo para móviles */}
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-700 mb-2">Doctocliq</h1>
-            <p className="text-gray-600">Sistema de gestión médica</p>
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-700">DENTI SALUD</h1>
+                <p className="text-xs text-gray-500">ODONTOLOGÍA</p>
+              </div>
+            </div>
+            <p className="text-gray-600">Sistema de gestión odontológica</p>
           </div>
 
           {/* Formulario */}
@@ -188,7 +208,7 @@ const Login = ({ onLogin }) => {
             {/* Información adicional */}
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
-                © 2024 Doctocliq. Sistema para Consultorio Moyobamba
+                © 2024 Denti Salud. Sistema para Consultorio Odontológico
               </p>
             </div>
           </div>
@@ -196,7 +216,7 @@ const Login = ({ onLogin }) => {
           {/* Información de contacto */}
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>¿Necesitas ayuda? Contacta al administrador</p>
-            <p className="font-medium text-blue-600">soporte@doctocliq.com</p>
+            <p className="font-medium text-blue-600">soporte@dentisalud.com</p>
           </div>
         </div>
       </div>

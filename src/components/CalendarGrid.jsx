@@ -35,18 +35,18 @@ const CalendarGrid = ({
     <div className="flex-1 overflow-auto bg-white rounded-lg shadow-sm border">
       {/* Header del calendario */}
       <div className="sticky top-0 bg-white border-b z-10">
-        <div className="grid grid-cols-7 gap-0">
+        <div className="grid grid-cols-7 gap-0 min-w-[800px]">
           {/* Columna de horas */}
-          <div className="p-4 bg-gray-50 border-r">
-            <div className="text-sm font-medium text-gray-700">Hora</div>
+          <div className="p-2 sm:p-4 bg-gray-50 border-r">
+            <div className="text-xs sm:text-sm font-medium text-gray-700">Hora</div>
           </div>
           
           {/* Columnas de días */}
           {diasSemana.map((dia) => (
-            <div key={dia.fecha} className="p-4 text-center border-r last:border-r-0">
-              <div className="text-sm font-medium text-gray-900">{dia.nombre}</div>
-              <div className="text-lg font-bold text-gray-700 mt-1">{dia.dia}</div>
-              <div className="text-xs text-gray-500">
+            <div key={dia.fecha} className="p-2 sm:p-4 text-center border-r last:border-r-0">
+              <div className="text-xs sm:text-sm font-medium text-gray-900">{dia.nombre}</div>
+              <div className="text-base sm:text-lg font-bold text-gray-700 mt-1">{dia.dia}</div>
+              <div className="text-xs text-gray-500 hidden sm:block">
                 {new Date(dia.fecha).toLocaleDateString('es-ES', { month: 'short' })}
               </div>
             </div>
@@ -55,12 +55,12 @@ const CalendarGrid = ({
       </div>
 
       {/* Cuerpo del calendario */}
-      <div className="grid grid-cols-7 gap-0">
+      <div className="grid grid-cols-7 gap-0 min-w-[800px]">
         {/* Columna de horas */}
         <div className="bg-gray-50 border-r">
           {horarios.map((hora) => (
-            <div key={hora} className="h-20 p-2 border-b flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-600">
+            <div key={hora} className="h-16 sm:h-20 p-1 sm:p-2 border-b flex items-center justify-center">
+              <span className="text-xs sm:text-sm font-medium text-gray-600">
                 {new Date(`2000-01-01T${hora}:00`).toLocaleTimeString([], { 
                   hour: '2-digit', 
                   minute: '2-digit',
@@ -81,7 +81,7 @@ const CalendarGrid = ({
               return (
                 <div
                   key={`${dia.fecha}-${hora}`}
-                  className={`h-20 p-1 border-b relative transition-colors duration-150 ${
+                  className={`h-16 sm:h-20 p-1 border-b relative transition-colors duration-150 ${
                     isEmpty 
                       ? 'hover:bg-blue-50 cursor-pointer' 
                       : 'bg-gray-25'
