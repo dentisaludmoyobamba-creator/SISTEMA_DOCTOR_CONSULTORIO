@@ -57,7 +57,7 @@ const EmbudoVentas = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 pt-14 sm:pt-16">
+    <div className="flex h-screen bg-gray-50 pt-24 sm:pt-28">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-white shadow-sm border-b px-6 py-4">

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { pacientes as pacientesData } from '../data/mockData';
+import NewPatientModal from '../components/NewPatientModal';
 
 const Pacientes = () => {
   const [activeTab, setActiveTab] = useState('mis-pacientes');
   const [searchTerm, setSearchTerm] = useState('');
   const [pacientes] = useState(pacientesData);
+  const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
 
   // Filtrar pacientes según búsqueda
   const pacientesFiltrados = pacientes.filter(paciente => 
@@ -48,13 +50,13 @@ const Pacientes = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 pt-14 sm:pt-16">
+    <div className="flex h-screen bg-gray-50 pt-24 sm:pt-28">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-white shadow-sm border-b px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-3 sm:space-y-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pacientes</h1>
-            <button className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm sm:text-base">
+            <button onClick={() => setIsNewPatientOpen(true)} className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm sm:text-base">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -268,6 +270,13 @@ const Pacientes = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal: Nuevo Paciente */}
+      <NewPatientModal
+        isOpen={isNewPatientOpen}
+        onClose={() => setIsNewPatientOpen(false)}
+        onCreate={() => setIsNewPatientOpen(false)}
+      />
     </div>
   );
 };
