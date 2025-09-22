@@ -275,11 +275,20 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                 {isSettingsOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-md shadow-lg py-2 z-50">
                     <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Etiquetas</button>
-                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Plantilla de mensajes</button>
-                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Servicios</button>
+                    <button 
+                      onClick={() => { setIsSettingsOpen(false); handleTabClick('configuracion'); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Servicios
+                    </button>
                     <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Usuarios</button>
                     <div className="border-t my-1" />
-                    <button className="w-full text-left px-4 py-2 text-sm text-teal-700 hover:bg-teal-50">Ir a configuración</button>
+                    <button 
+                      onClick={() => { setIsSettingsOpen(false); handleTabClick('configuracion'); }}
+                      className="w-full text-left px-4 py-2 text-sm text-teal-700 hover:bg-teal-50"
+                    >
+                      Ir a configuración
+                    </button>
                   </div>
                 )}
               </div>

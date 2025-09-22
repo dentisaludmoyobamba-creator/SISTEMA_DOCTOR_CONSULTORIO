@@ -17,6 +17,7 @@ import Segmentaciones from './pages/Segmentaciones';
 import Automatizaciones from './pages/Automatizaciones';
 import Campanas from './pages/Campanas';
 import SoylaIA from './pages/SoylaIA';
+import Configuracion from './pages/Configuracion';
 
 // Componente placeholder para páginas no implementadas (comentado temporalmente)
 // const PlaceholderPage = ({ title, icon }) => {
@@ -245,6 +246,15 @@ function AppContent() {
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <SoylaIA />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/configuracion"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Configuracion />
               </ProtectedRoute>
             }
           />
