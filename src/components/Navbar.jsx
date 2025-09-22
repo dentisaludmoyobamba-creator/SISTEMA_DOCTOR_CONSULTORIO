@@ -5,10 +5,14 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMarketingMenuOpen, setIsMarketingMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const marketingMenuRef = useRef(null);
   const userMenuRef = useRef(null);
+  const quickMenuRef = useRef(null);
+  const settingsRef = useRef(null);
 
   // Cerrar dropdowns al hacer click fuera
   useEffect(() => {
@@ -18,6 +22,12 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
+      }
+      if (quickMenuRef.current && !quickMenuRef.current.contains(event.target)) {
+        setIsQuickMenuOpen(false);
+      }
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setIsSettingsOpen(false);
       }
     };
 
@@ -58,11 +68,13 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   };
 
   return (
-    <nav className="bg-slate-700 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
-      <div className="px-2 sm:px-4 lg:px-6">
-        <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+    <nav className="text-white shadow-lg fixed top-0 left-0 right-0 z-50">
+      {/* Fila superior (más oscura): Marca y Usuario */}
+      <div className="bg-slate-800">
+        <div className="px-2 sm:px-4 lg:px-6">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
             {/* Botón hamburguesa para móvil */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -86,9 +98,42 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
               <h1 className="text-sm font-bold text-white">DENTI SALUD</h1>
             </div>
           </div>
+            {/* Usuario */}
+            <div className="flex items-center space-x-3">
+              {/* Menú de usuario */}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 text-sm bg-slate-700 rounded-md px-3 py-2 hover:bg-slate-600 transition-colors"
+                >
+                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nombre || 'Usuario')}&background=0ea5e9&color=fff`}
+                       alt="avatar" className="w-6 h-6 rounded-full hidden sm:block" />
+                  <span className="hidden sm:inline">{user?.nombre || 'Usuario'}</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-          {/* Pestañas de navegación */}
-          <div className="hidden md:flex space-x-1">
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-lg py-1 z-50">
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Mi Perfil</button>
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Configuración</button>
+                    <div className="border-t" />
+                    <button onClick={onLogout} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Cerrar Sesión</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fila inferior (más clara): Tabs e iconos + buscador */}
+      <div className="bg-slate-700">
+        <div className="px-2 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between h-12">
+            {/* Pestañas de navegación */}
+            <div className="hidden md:flex space-x-1">
             {tabs.slice(0, 3).map((tab) => (
               <button
                 key={tab.id}
@@ -217,84 +262,100 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             ))}
           </div>
 
-          {/* Lado derecho: búsqueda y usuario */}
-          <div className="flex items-center space-x-4">
-            {/* Buscador */}
-            <form onSubmit={handleSearch} className="relative hidden sm:block">
-              <input
-                type="text"
-                placeholder="Buscar paciente"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-slate-600 text-white placeholder-slate-400 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-500 w-48 lg:w-64"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </form>
+            {/* Acciones y buscador */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* Engranaje */}
+              <div className="relative" ref={settingsRef}>
+                <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="p-2 text-slate-300 hover:text-white">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+                {isSettingsOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-md shadow-lg py-2 z-50">
+                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Etiquetas</button>
+                    <button 
+                      onClick={() => { setIsSettingsOpen(false); handleTabClick('configuracion'); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Servicios
+                    </button>
+                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Usuarios</button>
+                    <div className="border-t my-1" />
+                    <button 
+                      onClick={() => { setIsSettingsOpen(false); handleTabClick('configuracion'); }}
+                      className="w-full text-left px-4 py-2 text-sm text-teal-700 hover:bg-teal-50"
+                    >
+                      Ir a configuración
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            {/* Botón de búsqueda para móvil */}
-            <button className="sm:hidden p-2 text-slate-400 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+              {/* Botón suma - Acciones rápidas */}
+              <div className="relative" ref={quickMenuRef}>
+                <button onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)} className="p-2 text-slate-300 hover:text-white">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                {isQuickMenuOpen && (
+                  <div className="absolute right-0 mt-2 bg-white text-gray-800 rounded-xl shadow-xl p-3 z-50 w-80">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l2 2 4-4m-2-7a2 2 0 012 2v2h-6V7a2 2 0 012-2zM7 11a2 2 0 012-2h6a2 2 0 012 2v7H7v-7z" /></svg>
+                        </div>
+                        <div className="text-center text-sm">Crear presupuesto</div>
+                      </button>
+                      <button className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="text-center text-sm">Generar link de pago</div>
+                      </button>
+                      <button onClick={() => { setIsQuickMenuOpen(false); handleTabClick('pacientes'); }} className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 1118.879 4.196 7 7 0 015.12 17.804zM15 11h3m-6 0H6" /></svg>
+                        </div>
+                        <div className="text-center text-sm">Nuevo paciente</div>
+                      </button>
+                      <button onClick={() => { setIsQuickMenuOpen(false); handleTabClick('agenda'); }} className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                        <div className="text-center text-sm">Agendar cita</div>
+                      </button>
+                      <button onClick={() => { setIsQuickMenuOpen(false); handleTabClick('campanas'); }} className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700 col-span-2">
+                        <div className="flex items-center justify-center mb-2">
+                          <svg className="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        </div>
+                        <div className="text-center text-sm">Crear campaña</div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* Notificaciones */}
-            <button className="text-slate-400 hover:text-white p-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM10.5 3.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v18l1.5-1.5L6 20l1.5-1.5L9 20l1.5-1.5L12 20V2l-1.5 1.5z" />
-              </svg>
-            </button>
-
-            {/* Menú de usuario */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm bg-slate-600 rounded-md px-2 sm:px-3 py-1 sm:py-2 hover:bg-slate-500 transition-colors"
-              >
-                <span className="hidden sm:inline">{user?.nombre || 'Usuario'}</span>
-                <span className="sm:hidden">User</span>
-                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {/* Dropdown del usuario */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Mi Perfil
-                  </button>
-                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Configuración
-                  </button>
-                  <div className="border-t border-gray-100"></div>
-                  <button 
-                    onClick={onLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Cerrar Sesión
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Selector de consultorio */}
-            <div className="hidden lg:flex items-center space-x-2 text-xs">
-              <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-slate-300 text-xs">Moyobamba</span>
-              <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              {/* Buscador */}
+              <form onSubmit={handleSearch} className="relative hidden sm:block">
+                <input
+                  type="text"
+                  placeholder="Buscar paciente"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-slate-600 text-white placeholder-slate-400 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-500 w-48 lg:w-64"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-300 hover:text-white"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </form>
             </div>
           </div>
         </div>
