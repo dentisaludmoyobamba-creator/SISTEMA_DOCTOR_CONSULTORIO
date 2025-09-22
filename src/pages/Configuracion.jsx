@@ -576,22 +576,162 @@ const Servicios = () => {
 
 // Componente Etiquetas
 const Etiquetas = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [etiquetas, setEtiquetas] = useState([
+    {
+      id: 1,
+      nombre: 'Nuevo',
+      lugarUso: 'Agenda, CRM e Historia clínica',
+      color: '#26A151',
+      estado: true
+    },
+    {
+      id: 2,
+      nombre: 'VIP',
+      lugarUso: 'Agenda, CRM e Historia clínica',
+      color: '#0E13A4',
+      estado: true
+    },
+    {
+      id: 3,
+      nombre: 'Impuntual',
+      lugarUso: 'Agenda, CRM e Historia clínica',
+      color: '#E42F2F',
+      estado: true
+    },
+    {
+      id: 4,
+      nombre: 'Fidelizado',
+      lugarUso: 'Agenda, CRM e Historia clínica',
+      color: '#61D6E6',
+      estado: true
+    },
+    {
+      id: 5,
+      nombre: 'VIP',
+      lugarUso: 'Agenda, CRM e Historia clínica',
+      color: '#0E13A4',
+      estado: true
+    }
+  ]);
+
+  const toggleEstado = (id) => {
+    setEtiquetas(etiquetas.map(etiqueta => 
+      etiqueta.id === id ? { ...etiqueta, estado: !etiqueta.estado } : etiqueta
+    ));
+  };
+
+  const eliminarEtiqueta = (id) => {
+    setEtiquetas(etiquetas.filter(etiqueta => etiqueta.id !== id));
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-      <div className="text-center py-12">
-        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-          </svg>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Header con descripción y botón */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Las etiquetas te permitirá distinguir mejor a tus pacientes. Puedes usarlo de manera independiente en agenda, ficha médica y CRM.
+            </h2>
+            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              Ver más.
+            </button>
+          </div>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium whitespace-nowrap"
+          >
+            Agregar
+          </button>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestión de Etiquetas</h3>
-        <p className="text-gray-600 mb-6">
-          Crea y gestiona etiquetas para organizar mejor tus pacientes y servicios.
-        </p>
-        <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-          Crear Etiqueta
-        </button>
       </div>
+
+      {/* Tabla de etiquetas */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nombre de la etiqueta
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Lugar de uso
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Color
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {etiquetas.map((etiqueta) => (
+              <tr key={etiqueta.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-400 hover:text-blue-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={() => eliminarEtiqueta(etiqueta.id)}
+                        className="text-pink-400 hover:text-pink-600"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">{etiqueta.nombre}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {etiqueta.lugarUso}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {etiqueta.color}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => toggleEstado(etiqueta.id)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      etiqueta.estado ? 'bg-pink-500' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        etiqueta.estado ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    >
+                      {etiqueta.estado && (
+                        <svg className="h-3 w-3 text-pink-500 m-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal para nueva etiqueta */}
+      {isModalOpen && (
+        <NuevaEtiquetaModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={(nuevaEtiqueta) => {
+            setEtiquetas([...etiquetas, { ...nuevaEtiqueta, id: Date.now() }]);
+            setIsModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -623,23 +763,108 @@ const Propiedades = () => {
 const CajaAdmin = () => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-      <div className="text-center py-12">
-        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
+      <div className="mb-8">
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">Configuración de Caja</h3>
+        <p className="text-gray-600">Configura los métodos de pago, monedas y configuraciones financieras del sistema.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Métodos de Pago */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Métodos de Pago</h4>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <span className="font-medium">Efectivo</span>
+              </div>
+              <div className="w-12 h-6 bg-green-500 rounded-full relative">
+                <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <span className="font-medium">Tarjeta</span>
+              </div>
+              <div className="w-12 h-6 bg-green-500 rounded-full relative">
+                <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                <span className="font-medium">Transferencia</span>
+              </div>
+              <div className="w-12 h-6 bg-green-500 rounded-full relative">
+                <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Configuración de Caja</h3>
-        <p className="text-gray-600 mb-6">
-          Configura los métodos de pago, monedas y configuraciones financieras.
-        </p>
-        <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-          Configurar Caja
+
+        {/* Configuraciones Generales */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Configuraciones Generales</h4>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Moneda Principal</label>
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option>Soles Peruanos (PEN)</option>
+                <option>Dólares Americanos (USD)</option>
+                <option>Euros (EUR)</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Cambio USD</label>
+              <input 
+                type="number" 
+                step="0.01"
+                defaultValue="3.80"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Formato de Fecha</label>
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option>DD/MM/YYYY</option>
+                <option>MM/DD/YYYY</option>
+                <option>YYYY-MM-DD</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botones de acción */}
+      <div className="mt-8 flex justify-end space-x-4">
+        <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+          Cancelar
+        </button>
+        <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+          Guardar Configuración
         </button>
       </div>
     </div>
   );
 };
+
 
 // Componente Proveedores
 const Proveedores = () => {
@@ -658,6 +883,158 @@ const Proveedores = () => {
         <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           Agregar Proveedor
         </button>
+      </div>
+    </div>
+  );
+};
+
+// Modal para nueva etiqueta
+const NuevaEtiquetaModal = ({ isOpen, onClose, onSave }) => {
+  const [nombre, setNombre] = useState('');
+  const [color, setColor] = useState('#32cfc9');
+  const [lugaresUso, setLugaresUso] = useState({
+    agenda: false,
+    crm: false,
+    historiaClinica: false
+  });
+
+  const handleSave = () => {
+    const lugaresSeleccionados = [];
+    if (lugaresUso.agenda) lugaresSeleccionados.push('Agenda');
+    if (lugaresUso.crm) lugaresSeleccionados.push('CRM');
+    if (lugaresUso.historiaClinica) lugaresSeleccionados.push('Historia clínica');
+    
+    const lugarUsoTexto = lugaresSeleccionados.length > 0 
+      ? lugaresSeleccionados.join(', ') 
+      : 'Agenda, CRM e Historia clínica';
+
+    onSave({
+      nombre,
+      color,
+      lugarUso: lugarUsoTexto,
+      estado: true
+    });
+    
+    // Reset form
+    setNombre('');
+    setColor('#32cfc9');
+    setLugaresUso({ agenda: false, crm: false, historiaClinica: false });
+  };
+
+  const toggleLugarUso = (lugar) => {
+    setLugaresUso(prev => ({
+      ...prev,
+      [lugar]: !prev[lugar]
+    }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        {/* Header del modal */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-blue-600">NUEVA ETIQUETA</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Contenido del modal */}
+        <div className="p-6 space-y-6">
+          {/* Campo Nombre */}
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700 w-16">Nombre:</label>
+            <input
+              type="text"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ingresa el nombre de la etiqueta"
+            />
+          </div>
+
+          {/* Campo Color */}
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700 w-16">Color</label>
+            <div className="flex items-center space-x-3">
+              <div 
+                className="w-8 h-8 rounded-full border-2 border-gray-300 cursor-pointer"
+                style={{ backgroundColor: color }}
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'color';
+                  input.value = color;
+                  input.onchange = (e) => setColor(e.target.value);
+                  input.click();
+                }}
+              />
+              <input
+                type="text"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-24"
+                placeholder="#32cfc9"
+              />
+            </div>
+          </div>
+
+          {/* Lugares de uso */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-3">
+              ¿En qué lugares usarás esta etiqueta?
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="lugarUso"
+                  checked={lugaresUso.agenda}
+                  onChange={() => toggleLugarUso('agenda')}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Agenda</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="lugarUso"
+                  checked={lugaresUso.crm}
+                  onChange={() => toggleLugarUso('crm')}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">CRM</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="lugarUso"
+                  checked={lugaresUso.historiaClinica}
+                  onChange={() => toggleLugarUso('historiaClinica')}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Historia clínica</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer del modal */}
+        <div className="flex justify-center p-6 border-t border-gray-200">
+          <button
+            onClick={handleSave}
+            disabled={!nombre.trim()}
+            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-lg hover:from-blue-600 hover:to-teal-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Guardar
+          </button>
+        </div>
       </div>
     </div>
   );
