@@ -7,6 +7,9 @@ const Pacientes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [pacientes] = useState(pacientesData);
   const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
+  const [isPatientProfileOpen, setIsPatientProfileOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [activeProfileTab, setActiveProfileTab] = useState('citas');
   // Asistencias - filtros y popovers
   const [lineaNegocio, setLineaNegocio] = useState('Todos los pacientes');
   const [estadoFiltro, setEstadoFiltro] = useState('Selecciona una opción');
@@ -66,6 +69,12 @@ const Pacientes = () => {
         </svg>
       );
     }
+  };
+
+  const handlePatientClick = (paciente) => {
+    setSelectedPatient(paciente);
+    setIsPatientProfileOpen(true);
+    setActiveProfileTab('citas');
   };
 
   return (
@@ -242,7 +251,7 @@ const Pacientes = () => {
               </thead>
               <tbody>
                 {pacientesFiltrados.map((paciente, index) => (
-                  <tr key={paciente.id} className={`border-b hover:bg-gray-50 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                  <tr key={paciente.id} onClick={() => handlePatientClick(paciente)} className={`border-b hover:bg-gray-50 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
                     <td className="p-3 sm:p-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm sm:text-lg">{paciente.avatar}</div>
@@ -368,6 +377,181 @@ const Pacientes = () => {
         onClose={() => setIsNewPatientOpen(false)}
         onCreate={() => setIsNewPatientOpen(false)}
       />
+
+      {/* Modal: Perfil de Paciente */}
+      {isPatientProfileOpen && selectedPatient && (
+        <div className="fixed inset-0 z-[100]">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setIsPatientProfileOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-full sm:w-[600px] bg-white shadow-2xl overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-white border-b">
+              <div className="px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedPatient.nombre} {selectedPatient.apellido}</h3>
+                  <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1">
+                    <span>Abrir historia</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="text-sm text-gray-500">Creado el 22 sep 2025</div>
+                <button onClick={() => setIsPatientProfileOpen(false)} className="p-2 text-gray-500 hover:text-gray-700">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Información del paciente */}
+            <div className="p-6 border-b">
+              <div className="flex items-start space-x-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-2xl">
+                  {selectedPatient.avatar}
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-gray-900">{selectedPatient.nombre} {selectedPatient.apellido}</h4>
+                  <div className="mt-2 space-y-1">
+                    <div className="text-sm text-gray-600">22 años</div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <span>956224010</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
+                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </div>
+                      <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Agregar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Nota general */}
+            <div className="p-6 border-b">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Nota general</h4>
+              <textarea 
+                className="w-full h-20 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+                placeholder="Escribe aquí..."
+              />
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b">
+              <nav className="flex space-x-8 px-6">
+                {[
+                  { id: 'citas', label: 'Citas' },
+                  { id: 'filiacion', label: 'Filiación' },
+                  { id: 'presupuestos', label: 'Presupuestos' },
+                  { id: 'tareas', label: 'Tareas' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveProfileTab(tab.id)}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activeProfileTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Contenido de tabs */}
+            <div className="flex-1 p-6">
+              {activeProfileTab === 'citas' && (
+                <div>
+                  <div className="bg-blue-600 text-white">
+                    <div className="grid grid-cols-5 gap-4 px-6 py-3 text-sm font-medium">
+                      <div>Fecha</div>
+                      <div>Doctor</div>
+                      <div>Motivo</div>
+                      <div>Estado</div>
+                      <div>Comentario</div>
+                    </div>
+                  </div>
+                  
+                  <div className="min-h-96 flex flex-col items-center justify-center py-12">
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
+                  </div>
+
+                  {/* Paginación */}
+                  <div className="flex justify-end items-center space-x-2 mt-4">
+                    <button className="p-2 text-gray-400 hover:text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button className="p-2 text-gray-400 hover:text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'filiacion' && (
+                <div className="min-h-96 flex flex-col items-center justify-center py-12">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg">Información de filiación</p>
+                </div>
+              )}
+
+              {activeProfileTab === 'presupuestos' && (
+                <div className="min-h-96 flex flex-col items-center justify-center py-12">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg">Presupuestos del paciente</p>
+                </div>
+              )}
+
+              {activeProfileTab === 'tareas' && (
+                <div className="min-h-96 flex flex-col items-center justify-center py-12">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg">Tareas pendientes</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
