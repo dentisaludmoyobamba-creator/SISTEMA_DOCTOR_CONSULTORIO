@@ -11,6 +11,11 @@ const apiClient = axios.create({
 // Interceptor para agregar token de autenticación automáticamente
 apiClient.interceptors.request.use(
   (config) => {
+    console.log('Enviando petición:', config.method?.toUpperCase(), config.url);
+    console.log('Base URL:', config.baseURL);
+    console.log('Headers:', config.headers);
+    console.log('Data:', config.data);
+    
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -18,6 +23,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Error en interceptor de request:', error);
     return Promise.reject(error);
   }
 );
@@ -25,9 +31,13 @@ apiClient.interceptors.request.use(
 // Interceptor para manejar respuestas y errores
 apiClient.interceptors.response.use(
   (response) => {
+    console.log('Respuesta exitosa:', response.config.url, response.status);
     return response;
   },
   (error) => {
+    console.error('Error en petición:', error.config?.url, error.message);
+    console.error('Detalles del error:', error);
+    
     // Si el token expiró, redirigir al login
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
@@ -38,6 +48,7 @@ apiClient.interceptors.response.use(
     // Manejar errores de red
     if (!error.response) {
       console.error('Error de red:', error.message);
+      console.error('Posible problema de CORS o backend no disponible');
     }
     
     return Promise.reject(error);

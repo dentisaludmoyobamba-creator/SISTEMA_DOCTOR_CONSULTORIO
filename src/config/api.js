@@ -1,8 +1,15 @@
+import { getEnvironmentConfig } from './environments';
+
+// Obtener configuración según el entorno
+const envConfig = getEnvironmentConfig();
+
 // Configuración de la API
 const API_CONFIG = {
   // URL base del backend FastAPI
-  BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000',
-  VERSION: process.env.REACT_APP_API_VERSION || 'v1',
+  // localmente: http://localhost:8000
+  // en producción: https://tu-app-name.onrender.com (o la URL que te dé Render)
+  BASE_URL: process.env.REACT_APP_API_BASE_URL || envConfig.API_BASE_URL,
+  VERSION: process.env.REACT_APP_API_VERSION || envConfig.API_VERSION,
   
   // Endpoints principales
   ENDPOINTS: {

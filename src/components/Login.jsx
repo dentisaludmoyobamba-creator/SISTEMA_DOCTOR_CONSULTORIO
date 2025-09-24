@@ -28,17 +28,19 @@ const Login = ({ onLogin }) => {
         password: formData.password
       });
       
-      // Si el login es exitoso, obtener el perfil del usuario
-      const userProfile = await authService.getProfile();
+      console.log('Respuesta del login:', response);
+      
+      // La respuesta del login ya contiene la información del usuario
+      const userData = response.user || response;
       
       // Llamar a la función onLogin con los datos del usuario
       onLogin({
-        nombre: userProfile.nombre || userProfile.full_name || 'Usuario',
+        nombre: userData.full_name || userData.nombre || 'Usuario',
         usuario: formData.usuario,
-        consultorio: userProfile.consultorio || 'Denti Salud',
-        id: userProfile.id,
-        email: userProfile.email,
-        role: userProfile.role
+        consultorio: userData.consultorio || 'Denti Salud',
+        id: userData.id,
+        email: userData.email,
+        role: userData.role
       });
       
     } catch (error) {

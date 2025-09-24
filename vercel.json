@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "npm run build",
   "outputDirectory": "build",
   "installCommand": "npm install",
+  "env": {
+    "REACT_APP_ENVIRONMENT": "production"
+  },
   "routes": [
     {
       "src": "/static/(.*)",
