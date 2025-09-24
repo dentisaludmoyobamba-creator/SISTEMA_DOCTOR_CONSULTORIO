@@ -1,7 +1,7 @@
 // Configuración de la API
 const API_CONFIG = {
   // URL base del backend FastAPI
-  BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
+  BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000',
   VERSION: process.env.REACT_APP_API_VERSION || 'v1',
   
   // Endpoints principales
