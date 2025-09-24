@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { authService } from '../services';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -6,6 +7,7 @@ const Login = ({ onLogin }) => {
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -17,18 +19,44 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simular carga de login
-    setTimeout(() => {
-      if (formData.usuario && formData.password) {
-        onLogin({
-          nombre: 'Eduardo Carmin',
-          usuario: formData.usuario,
-          consultorio: 'Denti Salud'
-        });
+    try {
+      // Intentar hacer login con el backend
+      const response = await authService.login({
+        username: formData.usuario,
+        password: formData.password
+      });
+      
+      // Si el login es exitoso, obtener el perfil del usuario
+      const userProfile = await authService.getProfile();
+      
+      // Llamar a la función onLogin con los datos del usuario
+      onLogin({
+        nombre: userProfile.nombre || userProfile.full_name || 'Usuario',
+        usuario: formData.usuario,
+        consultorio: userProfile.consultorio || 'Denti Salud',
+        id: userProfile.id,
+        email: userProfile.email,
+        role: userProfile.role
+      });
+      
+    } catch (error) {
+      console.error('Error en login:', error);
+      
+      // Mostrar mensaje de error apropiado
+      if (error.response?.status === 401) {
+        setError('Usuario o contraseña incorrectos');
+      } else if (error.response?.status === 422) {
+        setError('Por favor, completa todos los campos');
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        setError('Error de conexión. Verifica que el backend esté ejecutándose');
+      } else {
+        setError('Error al iniciar sesión. Inténtalo de nuevo');
       }
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -126,6 +154,18 @@ const Login = ({ onLogin }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Mensaje de error */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  <div className="flex">
+                    <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm">{error}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Campo Usuario */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

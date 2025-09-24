@@ -1,0 +1,294 @@
+-- CREACIÓN DE LA BASE DE DATOS
+CREATE DATABASE CONSULTORIO_DENTI_SALUD;
+--
+
+CREATE TABLE roles (
+    id_rol SERIAL PRIMARY KEY,
+    nombre_rol VARCHAR(50) UNIQUE NOT NULL,
+    descripcion TEXT,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    nombre_usuario VARCHAR(50) UNIQUE NOT NULL,
+    contrasena_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    id_rol INTEGER NOT NULL,
+    activo BOOLEAN DEFAULT TRUE,
+    ultimo_login TIMESTAMP WITH TIME ZONE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
+);
+
+CREATE TABLE pacientes (
+    id_paciente SERIAL PRIMARY KEY,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    genero CHAR(1),
+    dni VARCHAR(15) UNIQUE,
+    telefono VARCHAR(20),
+    direccion VARCHAR(255),
+    --id_usuario INTEGER UNIQUE, Opcional, si el paciente puede loguearse
+    fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    --FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+);
+ALTER TABLE pacientes
+ADD COLUMN notas TEXT;
+
+ALTER TABLE pacientes
+ADD COLUMN alergias TEXT;
+
+
+CREATE TABLE especialidades (
+    id_especialidad SERIAL PRIMARY KEY,
+    nombre_especialidad VARCHAR(100) UNIQUE NOT NULL,
+    descripcion TEXT
+);
+
+CREATE TABLE doctores (
+    id_doctor SERIAL PRIMARY KEY,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    dni VARCHAR(15) UNIQUE NOT NULL,
+    colegiatura VARCHAR(20) UNIQUE NOT NULL,
+    telefono VARCHAR(20),
+    id_usuario INTEGER UNIQUE NOT NULL, -- Cada doctor debe tener un usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+);
+
+CREATE TABLE doctor_especialidad (
+    id_doctor_especialidad SERIAL PRIMARY KEY,
+    id_doctor INTEGER NOT NULL,
+    id_especialidad INTEGER NOT NULL,
+    UNIQUE (id_doctor, id_especialidad), -- Evita duplicados
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE CASCADE,
+    FOREIGN KEY (id_especialidad) REFERENCES especialidades(id_especialidad) ON DELETE CASCADE
+);
+
+CREATE TABLE citas_medicas (
+    id_cita SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER NOT NULL,
+    fecha_hora TIMESTAMP WITH TIME ZONE NOT NULL,
+    motivo_consulta TEXT,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Programada', -- Ej. Programada, Confirmada, Cancelada, Realizada
+    notas_recepcion TEXT,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente),
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor)
+);
+
+CREATE TABLE tratamientos (
+    id_tratamiento SERIAL PRIMARY KEY,
+    nombre_tratamiento VARCHAR(150) UNIQUE NOT NULL,
+    descripcion TEXT,
+    costo_base NUMERIC(10, 2) NOT NULL
+);
+
+CREATE TABLE historial_clinico (
+    id_historial SERIAL PRIMARY KEY,
+    id_cita INTEGER UNIQUE NOT NULL, -- Cada entrada de historial corresponde a una única cita
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER NOT NULL,
+    diagnostico TEXT NOT NULL,
+    observaciones TEXT,
+    fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cita) REFERENCES citas_medicas(id_cita),
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente),
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor)
+);
+
+CREATE TABLE historial_tratamientos (
+    id_historial_tratamiento SERIAL PRIMARY KEY,
+    id_historial INTEGER NOT NULL,
+    id_tratamiento INTEGER NOT NULL,
+    costo_final NUMERIC(10, 2) NOT NULL, -- El costo puede variar del base
+    notas_tratamiento TEXT,
+    FOREIGN KEY (id_historial) REFERENCES historial_clinico(id_historial) ON DELETE CASCADE,
+    FOREIGN KEY (id_tratamiento) REFERENCES tratamientos(id_tratamiento)
+);
+
+
+CREATE TABLE productos (
+    id_producto SERIAL PRIMARY KEY,
+    nombre_producto VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    stock INTEGER NOT NULL DEFAULT 0,
+    proveedor VARCHAR(100),
+    costo_unitario NUMERIC(10, 2)
+);
+
+CREATE TABLE facturas (
+    id_factura SERIAL PRIMARY KEY,
+    id_cita INTEGER NOT NULL,
+    id_paciente INTEGER NOT NULL,
+    fecha_emision TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    monto_total NUMERIC(10, 2) NOT NULL,
+    monto_pagado NUMERIC(10, 2) DEFAULT 0.00,
+    estado_factura VARCHAR(20) NOT NULL DEFAULT 'Pendiente', -- Ej. Pendiente, Pagada, Anulada
+    FOREIGN KEY (id_cita) REFERENCES citas_medicas(id_cita),
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente)
+);
+
+
+CREATE TABLE detalle_factura (
+    id_detalle SERIAL PRIMARY KEY,
+    id_factura INTEGER NOT NULL,
+    id_tratamiento INTEGER, -- Puede ser un tratamiento
+    id_producto INTEGER,    -- O un producto
+    descripcion_item VARCHAR(255) NOT NULL,
+    cantidad INTEGER NOT NULL DEFAULT 1,
+    precio_unitario NUMERIC(10, 2) NOT NULL,
+    subtotal NUMERIC(10, 2) NOT NULL,
+    FOREIGN KEY (id_factura) REFERENCES facturas(id_factura) ON DELETE CASCADE,
+    FOREIGN KEY (id_tratamiento) REFERENCES tratamientos(id_tratamiento),
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+);
+
+CREATE TABLE pagos (
+    id_pago SERIAL PRIMARY KEY,
+    id_factura INTEGER NOT NULL,
+    monto_pago NUMERIC(10, 2) NOT NULL,
+    metodo_pago VARCHAR(50), -- Ej. Efectivo, Tarjeta, Transferencia
+    fecha_pago TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    referencia_pago VARCHAR(100),
+    FOREIGN KEY (id_factura) REFERENCES facturas(id_factura)
+);
+
+
+
+-- Borra datos existentes para empezar desde cero (opcional, usar con cuidado)
+-- TRUNCATE TABLE roles, usuarios, pacientes, especialidades, doctores, doctor_especialidad, citas_medicas, tratamientos, historial_clinico, historial_tratamientos, productos, facturas, detalle_factura, pagos RESTART IDENTITY CASCADE;
+
+-- 1. Insertar Roles
+INSERT INTO roles (nombre_rol, descripcion) VALUES
+('Administrador', 'Acceso total al sistema'),
+('Doctor', 'Acceso a historias clínicas y agenda propia'),
+('Recepcionista', 'Acceso a la gestión de citas y pagos');
+
+-- 2. Insertar Usuarios (Contraseñas deben ser hasheadas en una aplicación real)
+INSERT INTO usuarios (nombre_usuario, contrasena_hash, email, id_rol) VALUES
+('admin', 'hash_admin_pass', 'admin@consultorio.com', 1),
+('dr.gomez', 'hash_doc1_pass', 'c.gomez@consultorio.com', 2),
+('dra.avila', 'hash_doc2_pass', 'm.avila@consultorio.com', 2),
+('recepcion1', 'hash_recep_pass', 'recepcion@consultorio.com', 3);
+
+-- 3. Insertar Pacientes (sin campo id_usuario)
+INSERT INTO pacientes (nombres, apellidos, fecha_nacimiento, genero, dni, telefono, direccion) VALUES
+('Ana', 'López García', '1990-05-15', 'F', '12345678A', '555-1234', 'Calle Falsa 123'),
+('Juan', 'Martínez Pérez', '1985-11-20', 'M', '87654321B', '555-5678', 'Avenida Siempreviva 742'),
+('Sofía', 'Rodríguez Castillo', '2001-08-30', 'F', '45678912C', '555-8765', 'Plaza Mayor 1');
+
+-- 4. Insertar Especialidades
+INSERT INTO especialidades (nombre_especialidad, descripcion) VALUES
+('Odontología General', 'Tratamientos dentales básicos y preventivos.'),
+('Ortodoncia', 'Corrección de la posición de los dientes y mandíbula.'),
+('Endodoncia', 'Tratamiento de las enfermedades de la pulpa dental.'),
+('Periodoncia', 'Tratamiento de las enfermedades de las encías.');
+
+-- 5. Insertar Doctores
+INSERT INTO doctores (nombres, apellidos, dni, colegiatura, telefono, id_usuario) VALUES
+('Carlos', 'Gómez', '11223344D', 'OD-1020', '555-1122', 2),
+('Mariela', 'Ávila', '55667788E', 'OD-1035', '555-3344', 3);
+
+-- 6. Asignar Especialidades a Doctores
+INSERT INTO doctor_especialidad (id_doctor, id_especialidad) VALUES
+(1, 1), -- Dr. Gómez es Odontólogo General
+(1, 3), -- Dr. Gómez también es Endodoncista
+(2, 1), -- Dra. Ávila es Odontóloga General
+(2, 2); -- Dra. Ávila también es Ortodoncista
+
+-- 7. Insertar Tratamientos
+INSERT INTO tratamientos (nombre_tratamiento, descripcion, costo_base) VALUES
+('Limpieza Dental', 'Eliminación de placa y sarro.', 50.00),
+('Empaste de Resina', 'Restauración de un diente afectado por caries.', 80.00),
+('Extracción Simple', 'Extracción de un diente visible.', 70.00),
+('Consulta de Ortodoncia', 'Evaluación para tratamiento de brackets.', 40.00),
+('Blanqueamiento Dental', 'Tratamiento estético para aclarar el tono de los dientes.', 250.00);
+
+-- 8. Agendar Citas Médicas
+-- Una cita ya realizada, una programada y una cancelada
+INSERT INTO citas_medicas (id_paciente, id_doctor, fecha_hora, motivo_consulta, estado) VALUES
+(1, 1, '2025-09-10 10:00:00-05', 'Revisión y limpieza anual', 'Realizada'),
+(2, 2, '2025-09-22 15:30:00-05', 'Dolor en una muela', 'Programada'),
+(3, 2, '2025-09-11 12:00:00-05', 'Consulta para brackets', 'Realizada'),
+(1, 2, '2025-09-25 09:00:00-05', 'Seguimiento de ortodoncia', 'Programada'),
+(2, 1, '2025-09-01 11:00:00-05', 'Urgencia por un golpe', 'Cancelada');
+
+-- 9. Insertar en Historial Clínico (solo para citas 'Realizada')
+INSERT INTO historial_clinico (id_cita, id_paciente, id_doctor, diagnostico, observaciones) VALUES
+(1, 1, 1, 'Presencia de placa bacteriana leve. No se observan caries.', 'Se recomienda mejorar técnica de cepillado.'),
+(3, 3, 2, 'Maloclusión de clase II. Candidata para ortodoncia.', 'Se solicitan radiografías panorámicas para plan de tratamiento.');
+
+-- 10. Insertar Tratamientos realizados en el Historial
+INSERT INTO historial_tratamientos (id_historial, id_tratamiento, costo_final, notas_tratamiento) VALUES
+(1, 1, 50.00, 'Limpieza realizada sin complicaciones.'), -- Limpieza en la primera cita
+(2, 4, 40.00, 'Se explica el procedimiento y costos del tratamiento de ortodoncia.'); -- Consulta de ortodoncia
+
+-- 11. Insertar Productos de Inventario
+INSERT INTO productos (nombre_producto, descripcion, stock, proveedor, costo_unitario) VALUES
+('Guantes de Nitrilo (Caja 100u)', 'Guantes desechables talla M', 50, 'DentalPro', 10.00),
+('Anestesia Lidocaína 2%', 'Cartucho de anestesia local', 200, 'PharmaDent', 1.50),
+('Resina Compuesta A2', 'Material para empastes estéticos', 30, '3M Dental', 25.00);
+
+-- 12. Generar Facturas para las citas realizadas
+INSERT INTO facturas (id_cita, id_paciente, monto_total, monto_pagado, estado_factura) VALUES
+(1, 1, 50.00, 50.00, 'Pagada'),
+(3, 3, 40.00, 0.00, 'Pendiente');
+
+-- 13. Insertar Detalle de las Facturas
+INSERT INTO detalle_factura (id_factura, id_tratamiento, descripcion_item, cantidad, precio_unitario, subtotal) VALUES
+(1, 1, 'Limpieza Dental', 1, 50.00, 50.00),
+(2, 4, 'Consulta de Ortodoncia', 1, 40.00, 40.00);
+
+-- 14. Registrar Pagos
+INSERT INTO pagos (id_factura, monto_pago, metodo_pago, referencia_pago) VALUES
+(1, 50.00, 'Tarjeta de Crédito', 'Visa-4512');
+-- La factura 2 sigue pendiente, no tiene pagos.
+
+-- (Opcional) Un ejemplo de pago parcial para la factura 2
+-- INSERT INTO pagos (id_factura, monto_pago, metodo_pago) VALUES
+-- (2, 20.00, 'Efectivo');
+-- Y luego se debería actualizar la factura:
+-- UPDATE facturas SET monto_pagado = 20.00 WHERE id_factura = 2;
+
+CREATE TABLE fuente_captacion(
+id SERIAL PRIMARY KEY,
+nombre VARCHAR(50),
+estado char(1) default 1
+);
+
+CREATE TABLE aseguradora(
+id SERIAL PRIMARY KEY,
+nombre VARCHAR(50),
+estado char(1) default 1
+);
+
+CREATE TABLE IF NOT EXISTS linea_negocio(
+id SERIAL PRIMARY KEY,
+nombre VARCHAR(50),
+estadi char(1) default 1
+);
+
+-- Insertar datos en la tabla fuente_captacion
+INSERT INTO linea_negocio (nombre) VALUES
+('Ortodoncia'),
+('Estética'),
+('Rehabilitación');
+
+-- Insertar datos en la tabla fuente_captacion
+INSERT INTO fuente_captacion (nombre) VALUES
+('Facebook'),
+('amigos-familiares'),
+('Instagram'),
+('tik tok');
+
+-- Insertar datos en la tabla aseguradora
+INSERT INTO aseguradora (nombre) VALUES
+('AUNA'),
+('Cardif'),
+('Chubb'),
+('Dinners Coris gols'),
+('Dinner gold');
