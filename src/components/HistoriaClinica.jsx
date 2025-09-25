@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import NuevoArchivoModal from './NuevoArchivoModal';
 import NotaEvolucionModal from './NotaEvolucionModal';
+import AgregarEvolucionModal from './AgregarEvolucionModal';
 import DienteSVG from './DienteSVG';
 
 const HistoriaClinica = ({ paciente, onClose }) => {
@@ -12,6 +13,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
   const [notasEvolucion, setNotasEvolucion] = useState([]);
   const [activeOdontogramaTab, setActiveOdontogramaTab] = useState('inicial');
+  const [activeHistoriaTab, setActiveHistoriaTab] = useState('anam-odontologia');
+  const [isAgregarEvolucionOpen, setIsAgregarEvolucionOpen] = useState(false);
+  const [notasEvolucionBreve, setNotasEvolucionBreve] = useState([]);
 
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
@@ -46,6 +50,15 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       paciente: paciente?.nombre + ' ' + paciente?.apellido
     };
     setNotasEvolucion(prev => [...prev, nuevaNota]);
+  };
+
+  const handleSaveEvolucionBreve = (evolucionData) => {
+    const nuevaEvolucion = {
+      id: Date.now(),
+      ...evolucionData,
+      fecha: new Date().toISOString()
+    };
+    setNotasEvolucionBreve(prev => [nuevaEvolucion, ...prev]);
   };
 
   const getTipoDiente = (numero) => {
@@ -614,22 +627,64 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               <div className="bg-white border-b">
                 <div className="flex items-center justify-between px-6 py-4">
                   <div className="flex space-x-6 overflow-x-auto">
-                    <button className="text-blue-600 border-b-2 border-blue-600 pb-2 font-medium text-sm whitespace-nowrap">
+                    <button 
+                      onClick={() => setActiveHistoriaTab('anam-odontologia')}
+                      className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                        activeHistoriaTab === 'anam-odontologia'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
                       Anam. Odontología
                     </button>
-                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                    <button 
+                      onClick={() => setActiveHistoriaTab('nota-evolucion-breve')}
+                      className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                        activeHistoriaTab === 'nota-evolucion-breve'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
                       Nota evolución breve
                     </button>
-                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                    <button 
+                      onClick={() => setActiveHistoriaTab('anam-odontopediatria')}
+                      className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                        activeHistoriaTab === 'anam-odontopediatria'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
                       Anam. Odontopediatría
                     </button>
-                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                    <button 
+                      onClick={() => setActiveHistoriaTab('endodoncia')}
+                      className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                        activeHistoriaTab === 'endodoncia'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
                       Endodoncia
                     </button>
-                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                    <button 
+                      onClick={() => setActiveHistoriaTab('signos-vitales')}
+                      className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                        activeHistoriaTab === 'signos-vitales'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
                       Signos Vitales
                     </button>
-                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                    <button 
+                      onClick={() => setActiveHistoriaTab('consentimientos')}
+                      className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                        activeHistoriaTab === 'consentimientos'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
                       Consentimientos
                     </button>
                   </div>
@@ -665,8 +720,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 </button>
               </div>
 
-              {/* Contenido del formulario */}
-              <div className="p-6 space-y-6">
+              {/* Contenido del formulario - Anam. Odontología */}
+              {activeHistoriaTab === 'anam-odontologia' && (
+                <div className="p-6 space-y-6">
                 {/* Sección - Motivo de consulta */}
                 <div className="border border-gray-200 rounded-lg">
                   <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -926,6 +982,353 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                   </div>
                 </div>
               </div>
+              )}
+
+              {/* Contenido - Nota evolución breve */}
+              {activeHistoriaTab === 'nota-evolucion-breve' && (
+                <div className="p-6">
+                  <div className="bg-white min-h-96">
+                    <div className="mb-4">
+                      <button
+                        onClick={() => setIsAgregarEvolucionOpen(true)}
+                        className="bg-blue-100 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+                      >
+                        Agregar evolución
+                      </button>
+                    </div>
+                    
+                    {/* Lista de notas de evolución */}
+                    {notasEvolucionBreve.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p className="text-gray-500 text-lg">No hay notas de evolución</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {notasEvolucionBreve.map((nota) => (
+                          <div key={nota.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-medium text-gray-900">{nota.doctor}</span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(nota.fecha).toLocaleDateString('es-ES')}
+                              </span>
+                            </div>
+                            {nota.evolucion && (
+                              <div className="mb-3">
+                                <p className="text-xs text-gray-600 font-medium mb-1">Evolución:</p>
+                                <p className="text-sm text-gray-800">{nota.evolucion}</p>
+                              </div>
+                            )}
+                            {nota.observacion && (
+                              <div>
+                                <p className="text-xs text-gray-600 font-medium mb-1">Observación:</p>
+                                <p className="text-sm text-gray-800">{nota.observacion}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Contenido - Anam. Odontopediatría */}
+              {activeHistoriaTab === 'anam-odontopediatria' && (
+                <div className="p-6 space-y-6">
+                  {/* Sección - Motivo de consulta y datos familiares */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-medium">Sección</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Motivo de consulta</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                      
+                      {/* Información de padres y hermanos */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre mamá</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre papá</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Número de hermanos</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ENFERMEDAD ACTUAL */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">ENFERMEDAD ACTUAL</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de enfermedad</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Relato cronológico</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ANTECEDENTES PRENATALES */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">ANTECEDENTES PRENATALES</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Enfermedades maternas</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">¿Hubo complicaciones en el embarazo?</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">¿Fue un bebé prematuro?</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="block text-sm font-medium text-gray-700">Peso al nacer</label>
+                        <input
+                          type="text"
+                          className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                        <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">kg</span>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Comentario</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ANTECEDENTES POSTNATALES */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">ANTECEDENTES POSTNATALES</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      {/* Preguntas Sí/No con campos de texto */}
+                      {[
+                        '¿Problemas en el parto?', '¿Usó chupón?', '¿Usó biberón?', '¿Se chupa/chupaba el dedo?',
+                        '¿Toma alguna medicación o terapia?', '¿Es alérgico o intolerante a algo?',
+                        '¿Se cepilla antes de dormir?', '¿Duerme con la boca abierta o ronca?'
+                      ].map((pregunta) => (
+                        <div key={pregunta} className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-700 w-48">{pregunta}</span>
+                          <div className="flex space-x-2">
+                            <label className="flex items-center space-x-1">
+                              <input type="radio" name={pregunta} value="no" className="text-blue-600" />
+                              <span className="text-sm text-gray-600">No</span>
+                            </label>
+                            <label className="flex items-center space-x-1">
+                              <input type="radio" name={pregunta} value="si" className="text-blue-600" />
+                              <span className="text-sm text-gray-600">Si</span>
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                        </div>
+                      ))}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Comentario adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+
+                      {/* Preguntas sobre dieta y alimentación */}
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-700 w-48">¿Cuánto dulce come?</span>
+                          <input
+                            type="text"
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                          <button className="bg-blue-100 text-blue-600 px-3 py-2 rounded border text-sm">
+                            Veces al día
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-700 w-48">¿Con qué frecuencia?</span>
+                          <input
+                            type="text"
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                          <button className="bg-blue-100 text-blue-600 px-3 py-2 rounded border text-sm">
+                            días/semana
+                          </button>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué tipo de leche recibe el bebé?</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder=""
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">¿Cómo le lava los dientes al bebé o niño?</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Describa un día de comida de su bebé/niño desde el desayuno.</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sección final - Evaluación parental y examen clínico */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="p-4 space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ¿Te consideras un papá/mamá autoritario, cooperador, despreocupado o sobreprotector?
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Hábitos orales</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Técnica de cepillado</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Examen clínico</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Botón Guardar */}
+                      <div className="flex justify-center pt-4">
+                        <button className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors">
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Contenido - Otras pestañas (placeholder) */}
+              {activeHistoriaTab !== 'anam-odontologia' && activeHistoriaTab !== 'nota-evolucion-breve' && activeHistoriaTab !== 'anam-odontopediatria' && (
+                <div className="p-6">
+                  <div className="bg-white min-h-96 flex items-center justify-center">
+                    <p className="text-gray-500 text-lg">Contenido de {activeHistoriaTab} - En desarrollo</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1173,6 +1576,13 @@ const HistoriaClinica = ({ paciente, onClose }) => {
         isOpen={isNotaEvolucionOpen}
         onClose={() => setIsNotaEvolucionOpen(false)}
         onSave={handleSaveNotaEvolucion}
+      />
+
+      {/* Modal de agregar evolución breve */}
+      <AgregarEvolucionModal
+        isOpen={isAgregarEvolucionOpen}
+        onClose={() => setIsAgregarEvolucionOpen(false)}
+        onSave={handleSaveEvolucionBreve}
       />
     </div>
   );
