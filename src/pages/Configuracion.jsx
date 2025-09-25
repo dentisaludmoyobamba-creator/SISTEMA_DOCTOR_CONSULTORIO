@@ -4,10 +4,10 @@ const Configuracion = () => {
   const [activeSection, setActiveSection] = useState('mi-perfil');
 
   const sections = [
-    { id: 'mi-perfil', name: 'Mi perfil', icon: '👤' },
-    { id: 'usuarios', name: 'Usuarios', icon: '👥' },
-    { id: 'historia-clinica', name: 'Historia clínica', icon: '📋' },
-    { id: 'administracion', name: 'Administración', icon: '⚙️' }
+    { id: 'mi-perfil', name: 'Mi perfil' },
+    { id: 'usuarios', name: 'Usuarios' },
+    { id: 'historia-clinica', name: 'Historia clínica' },
+    { id: 'administracion', name: 'Administración' }
   ];
 
   const renderSection = () => {
@@ -26,35 +26,31 @@ const Configuracion = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 pt-24 sm:pt-28">
-      <div className="flex-1 flex">
-        {/* Sidebar de navegación */}
-        <div className="w-64 bg-white shadow-sm border-r border-gray-200">
-          <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Configuración</h2>
-            <nav className="space-y-2">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeSection === section.id
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="text-lg">{section.icon}</span>
-                  <span className="font-medium">{section.name}</span>
-                </button>
-              ))}
-            </nav>
+    <div className="flex flex-col h-screen bg-gray-50 pt-24 sm:pt-28">
+      {/* Navegación horizontal bajo el header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex space-x-8">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeSection === section.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {section.name}
+              </button>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Contenido principal */}
-        <div className="flex-1 overflow-y-auto">
-          {renderSection()}
-        </div>
+      {/* Contenido principal */}
+      <div className="flex-1 overflow-y-auto">
+        {renderSection()}
       </div>
     </div>
   );
@@ -307,29 +303,148 @@ const MiPerfil = () => {
 
 // Componente Usuarios
 const Usuarios = () => {
+  const [activeSubTab, setActiveSubTab] = useState('todos');
+
+  const usuarios = [
+    {
+      id: 1,
+      nombre: 'Eduardo Carmin',
+      email: 'eduardo.carmin@tecsup.edu.pe',
+      tipoUsuario: 'Doctor principal',
+      sucursal: '1',
+      estado: 'Activo',
+      permisos: 'Todos los permisos'
+    }
+  ];
+
+  const subTabs = [
+    { id: 'todos', label: 'Todos' },
+    { id: 'staff-medico', label: 'Staff médico' }
+  ];
+
   return (
-    <div className="p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Usuarios</h1>
-          <p className="text-gray-600">Gestiona los usuarios del sistema</p>
+    <div className="flex-1 bg-gray-50">
+      <div className="bg-white shadow-sm border-b px-4 sm:px-6 py-2">
+        {/* Sub-navegación de Usuarios */}
+        <div className="flex space-x-8 border-b mb-2">
+          {subTabs.map((subTab) => (
+            <button
+              key={subTab.id}
+              onClick={() => setActiveSubTab(subTab.id)}
+              className={`pb-2 px-1 relative ${
+                activeSubTab === subTab.id
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {subTab.label}
+            </button>
+          ))}
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+        {/* User Summary and New User Button */}
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center space-x-4 text-sm text-gray-700">
+            <span>Doctor principal contratados: <span className="font-semibold">1</span></span>
+            <span>Usados: <span className="font-semibold">1</span></span>
+            <div className="flex items-center space-x-1 text-yellow-600">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.3 2.647-1.3 3.412 0l7.66 13.139A1 1 0 0118 18H2a1 1 0 01-.824-1.559L8.257 3.099zM10 8a1 1 0 011 1v3a1 1 0 11-2 0V9a1 1 0 011-1zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
+              <span>Disponibles: <span className="font-semibold">0</span></span>
+              <a href="#" className="text-blue-600 hover:underline">Contratar más</a>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestión de Usuarios</h3>
-            <p className="text-gray-600 mb-6">
-              Aquí podrás agregar, editar y gestionar los usuarios que tienen acceso al sistema.
-            </p>
-            <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-              Agregar Usuario
-            </button>
+            <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
           </div>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span>Nuevo usuario</span>
+          </button>
+        </div>
+      </div>
+
+      {/* User Table */}
+      <div className="p-4 sm:p-6">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-slate-700">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Usuario
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  E-mail
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Tipo usuario
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Sucursal
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Estado
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {usuarios.map((usuario) => (
+                <tr key={usuario.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-100 rounded-full text-blue-600 text-sm font-medium">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="text-sm font-medium text-blue-600">Superadmin.</div>
+                          <div className="text-sm font-medium text-gray-900">{usuario.nombre}</div>
+                          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="text-sm text-gray-500">{usuario.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{usuario.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{usuario.tipoUsuario}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {usuario.sucursal}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
+                        <div className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6"></div>
+                      </div>
+                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm text-green-800 font-medium">{usuario.estado}</span>
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {usuario.permisos}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
