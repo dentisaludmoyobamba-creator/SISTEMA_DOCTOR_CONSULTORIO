@@ -5,6 +5,7 @@ import AgregarEvolucionModal from './AgregarEvolucionModal';
 import AgregarDatosFiscalesModal from './AgregarDatosFiscalesModal';
 import AgregarFamiliarModal from './AgregarFamiliarModal';
 import DienteSVG from './DienteSVG';
+import PeriodontoTooth from './PeriodontoTooth';
 
 const HistoriaClinica = ({ paciente, onClose }) => {
   const [activeSection, setActiveSection] = useState('filiacion');
@@ -23,6 +24,15 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [datosFiscales, setDatosFiscales] = useState([]);
   const [familiares, setFamiliares] = useState([]);
   const [citas, setCitas] = useState([]);
+  const [activePeriodontogramaTab, setActivePeriodontogramaTab] = useState('periodontogramas');
+  const [selectedDoctor, setSelectedDoctor] = useState('Eduardo Carmin');
+  const [periodontogramaData, setPeriodontogramaData] = useState({
+    movilidad: {},
+    sangrado: {},
+    placa: {},
+    margenGingival: {},
+    profundidadSondaje: {}
+  });
 
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
@@ -2326,10 +2336,447 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               </div>
             </div>
           )}
+
+          {/* Sección de Periodontograma */}
+          {activeSection === 'periodontograma' && (
+            <div className="flex-1 bg-white p-4 sm:p-6 overflow-y-auto">
+              {/* Header del periodontograma */}
+              <div className="mb-6">
+                {/* Tabs */}
+                <div className="flex space-x-8 border-b mb-4">
+                  <button
+                    onClick={() => setActivePeriodontogramaTab('periodontogramas')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activePeriodontogramaTab === 'periodontogramas'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Periodontogramas
+                  </button>
+                  <button
+                    onClick={() => setActivePeriodontogramaTab('plan-tratamiento')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activePeriodontogramaTab === 'plan-tratamiento'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Plan de tratamiento
+                  </button>
+                </div>
+
+                {/* Controls Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-700">Doctor:</span>
+                      <select 
+                        value={selectedDoctor}
+                        onChange={(e) => setSelectedDoctor(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        <option value="Eduardo Carmin">Eduardo Carmin</option>
+                        <option value="Dr. Rodriguez">Dr. Rodriguez</option>
+                        <option value="Dra. Martinez">Dra. Martinez</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    {/* Indicadores */}
+                    <div className="bg-cyan-100 text-cyan-800 px-4 py-2 rounded-md flex items-center space-x-4">
+                      <span className="text-sm font-medium">Índice de placa (%IP): 0.00%</span>
+                      <span className="text-sm font-medium">Sangrado (%SAS): 0.00%</span>
+                    </div>
+                    
+                    <button className="bg-cyan-400 hover:bg-cyan-500 text-white px-4 py-2 rounded-md text-sm font-medium">
+                      Guardar
+                    </button>
+                    
+                    <button className="p-2 text-gray-400 hover:text-gray-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {activePeriodontogramaTab === 'periodontogramas' && (
+                <div className="space-y-8">
+                  {/* Tabla Superior */}
+                  <div className="space-y-4">
+                    {/* Dientes superiores 18-11 */}
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-700 w-32"></th>
+                            {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                              <th key={numero} className="text-center py-2 px-2 text-sm font-medium text-gray-700 border-l border-gray-200">
+                                {numero}
+                              </th>
+                            ))}
+                            <th className="w-8"></th>
+                            {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                              <th key={numero} className="text-center py-2 px-2 text-sm font-medium text-gray-700 border-l border-gray-200">
+                                {numero}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Movilidad</td>
+                            {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t bg-red-50">
+                            <td className="py-2 px-3 text-sm text-blue-600 bg-gray-50 font-medium">Sangrado al sondaje</td>
+                            {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded bg-red-50" defaultValue="0" />
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded bg-red-50" defaultValue="0" />
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t bg-gray-100">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Placa</td>
+                            {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200 bg-gray-100">
+                                <div className="w-8 h-6 bg-gray-200 rounded border border-gray-300"></div>
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200 bg-gray-100">
+                                <div className="w-8 h-6 bg-gray-200 rounded border border-gray-300"></div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Margen Gingival</td>
+                            {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Profundidad de Sondaje</td>
+                            {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Gráfico de dientes superiores */}
+                    <div className="border border-gray-300 rounded-lg p-6 bg-white">
+                      <svg width="100%" height="200" viewBox="0 0 1000 200" className="bg-white">
+                        {/* Línea guía */}
+                        <line x1="40" y1="110" x2="960" y2="110" stroke="#9333ea" strokeWidth="2" />
+                        {/* Dientes superiores 18-11 */}
+                        {[18, 17, 16, 15, 14, 13, 12, 11].map((numero, index) => (
+                          <PeriodontoTooth
+                            key={numero}
+                            x={60 + index * 48}
+                            y={50}
+                            type={index <= 1 ? 'molar' : index <= 3 ? 'premolar' : index === 4 ? 'canino' : 'incisor'}
+                            arch="upper"
+                            number={numero}
+                          />
+                        ))}
+                        {/* Dientes superiores 21-28 */}
+                        {[21, 22, 23, 24, 25, 26, 27, 28].map((numero, index) => (
+                          <PeriodontoTooth
+                            key={numero}
+                            x={560 + index * 48}
+                            y={50}
+                            type={index >= 6 ? 'molar' : index >= 4 ? 'premolar' : index === 3 ? 'canino' : 'incisor'}
+                            arch="upper"
+                            number={numero}
+                          />
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Tabla Inferior */}
+                  <div className="space-y-4">
+                    {/* Tabla para dientes inferiores */}
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <tbody>
+                          <tr>
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Margen Gingival</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Profundidad de Sondaje</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <div className="flex space-x-1">
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                  <input className="w-6 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t bg-gray-100">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Placa</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200 bg-gray-100">
+                                <div className="w-8 h-6 bg-gray-200 rounded border border-gray-300"></div>
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200 bg-gray-100">
+                                <div className="w-8 h-6 bg-gray-200 rounded border border-gray-300"></div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t bg-red-50">
+                            <td className="py-2 px-3 text-sm text-blue-600 bg-gray-50 font-medium">Sangrado al sondaje</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded bg-red-50" defaultValue="0" />
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded bg-red-50" defaultValue="0" />
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-2 px-3 text-sm text-gray-700 bg-gray-50 font-medium">Movilidad</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                              </td>
+                            ))}
+                            <td className="w-8"></td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-2 px-2 border-l border-gray-200">
+                                <input className="w-8 h-6 text-center text-xs border border-gray-300 rounded" defaultValue="0" />
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                        <thead>
+                          <tr className="bg-gray-50 border-t">
+                            <th className="text-left py-2 px-3 text-sm font-medium text-gray-700 w-32"></th>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <th key={numero} className="text-center py-2 px-2 text-sm font-medium text-gray-700 border-l border-gray-200">
+                                {numero}
+                              </th>
+                            ))}
+                            <th className="w-8"></th>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <th key={numero} className="text-center py-2 px-2 text-sm font-medium text-gray-700 border-l border-gray-200">
+                                {numero}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+
+                    {/* Gráfico de dientes inferiores */}
+                    <div className="border border-gray-300 rounded-lg p-6 bg-white">
+                      <svg width="100%" height="200" viewBox="0 0 1000 200" className="bg-white">
+                        {/* Línea guía */}
+                        <line x1="40" y1="95" x2="960" y2="95" stroke="#9333ea" strokeWidth="2" />
+                        {/* Dientes inferiores 48-41 */}
+                        {[48, 47, 46, 45, 44, 43, 42, 41].map((numero, index) => (
+                          <PeriodontoTooth
+                            key={numero}
+                            x={60 + index * 48}
+                            y={100}
+                            type={index <= 1 ? 'molar' : index <= 3 ? 'premolar' : index === 4 ? 'canino' : 'incisor'}
+                            arch="lower"
+                            number={numero}
+                          />
+                        ))}
+                        {/* Dientes inferiores 31-38 */}
+                        {[31, 32, 33, 34, 35, 36, 37, 38].map((numero, index) => (
+                          <PeriodontoTooth
+                            key={numero}
+                            x={560 + index * 48}
+                            y={100}
+                            type={index >= 6 ? 'molar' : index >= 4 ? 'premolar' : index === 3 ? 'canino' : 'incisor'}
+                            arch="lower"
+                            number={numero}
+                          />
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Tablas adicionales inferiores */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Tabla izquierda inferior */}
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          <tr>
+                            <td className="py-1 px-2 text-right text-orange-600 bg-gray-50">Nota</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-1 px-1 border-l border-gray-200 bg-gray-100">
+                                <div className="w-6 h-4 bg-gray-200 rounded"></div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-1 px-2 text-right text-blue-600 bg-gray-50">Sangrado al sondaje</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-1 px-1 border-l border-gray-200 bg-gray-100">
+                                <div className="w-6 h-4 bg-gray-200 rounded"></div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-1 px-2 text-right text-gray-700 bg-gray-50">Placa</td>
+                            {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                              <td key={numero} className="text-center py-1 px-1 border-l border-gray-200 bg-gray-100">
+                                <div className="w-6 h-4 bg-gray-200 rounded"></div>
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Tabla derecha inferior */}
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          <tr>
+                            <td className="py-1 px-2 text-right text-orange-600 bg-gray-50">Nota</td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-1 px-1 border-l border-gray-200 bg-gray-100">
+                                <div className="w-6 h-4 bg-gray-200 rounded"></div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-1 px-2 text-right text-blue-600 bg-gray-50">Sangrado al sondaje</td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-1 px-1 border-l border-gray-200 bg-gray-100">
+                                <div className="w-6 h-4 bg-gray-200 rounded"></div>
+                              </td>
+                            ))}
+                          </tr>
+                          <tr className="border-t">
+                            <td className="py-1 px-2 text-right text-gray-700 bg-gray-50">Placa</td>
+                            {[31, 32, 33, 34, 35, 36, 37, 38].map(numero => (
+                              <td key={numero} className="text-center py-1 px-1 border-l border-gray-200 bg-gray-100">
+                                <div className="w-6 h-4 bg-gray-200 rounded"></div>
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activePeriodontogramaTab === 'plan-tratamiento' && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg">Plan de tratamiento periodontal</p>
+                  <p className="text-gray-400 text-sm mt-2">Esta sección estará disponible próximamente</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar derecho - Notas y presupuestos */}
-        <div className="w-80 bg-white border-l hidden xl:block">
+        <div className="w-80 bg-white border-l hidden lg:block">
           {/* Notas de evolución */}
           <div className="p-6 border-b">
             <div className="flex items-center justify-between mb-4">
