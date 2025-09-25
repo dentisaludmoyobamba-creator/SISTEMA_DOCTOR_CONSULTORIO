@@ -607,6 +607,328 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           )}
 
           {/* Sección de Odontograma */}
+          {/* Sección Historia Clínica */}
+          {activeSection === 'historia-clinica' && (
+            <div className="flex-1 bg-white overflow-y-auto">
+              {/* Barra de navegación con pestañas */}
+              <div className="bg-white border-b">
+                <div className="flex items-center justify-between px-6 py-4">
+                  <div className="flex space-x-6 overflow-x-auto">
+                    <button className="text-blue-600 border-b-2 border-blue-600 pb-2 font-medium text-sm whitespace-nowrap">
+                      Anam. Odontología
+                    </button>
+                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                      Nota evolución breve
+                    </button>
+                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                      Anam. Odontopediatría
+                    </button>
+                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                      Endodoncia
+                    </button>
+                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                      Signos Vitales
+                    </button>
+                    <button className="text-gray-500 hover:text-gray-700 pb-2 font-medium text-sm whitespace-nowrap">
+                      Consentimientos
+                    </button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                      </svg>
+                    </button>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Plantillas</span>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información del doctor */}
+              <div className="px-6 py-3 bg-gray-50 border-b flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Doctor:</span>
+                  <span className="text-sm font-medium text-gray-900">Eduardo Carmin</span>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </div>
+                <button className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contenido del formulario */}
+              <div className="p-6 space-y-6">
+                {/* Sección - Motivo de consulta */}
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="text-blue-600 font-medium">Sección</h3>
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                    </svg>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Motivo de consulta</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ENFERMEDAD ACTUAL */}
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="text-blue-600 font-bold">ENFERMEDAD ACTUAL</h3>
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                    </svg>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Tiempo de enfermedad</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Signos y síntomas principales</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Relato cronológico</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Funciones biológicas</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ANTECEDENTES */}
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="text-blue-600 font-bold">ANTECEDENTES</h3>
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                    </svg>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Antecedentes familiares</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Antecedentes personales</label>
+                      <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder=""
+                      />
+                    </div>
+                    
+                    {/* ¿Tiene o ha tenido? */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">¿Tiene o ha tenido?</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          'Presión alta', 'Presión baja', 'Hepatitis', 'Gastritis',
+                          'Úlceras', 'VIH', 'Diabetes', 'Asma', '¿Fuma?'
+                        ].map((condicion) => (
+                          <div key={condicion} className="flex items-center space-x-3">
+                            <span className="text-sm text-gray-700 w-24">{condicion}</span>
+                            <div className="flex space-x-2">
+                              <label className="flex items-center space-x-1">
+                                <input type="radio" name={condicion} value="no" className="text-blue-600" />
+                                <span className="text-sm text-gray-600">No</span>
+                              </label>
+                              <label className="flex items-center space-x-1">
+                                <input type="radio" name={condicion} value="si" className="text-blue-600" />
+                                <span className="text-sm text-gray-600">Si</span>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap mt-2">Comentario adicional</label>
+                      <textarea
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                        placeholder=""
+                      />
+                    </div>
+
+                    {/* Preguntas adicionales */}
+                    {[
+                      'Enfermedades sanguíneas', 'Problemas cardíacos', '¿Padece de alguna otra enfermedad?',
+                      '¿Cuántas veces al día se cepilla los dientes?', '¿Le sangra sus encías?',
+                      '¿Ha tenido hemorragias anormales después de una extracción?', '¿Hace rechinar o aprieta los dientes?',
+                      'Otras molestias en la boca', 'Alergias', '¿Ha tenido alguna operación grande en los últimos años?',
+                      '¿Toma alguna medicación de manera permanente?'
+                    ].map((pregunta) => (
+                      <div key={pregunta} className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-48">{pregunta}</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name={pregunta} value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name={pregunta} value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Si</span>
+                          </label>
+                        </div>
+                        <input
+                          type="text"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* EXAMEN CLINICO */}
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="text-blue-600 font-bold">EXAMEN CLINICO</h3>
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                    </svg>
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Columna izquierda */}
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">Signos vitales:</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700 w-20">PA</span>
+                              <input
+                                type="text"
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder=""
+                              />
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">mmgh</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700 w-20">Temperatura</span>
+                              <input
+                                type="text"
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder=""
+                              />
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">°C</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Examen extraoral</h4>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Resultado de exámenes auxiliares</h4>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                      </div>
+
+                      {/* Columna derecha */}
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">Signos vitales (continuación):</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700 w-20">FC</span>
+                              <input
+                                type="text"
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder=""
+                              />
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">bpm</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700 w-20">FR</span>
+                              <input
+                                type="text"
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder=""
+                              />
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">r/m</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Examen intraoral</h4>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Observaciones</h4>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Botón Guardar */}
+                    <div className="flex justify-center mt-6">
+                      <button className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors">
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeSection === 'odontograma' && (
             <div className="flex-1 bg-white p-4 sm:p-6 overflow-y-auto">
               {/* Header del odontograma */}
