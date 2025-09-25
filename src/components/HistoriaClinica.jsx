@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import NuevoArchivoModal from './NuevoArchivoModal';
 import NotaEvolucionModal from './NotaEvolucionModal';
 import AgregarEvolucionModal from './AgregarEvolucionModal';
+import AgregarDatosFiscalesModal from './AgregarDatosFiscalesModal';
+import AgregarFamiliarModal from './AgregarFamiliarModal';
 import DienteSVG from './DienteSVG';
 
 const HistoriaClinica = ({ paciente, onClose }) => {
@@ -16,6 +18,11 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [activeHistoriaTab, setActiveHistoriaTab] = useState('anam-odontologia');
   const [isAgregarEvolucionOpen, setIsAgregarEvolucionOpen] = useState(false);
   const [notasEvolucionBreve, setNotasEvolucionBreve] = useState([]);
+  const [isAgregarDatosFiscalesOpen, setIsAgregarDatosFiscalesOpen] = useState(false);
+  const [isAgregarFamiliarOpen, setIsAgregarFamiliarOpen] = useState(false);
+  const [datosFiscales, setDatosFiscales] = useState([]);
+  const [familiares, setFamiliares] = useState([]);
+  const [citas, setCitas] = useState([]);
 
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
@@ -59,6 +66,22 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       fecha: new Date().toISOString()
     };
     setNotasEvolucionBreve(prev => [nuevaEvolucion, ...prev]);
+  };
+
+  const handleSaveDatosFiscales = (datosData) => {
+    const nuevosDatos = {
+      id: Date.now(),
+      ...datosData
+    };
+    setDatosFiscales(prev => [nuevosDatos, ...prev]);
+  };
+
+  const handleSaveFamiliar = (familiarData) => {
+    const nuevoFamiliar = {
+      id: Date.now(),
+      ...familiarData
+    };
+    setFamiliares(prev => [nuevoFamiliar, ...prev]);
   };
 
   const getTipoDiente = (numero) => {
@@ -537,14 +560,135 @@ const HistoriaClinica = ({ paciente, onClose }) => {
 
           {/* Datos fiscales */}
           {activeSection === 'filiacion' && activeTab === 'datos-fiscales' && (
-            <div className="flex-1 bg-white p-4 sm:p-6 overflow-y-auto">
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
+            <div className="flex-1 bg-white overflow-y-auto">
+              {/* Datos Fiscales */}
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Datos Fiscales</h2>
+                
+                {/* Header de la tabla */}
+                <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
+                  <div className="grid grid-cols-4 gap-4 text-sm font-medium">
+                    <div>Razón Social</div>
+                    <div>Número Fiscal</div>
+                    <div>Dirección</div>
+                    <div>Departamento</div>
+                  </div>
                 </div>
-                <p className="text-gray-500 text-lg">Datos fiscales del paciente</p>
+                
+                {/* Botón Nuevo Registro */}
+                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                  <button
+                    onClick={() => setIsAgregarDatosFiscalesOpen(true)}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+                  >
+                    Nuevo Registro
+                  </button>
+                </div>
+                
+                {/* Contenido de la tabla */}
+                {datosFiscales.length === 0 ? (
+                  <div className="bg-white border border-gray-200 rounded-b-lg p-8 text-center">
+                    <p className="text-gray-500">No hay datos fiscales registrados</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-b-lg">
+                    {datosFiscales.map((dato) => (
+                      <div key={dato.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 text-sm">
+                        <div>{dato.razonSocial}</div>
+                        <div>{dato.documento}</div>
+                        <div>{dato.direccion}</div>
+                        <div>{dato.departamento}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Familiar */}
+              <div className="p-6 border-t">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Familiar</h2>
+                
+                {/* Header de la tabla */}
+                <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
+                  <div className="grid grid-cols-5 gap-4 text-sm font-medium">
+                    <div>Nombre</div>
+                    <div>N° doc</div>
+                    <div>Teléfono</div>
+                    <div>Email</div>
+                    <div>Apoderado</div>
+                  </div>
+                </div>
+                
+                {/* Botón Nuevo Registro */}
+                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                  <button
+                    onClick={() => setIsAgregarFamiliarOpen(true)}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+                  >
+                    Nuevo Registro
+                  </button>
+                </div>
+                
+                {/* Contenido de la tabla */}
+                {familiares.length === 0 ? (
+                  <div className="bg-white border border-gray-200 rounded-b-lg p-8 text-center">
+                    <p className="text-gray-500">No hay familiares registrados</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-b-lg">
+                    {familiares.map((familiar) => (
+                      <div key={familiar.id} className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-gray-100 text-sm">
+                        <div>{familiar.nombre}</div>
+                        <div>{familiar.documento}</div>
+                        <div>{familiar.telefono}</div>
+                        <div>{familiar.email}</div>
+                        <div>{familiar.apoderado ? 'Sí' : 'No'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Citas */}
+              <div className="p-6 border-t">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Citas</h2>
+                
+                {/* Header de la tabla */}
+                <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
+                  <div className="grid grid-cols-5 gap-4 text-sm font-medium">
+                    <div>Fecha</div>
+                    <div>Doctor</div>
+                    <div>Motivo</div>
+                    <div>Estado</div>
+                    <div>Comentario</div>
+                  </div>
+                </div>
+                
+                {/* Contenido vacío */}
+                <div className="bg-white border border-gray-200 rounded-b-lg p-12 text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                  </div>
+                  <p className="text-gray-500">No se encontró ninguna información</p>
+                </div>
+              </div>
+
+              {/* Paginación */}
+              <div className="p-6 border-t flex justify-end">
+                <div className="flex space-x-2">
+                  <button className="p-2 text-gray-400 hover:text-gray-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-gray-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -2227,6 +2371,16 @@ const HistoriaClinica = ({ paciente, onClose }) => {
         isOpen={isAgregarEvolucionOpen}
         onClose={() => setIsAgregarEvolucionOpen(false)}
         onSave={handleSaveEvolucionBreve}
+      />
+      <AgregarDatosFiscalesModal
+        isOpen={isAgregarDatosFiscalesOpen}
+        onClose={() => setIsAgregarDatosFiscalesOpen(false)}
+        onSave={handleSaveDatosFiscales}
+      />
+      <AgregarFamiliarModal
+        isOpen={isAgregarFamiliarOpen}
+        onClose={() => setIsAgregarFamiliarOpen(false)}
+        onSave={handleSaveFamiliar}
       />
     </div>
   );
