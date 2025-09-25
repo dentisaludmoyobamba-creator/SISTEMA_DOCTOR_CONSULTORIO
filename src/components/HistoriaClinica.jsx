@@ -2202,6 +2202,127 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     </div>
                   </div>
                 </div>
+
+                {/* Plan de tratamiento */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan de tratamiento</h3>
+                  
+                  {/* Tabla de plan de tratamiento */}
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Header de la tabla */}
+                    <div className="bg-slate-700 text-white">
+                      <div className="grid grid-cols-4 gap-4 px-6 py-3 text-sm font-medium">
+                        <div>N° diente</div>
+                        <div>Hallazgo</div>
+                        <div>Servicios</div>
+                        <div>Nota</div>
+                      </div>
+                    </div>
+                    
+                    {/* Contenido de la tabla */}
+                    <div className="p-6">
+                      <div className="min-h-32 flex flex-col items-center justify-center text-gray-500">
+                        <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <p className="text-sm">No se encontró ninguna información</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Secciones adicionales */}
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Especificaciones */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Especificaciones:</h4>
+                    <textarea 
+                      className="w-full h-32 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+                      placeholder="Escribir especificaciones..."
+                    />
+                  </div>
+
+                  {/* Diagnóstico */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Diagnóstico:</h4>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <button className="text-blue-600 text-sm hover:text-blue-800">
+                        Usar lista CIE-10
+                      </button>
+                    </div>
+                    <textarea 
+                      className="w-full h-32 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+                      placeholder="Escribir diagnóstico..."
+                    />
+                  </div>
+                </div>
+
+                {/* Observaciones y Plan de trabajo */}
+                <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Observaciones */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Observaciones:</h4>
+                    <div className="relative">
+                      <textarea 
+                        className="w-full h-40 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+                        placeholder=""
+                      />
+                      <div className="absolute bottom-2 right-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {/* Lista de observaciones con viñetas */}
+                    <div className="mt-4 text-sm text-gray-600">
+                      <div className="flex items-start space-x-2">
+                        <span className="text-gray-400 mt-1">▲</span>
+                        <span>P1 8-1.5: Aparato ortodóncico fijo</span>
+                      </div>
+                      <div className="flex items-start space-x-2 mt-1">
+                        <span className="text-gray-400 mt-1">⚪</span>
+                        <span>P1.3: Caries oclusal (a nivel del esmalte)</span>
+                      </div>
+                      <div className="flex items-start space-x-2 mt-1">
+                        <span className="text-gray-400 mt-1">⚪</span>
+                        <span>P1.3: Caries vestibular (a nivel del esmalte)</span>
+                      </div>
+                      <div className="flex items-start space-x-2 mt-1">
+                        <span className="text-gray-400 mt-1">⚪</span>
+                        <span>P1.3: Caries distal (a nivel del esmalte)</span>
+                      </div>
+                      <div className="flex items-start space-x-2 mt-1">
+                        <span className="text-gray-400 mt-1">⚪</span>
+                        <span>P2.5: Caries distal (Mancha Blanca)</span>
+                      </div>
+                      <div className="flex items-start space-x-2 mt-1">
+                        <span className="text-gray-400 mt-1">▼</span>
+                        <span>P2.5: Caries oclusal (Mancha Blanca)</span>
+                      </div>
+                      <div className="flex items-start space-x-2 mt-1">
+                        <span className="text-gray-400 mt-1">⚪</span>
+                        <span>P3.3: Caries distal</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Plan de trabajo */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Plan de trabajo:</h4>
+                    <div className="relative">
+                      <textarea 
+                        className="w-full h-40 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+                        placeholder=""
+                      />
+                      <div className="absolute bottom-2 right-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
