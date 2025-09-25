@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { pacientes as pacientesData } from '../data/mockData';
 import NewPatientModal from '../components/NewPatientModal';
+import HistoriaClinica from '../components/HistoriaClinica';
 
 const Pacientes = () => {
   const [activeTab, setActiveTab] = useState('mis-pacientes');
@@ -10,6 +11,7 @@ const Pacientes = () => {
   const [isPatientProfileOpen, setIsPatientProfileOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [activeProfileTab, setActiveProfileTab] = useState('citas');
+  const [isHistoriaClinicaOpen, setIsHistoriaClinicaOpen] = useState(false);
   // Asistencias - filtros y popovers
   const [lineaNegocio, setLineaNegocio] = useState('Todos los pacientes');
   const [estadoFiltro, setEstadoFiltro] = useState('Selecciona una opción');
@@ -75,6 +77,15 @@ const Pacientes = () => {
     setSelectedPatient(paciente);
     setIsPatientProfileOpen(true);
     setActiveProfileTab('citas');
+  };
+
+  const handleOpenHistoriaClinica = () => {
+    setIsHistoriaClinicaOpen(true);
+    setIsPatientProfileOpen(false);
+  };
+
+  const handleCloseHistoriaClinica = () => {
+    setIsHistoriaClinicaOpen(false);
   };
 
   return (
@@ -388,7 +399,10 @@ const Pacientes = () => {
               <div className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <h3 className="text-lg font-semibold text-gray-900">{selectedPatient.nombre} {selectedPatient.apellido}</h3>
-                  <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1">
+                  <button 
+                    onClick={handleOpenHistoriaClinica}
+                    className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1 hover:bg-blue-700 transition-colors"
+                  >
                     <span>Abrir historia</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -551,6 +565,14 @@ const Pacientes = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal: Historia Clínica */}
+      {isHistoriaClinicaOpen && selectedPatient && (
+        <HistoriaClinica
+          paciente={selectedPatient}
+          onClose={handleCloseHistoriaClinica}
+        />
       )}
     </div>
   );

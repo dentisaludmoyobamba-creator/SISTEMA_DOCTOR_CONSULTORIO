@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ProfileModal from './ProfileModal';
 
 const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -7,6 +8,7 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const marketingMenuRef = useRef(null);
@@ -116,7 +118,15 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
 
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-lg py-1 z-50">
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Mi Perfil</button>
+                    <button 
+                      onClick={() => {
+                        setIsProfileModalOpen(true);
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Mi Perfil
+                    </button>
                     <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Configuración</button>
                     <div className="border-t" />
                     <button onClick={onLogout} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Cerrar Sesión</button>
@@ -405,6 +415,13 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
           </div>
         </div>
       )}
+
+      {/* Modal de Perfil */}
+      <ProfileModal 
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user}
+      />
     </nav>
   );
 };
