@@ -1321,8 +1321,652 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 </div>
               )}
 
+              {/* Contenido - Endodoncia */}
+              {activeHistoriaTab === 'endodoncia' && (
+                <div className="p-6 space-y-6">
+                  {/* Primera sección - Datos básicos */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-medium">Sección</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">¿Tratamiento endodóntico previo?</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Historia del dolor</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nota adicional</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">N° de diente</label>
+                        <input
+                          type="text"
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* EXAMEN CLÍNICO */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">EXAMEN CLÍNICO</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      {/* Corona Anatómica */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Corona Anatómica</label>
+                        <div className="flex flex-wrap gap-4">
+                          {['Caries', 'Restauración', 'Bruxismo', 'Fractura', 'Fractura y exposición pulpar'].map((opcion) => (
+                            <label key={opcion} className="flex items-center space-x-2">
+                              <input type="checkbox" className="text-blue-600" />
+                              <span className="text-sm text-gray-700">{opcion}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Inflamación presente */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Inflamación presente</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="inflamacion" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="inflamacion" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <span className="text-sm text-gray-700">Especificar</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+
+                      {/* Fístulas */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Fístulas</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="fistulas" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="fistulas" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <span className="text-sm text-gray-700">Especificar</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+
+                      {/* Gingivitis */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Gingivitis</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="gingivitis" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="gingivitis" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <span className="text-sm text-gray-700">Movilidad</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+
+                      {/* Bolsas */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Bolsas</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="bolsas" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="bolsas" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <span className="text-sm text-gray-700">Sondeo</span>
+                        <input
+                          type="text"
+                          className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+
+                      {/* Sarro */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Sarro</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="sarro" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="sarro" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Características del dolor */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características del dolor</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex flex-wrap gap-4">
+                            {['Espontáneo', 'Provocado', 'Frío', 'Calor', 'Masticación', 'Nocturno', 'Aire', 'Dulce', 'Ácido', 'Irradiado', 'Difuso', 'Punzante'].map((opcion) => (
+                              <label key={opcion} className="flex items-center space-x-2">
+                                <input type="checkbox" className="text-blue-600" />
+                                <span className="text-sm text-gray-700">{opcion}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex flex-wrap gap-4">
+                            {['Continuo', 'Intermitente', 'Esporádico'].map((opcion) => (
+                              <label key={opcion} className="flex items-center space-x-2">
+                                <input type="checkbox" className="text-blue-600" />
+                                <span className="text-sm text-gray-700">{opcion}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Segunda sección - Dolor y pruebas */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Dolor a la percusión */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Dolor a la percusión</label>
+                        <div className="flex space-x-4 mb-4">
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">Horizontal</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">Vertical</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                            placeholder=""
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dolor a palpación */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Dolor a palpación</label>
+                        <div className="flex space-x-4">
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">Vestibular</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">Lingual/Palatino</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PRUEBA DE VITALIDAD */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">PRUEBA DE VITALIDAD</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      {/* Calor */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-20">Calor</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="calor" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="calor" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <span className="text-sm text-gray-700">Duración</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                        <span className="text-sm text-gray-700">Intensidad</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+
+                      {/* Frío */}
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-20">Frío</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="frio" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Sí</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="frio" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <span className="text-sm text-gray-700">Duración</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                        <span className="text-sm text-gray-700">Intensidad</span>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* EXAMEN RADIOGRÁFICO */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">EXAMEN RADIOGRÁFICO</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      {/* Cámara Pulpar */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Cámara Pulpar</label>
+                        <div className="flex flex-wrap gap-4">
+                          {['Abierta', 'Cerrada', 'Amplia', 'Estrecha', 'Cálculos pulpares'].map((opcion) => (
+                            <label key={opcion} className="flex items-center space-x-2">
+                              <input type="checkbox" className="text-blue-600" />
+                              <span className="text-sm text-gray-700">{opcion}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Conducto(s) */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Conducto(s)</label>
+                        <div className="space-y-3">
+                          <div>
+                            <span className="text-sm text-gray-700">Número de conductos:</span>
+                            <div className="flex flex-wrap gap-4 mt-2">
+                              {['Único', '2 conductos', '3 conductos', '4 conductos'].map((opcion) => (
+                                <label key={opcion} className="flex items-center space-x-2">
+                                  <input type="checkbox" className="text-blue-600" />
+                                  <span className="text-sm text-gray-700">{opcion}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-sm text-gray-700">Características:</span>
+                            <div className="flex flex-wrap gap-4 mt-2">
+                              {['Recto', 'Curvo', 'Amplio', 'Estrecho', 'Tratado anteriormente', 'Ápice abierto'].map((opcion) => (
+                                <label key={opcion} className="flex items-center space-x-2">
+                                  <input type="checkbox" className="text-blue-600" />
+                                  <span className="text-sm text-gray-700">{opcion}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Hallazgos específicos */}
+                      <div className="space-y-3">
+                        {[
+                          'Lesión en Furca', 'Lesión Apical', 'Lesión Lateral', 'Lesión Endo-perio',
+                          'Raíces enanas', 'Fractura radicular', 'Calcificación'
+                        ].map((hallazgo) => (
+                          <div key={hallazgo} className="flex items-center space-x-4">
+                            <span className="text-sm text-gray-700 w-32">{hallazgo}</span>
+                            <div className="flex space-x-2">
+                              <label className="flex items-center space-x-1">
+                                <input type="radio" name={hallazgo} value="si" className="text-blue-600" />
+                                <span className="text-sm text-gray-600">Sí</span>
+                              </label>
+                              <label className="flex items-center space-x-1">
+                                <input type="radio" name={hallazgo} value="no" className="text-blue-600" />
+                                <span className="text-sm text-gray-600">No</span>
+                              </label>
+                            </div>
+                            {(hallazgo === 'Fractura radicular' || hallazgo === 'Calcificación') && (
+                              <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option>Seleccionar</option>
+                              </select>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tercera sección - Ligamento periodontal y reabsorción */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Ligamento periodontal</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="ligamento" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Si</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="ligamento" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-700 w-32">Reabsorción</span>
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="reabsorcion" value="si" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">Si</span>
+                          </label>
+                          <label className="flex items-center space-x-1">
+                            <input type="radio" name="reabsorcion" value="no" className="text-blue-600" />
+                            <span className="text-sm text-gray-600">No</span>
+                          </label>
+                        </div>
+                        <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                          <option>Seleccionar</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DIAGNÓSTICO PULPAR DE PRESUNCIÓN */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">DIAGNÓSTICO PULPAR DE PRESUNCIÓN</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex flex-wrap gap-4">
+                        {['Pulpa normal', 'Pulpitis Reversible', 'Pulpitis Irreversible sintomática', 'Pulpitis Irreversible asintomática', 'Necrosis Pulpar', 'Previamente tratado', 'Previamente iniciado'].map((opcion) => (
+                          <label key={opcion} className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">{opcion}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DIAGNÓSTICO PERIAPICAL */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">DIAGNÓSTICO PERIAPICAL</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex flex-wrap gap-4">
+                        {['Tejidos apicales sanos', 'Periodontitis apical aguda (sintomática)', 'Periodontitis apical crónica (asintomática)', 'Absceso apical agudo (sin fístula)', 'Absceso apical crónico (con fístula)', 'Osteítis condensante'].map((opcion) => (
+                          <label key={opcion} className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">{opcion}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DIAGNÓSTICO DEFINITIVO */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">DIAGNÓSTICO DEFINITIVO</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex flex-wrap gap-4">
+                        {['Pulpitis irreversible', 'Pulpa necrótica'].map((opcion) => (
+                          <label key={opcion} className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">{opcion}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TRATAMIENTO INDICADO */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">TRATAMIENTO INDICADO</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex flex-wrap gap-4">
+                        {['Biopulpectomía', 'Apicectomía', 'Necropulpectomía', 'Hemisección', 'Retratamiento', 'Radicectomía', 'Blanqueamiento', 'Extracción'].map((opcion) => (
+                          <label key={opcion} className="flex items-center space-x-2">
+                            <input type="checkbox" className="text-blue-600" />
+                            <span className="text-sm text-gray-700">{opcion}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DATOS CLÍNICOS */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-bold">DATOS CLÍNICOS</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4">
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse border border-gray-300">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Conducto</th>
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Longitud de trabajo (mm)</th>
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Punto de referencia</th>
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Lima inicial</th>
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Última lima apical</th>
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Tipo Cemento</th>
+                              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">Cono maestro de gutapercha</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {['Único', 'Vestibular', 'Palatino/Lingual', 'Mesio lingual', 'Mesio Bucal', 'Distal', 'Disto Bucal', 'Disto Lingual'].map((conducto) => (
+                              <tr key={conducto}>
+                                <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">{conducto}</td>
+                                <td className="border border-gray-300 px-3 py-2">
+                                  <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="" />
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2">
+                                  <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="" />
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2">
+                                  <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="" />
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2">
+                                  <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="" />
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2">
+                                  <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="" />
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2">
+                                  <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="" />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sección final - Accidentes operatorios y pronóstico */}
+                  <div className="border border-gray-200 rounded-lg">
+                    <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="text-blue-600 font-medium">Sección</h3>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Accidentes operatorios</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Restauración post-endodóntica indicada</label>
+                        <div className="flex flex-wrap gap-4">
+                          {['Poste', 'Amalgama/Resina', 'Corona', 'Otro'].map((opcion) => (
+                            <label key={opcion} className="flex items-center space-x-2">
+                              <input type="checkbox" className="text-blue-600" />
+                              <span className="text-sm text-gray-700">{opcion}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Pronóstico</label>
+                        <div className="flex flex-wrap gap-4">
+                          {['Favorable', 'Desfavorable', 'Reservado'].map((opcion) => (
+                            <label key={opcion} className="flex items-center space-x-2">
+                              <input type="checkbox" className="text-blue-600" />
+                              <span className="text-sm text-gray-700">{opcion}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nota adicional</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botón Guardar */}
+                  <div className="flex justify-center pt-4">
+                    <button className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors">
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Contenido - Otras pestañas (placeholder) */}
-              {activeHistoriaTab !== 'anam-odontologia' && activeHistoriaTab !== 'nota-evolucion-breve' && activeHistoriaTab !== 'anam-odontopediatria' && (
+              {activeHistoriaTab !== 'anam-odontologia' && activeHistoriaTab !== 'nota-evolucion-breve' && activeHistoriaTab !== 'anam-odontopediatria' && activeHistoriaTab !== 'endodoncia' && (
                 <div className="p-6">
                   <div className="bg-white min-h-96 flex items-center justify-center">
                     <p className="text-gray-500 text-lg">Contenido de {activeHistoriaTab} - En desarrollo</p>
