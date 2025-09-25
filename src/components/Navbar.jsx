@@ -291,7 +291,12 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                     >
                       Servicios
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Usuarios</button>
+                    <button 
+                      onClick={() => { setIsSettingsOpen(false); handleTabClick('usuarios'); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Usuarios
+                    </button>
                     <div className="border-t my-1" />
                     <button 
                       onClick={() => { setIsSettingsOpen(false); handleTabClick('configuracion'); }}
