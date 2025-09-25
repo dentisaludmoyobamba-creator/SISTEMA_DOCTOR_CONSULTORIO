@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import NuevoArchivoModal from './NuevoArchivoModal';
 import NotaEvolucionModal from './NotaEvolucionModal';
+import DienteSVG from './DienteSVG';
 
 const HistoriaClinica = ({ paciente, onClose }) => {
   const [activeSection, setActiveSection] = useState('filiacion');
@@ -10,6 +11,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [archivos, setArchivos] = useState([]);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
   const [notasEvolucion, setNotasEvolucion] = useState([]);
+  const [activeOdontogramaTab, setActiveOdontogramaTab] = useState('inicial');
 
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
@@ -44,6 +46,14 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       paciente: paciente?.nombre + ' ' + paciente?.apellido
     };
     setNotasEvolucion(prev => [...prev, nuevaNota]);
+  };
+
+  const getTipoDiente = (numero) => {
+    const ultimoDigito = numero % 10;
+    if (ultimoDigito === 1 || ultimoDigito === 2) return 'incisor';
+    if (ultimoDigito === 3) return 'canino';
+    if (ultimoDigito === 4 || ultimoDigito === 5) return 'premolar';
+    return 'molar';
   };
 
   return (
@@ -221,24 +231,69 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 rounded-r-md">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-yellow-800">Notas</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Tarjeta de Etiquetas */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                    <span className="text-sm font-semibold text-gray-800">Etiquetas</span>
+                  </div>
+                  <button className="text-blue-600 text-sm flex items-center space-x-1 hover:text-blue-800">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span>Agregar</span>
+                  </button>
                 </div>
-                <p className="text-sm text-yellow-700 mt-1">bla bla bla</p>
+                <div className="flex flex-wrap gap-2">
+                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                    <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span>VIP</span>
+                    <button className="ml-1 text-yellow-600 hover:text-yellow-800">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="bg-red-100 border-l-4 border-red-400 p-3 rounded-r-md">
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+
+              {/* Tarjeta de Notas */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center space-x-2 mb-3">
+                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                   </svg>
-                  <span className="text-sm font-medium text-red-800">Alergias</span>
-                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span className="text-sm font-semibold text-yellow-800">Notas</span>
+                </div>
+                <div className="bg-yellow-100 border border-yellow-300 rounded-md p-3">
+                  <p className="text-sm text-yellow-800">bla bla bla</p>
+                </div>
+              </div>
+
+              {/* Tarjeta de Alergias */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm relative">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold text-red-800">Alergias</span>
+                </div>
+                <div className="bg-red-100 border border-red-300 rounded-md p-3">
+                  <p className="text-sm text-red-800">polvo</p>
+                </div>
+                <button className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center shadow-lg hover:bg-teal-600 transition-colors">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
                   </svg>
-                </div>
-                <p className="text-sm text-red-700 mt-1">polvo</p>
+                </button>
               </div>
             </div>
 
@@ -547,6 +602,160 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Sección de Odontograma */}
+          {activeSection === 'odontograma' && (
+            <div className="flex-1 bg-white p-4 sm:p-6 overflow-y-auto">
+              {/* Header del odontograma */}
+              <div className="mb-6">
+                {/* Tabs */}
+                <div className="flex space-x-8 border-b mb-4">
+                  <button
+                    onClick={() => setActiveOdontogramaTab('inicial')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activeOdontogramaTab === 'inicial'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Odo. Inicial
+                  </button>
+                  <button
+                    onClick={() => setActiveOdontogramaTab('evolucion')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activeOdontogramaTab === 'evolucion'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Odo. Evolución
+                  </button>
+                  <button
+                    onClick={() => setActiveOdontogramaTab('alta')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activeOdontogramaTab === 'alta'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Odo. Alta
+                  </button>
+                </div>
+
+                {/* Controles */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-6">
+                    <button className="text-blue-600 text-sm flex items-center space-x-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <span>Ver 'Barra de progreso'</span>
+                    </button>
+                    
+                    {/* Leyenda */}
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                        <span className="text-sm text-gray-700">Mal estado</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm text-gray-700">Buen estado</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <button className="bg-blue-100 text-blue-600 px-3 py-1 rounded-md text-sm flex items-center space-x-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <span>Nuevo odontog.</span>
+                    </button>
+                    
+                    <button className="bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm flex items-center space-x-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                      </svg>
+                      <span>Marcado múltiple</span>
+                    </button>
+                    
+                    <button className="bg-green-100 text-green-600 px-3 py-1 rounded-md text-sm flex items-center space-x-1">
+                      <span>$</span>
+                      <span>Crear presupuesto</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Odontograma */}
+              <div className="bg-white border border-gray-200 rounded-lg p-12">
+                {/* Arcada Superior */}
+                <div className="flex justify-center mb-8">
+                  <div className="flex items-center space-x-2">
+                    {/* Cuadrante Superior Derecho (18-11) */}
+                    <div className="flex space-x-2">
+                      {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                        <DienteSVG 
+                          key={numero} 
+                          numero={numero} 
+                          tipo={getTipoDiente(numero)} 
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Separador */}
+                    <div className="w-8"></div>
+                    
+                    {/* Cuadrante Superior Izquierdo (21-28) */}
+                    <div className="flex space-x-2">
+                      {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                        <DienteSVG 
+                          key={numero} 
+                          numero={numero} 
+                          tipo={getTipoDiente(numero)} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Arcada Inferior */}
+                <div className="flex justify-center">
+                  <div className="flex items-center space-x-2">
+                    {/* Cuadrante Inferior Izquierdo (38-31) */}
+                    <div className="flex space-x-2">
+                      {[38, 37, 36, 35, 34, 33, 32, 31].map(numero => (
+                        <DienteSVG 
+                          key={numero} 
+                          numero={numero} 
+                          tipo={getTipoDiente(numero)} 
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Separador */}
+                    <div className="w-8"></div>
+                    
+                    {/* Cuadrante Inferior Derecho (41-48) */}
+                    <div className="flex space-x-2">
+                      {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                        <DienteSVG 
+                          key={numero} 
+                          numero={numero} 
+                          tipo={getTipoDiente(numero)} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
