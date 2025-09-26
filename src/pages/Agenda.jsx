@@ -13,6 +13,7 @@ const Agenda = () => {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [vistaActual, setVistaActual] = useState('semana');
   const [estadosSeleccionados, setEstadosSeleccionados] = useState(['todos']);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   
   // Estados para modales
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
@@ -72,6 +73,11 @@ const Agenda = () => {
   // Manejar cambio de vista
   const handleVistaChange = (nuevaVista) => {
     setVistaActual(nuevaVista);
+  };
+
+  // Manejar toggle del sidebar
+  const handleToggleSidebar = () => {
+    setIsSidebarVisible(!isSidebarVisible);
   };
 
   // Manejar selección de estados (checkboxes)
@@ -210,10 +216,20 @@ const Agenda = () => {
                 </svg>
               </button>
               
-              <button className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white p-2 rounded-lg hover:from-[#2D1B69] hover:to-[#1A0F3D] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" title="Siguiente">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button 
+                onClick={handleToggleSidebar}
+                className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white p-2 rounded-lg hover:from-[#2D1B69] hover:to-[#1A0F3D] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" 
+                title={isSidebarVisible ? "Ocultar barra lateral" : "Mostrar barra lateral"}
+              >
+                {isSidebarVisible ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -262,7 +278,9 @@ const Agenda = () => {
       </div>
 
       {/* Sidebar */}
-      <div className="hidden lg:block">
+      <div className={`hidden lg:block transition-all duration-300 ease-in-out ${
+        isSidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'
+      }`}>
         <Sidebar
           filtroDoctor={filtroDoctor}
           setFiltroDoctor={setFiltroDoctor}
