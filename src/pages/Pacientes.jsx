@@ -94,8 +94,8 @@ const Pacientes = () => {
         {/* Header */}
         <div className="bg-white shadow-sm border-b px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-3 sm:space-y-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pacientes</h1>
-            <button onClick={() => setIsNewPatientOpen(true)} className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm sm:text-base">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#4A3C7B]">Pacientes</h1>
+            <button onClick={() => setIsNewPatientOpen(true)} className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white px-4 sm:px-6 py-2 rounded-xl hover:from-[#2D1B69] hover:to-[#1A0F3D] transition-all duration-300 flex items-center space-x-2 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -108,20 +108,20 @@ const Pacientes = () => {
           <div className="flex space-x-8 border-b">
             <button
               onClick={() => setActiveTab('mis-pacientes')}
-              className={`pb-3 px-1 relative ${
+              className={`pb-3 px-1 relative font-semibold transition-all duration-200 ${
                 activeTab === 'mis-pacientes'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-[#30B0B0] border-b-3 border-[#30B0B0]'
+                  : 'text-gray-500 hover:text-[#4A3C7B] hover:border-b-2 hover:border-gray-300'
               }`}
             >
               Mis pacientes
             </button>
             <button
               onClick={() => setActiveTab('asistencias')}
-              className={`pb-3 px-1 relative ${
+              className={`pb-3 px-1 relative font-semibold transition-all duration-200 ${
                 activeTab === 'asistencias'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-[#30B0B0] border-b-3 border-[#30B0B0]'
+                  : 'text-gray-500 hover:text-[#4A3C7B] hover:border-b-2 hover:border-gray-300'
               }`}
             >
               Asistencias
@@ -134,8 +134,8 @@ const Pacientes = () => {
           <div className="bg-white px-4 sm:px-6 py-3 sm:py-4 border-b">
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-3 lg:space-y-0">
               <div className="flex items-center space-x-4">
-                <span className="text-sm sm:text-base text-gray-700 font-medium">Todos los pacientes</span>
-                <span className="text-sm text-gray-500">{pacientesFiltrados.length} pacientes</span>
+                <span className="text-sm sm:text-base text-[#4A3C7B] font-semibold">Todos los pacientes</span>
+                <span className="text-sm text-[#30B0B0] font-medium bg-[#30B0B0]/10 px-2 py-1 rounded-full">{pacientesFiltrados.length} pacientes</span>
               </div>
               
               <div className="flex items-center space-x-2 sm:space-x-4">
@@ -145,14 +145,14 @@ const Pacientes = () => {
                     placeholder="Buscar paciente..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full lg:w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    className="w-full lg:w-80 pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] text-sm transition-all duration-300 bg-gray-50 focus:bg-white"
                   />
-                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-3 top-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
                 
-                <button className="p-2 text-gray-400 hover:text-gray-600">
+                <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                   </svg>
@@ -261,32 +261,32 @@ const Pacientes = () => {
         {activeTab === 'mis-pacientes' && (
           <div className="flex-1 overflow-auto bg-white">
             <table className="w-full min-w-[800px]">
-              <thead className="bg-slate-700 text-white sticky top-0">
+              <thead className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white sticky top-0">
                 <tr>
-                  <th className="text-left p-3 sm:p-4 font-medium">Paciente</th>
-                  <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Última cita</th>
-                  <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Próxima cita</th>
-                  <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">Tarea</th>
-                  <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">Presupuesto</th>
-                  <th className="text-left p-3 sm:p-4 font-medium hidden xl:table-cell">Fuente de captación</th>
-                  <th className="text-left p-3 sm:p-4 font-medium hidden xl:table-cell">Comentario</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold">Paciente</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold hidden sm:table-cell">Última cita</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold hidden md:table-cell">Próxima cita</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold hidden lg:table-cell">Tarea</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold hidden lg:table-cell">Presupuesto</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold hidden xl:table-cell">Fuente de captación</th>
+                  <th className="text-left p-3 sm:p-4 font-semibold hidden xl:table-cell">Comentario</th>
                 </tr>
               </thead>
               <tbody>
                 {pacientesFiltrados.map((paciente, index) => (
-                  <tr key={paciente.id} onClick={() => handlePatientClick(paciente)} className={`border-b hover:bg-gray-50 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                  <tr key={paciente.id} onClick={() => handlePatientClick(paciente)} className={`border-b hover:bg-[#30B0B0]/5 cursor-pointer transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
                     <td className="p-3 sm:p-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm sm:text-lg">{paciente.avatar}</div>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#4A3C7B] to-[#2D1B69] rounded-full flex items-center justify-center text-sm sm:text-lg text-white font-medium shadow-sm">{paciente.avatar}</div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                            <span className="font-medium text-blue-600 truncate">{paciente.nombre} {paciente.apellido}</span>
-                            {paciente.etiqueta && (<span className={`px-2 py-1 text-xs font-medium rounded-full ${paciente.etiquetaColor} flex-shrink-0`}>{paciente.etiqueta}</span>)}
+                            <span className="font-semibold text-[#4A3C7B] truncate">{paciente.nombre} {paciente.apellido}</span>
+                            {paciente.etiqueta && (<span className={`px-2 py-1 text-xs font-semibold rounded-full ${paciente.etiquetaColor} flex-shrink-0`}>{paciente.etiqueta}</span>)}
                           </div>
                           <div className="text-xs sm:text-sm text-gray-500">DNI: {paciente.documento}</div>
                           <div className="sm:hidden mt-1">
                             <div className="text-xs text-gray-600">Última: {formatearFecha(paciente.ultimaCita)}</div>
-                            {paciente.presupuesto > 0 && (<div className="text-xs text-green-600">S/ {paciente.presupuesto}</div>)}
+                            {paciente.presupuesto > 0 && (<div className="text-xs text-[#30B0B0] font-medium">S/ {paciente.presupuesto}</div>)}
                           </div>
                         </div>
                       </div>
@@ -355,25 +355,25 @@ const Pacientes = () => {
         <div className="bg-white border-t px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <div className="bg-teal-500 text-white px-4 py-2 rounded-md flex items-center space-x-2">
+              <div className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-4 py-2 rounded-xl flex items-center space-x-2 shadow-lg">
                 <span>😊</span>
-                <span>¡Comienza aquí!</span>
+                <span className="font-semibold">¡Comienza aquí!</span>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">{pacientesFiltrados.length} resultados</span>
+              <span className="text-[#4A3C7B] font-medium">{pacientesFiltrados.length} resultados</span>
               
               <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600">
+                <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 
-                <span className="px-3 py-1 bg-blue-600 text-white rounded">1</span>
+                <span className="px-3 py-1 bg-[#4A3C7B] text-white rounded-lg font-medium">1</span>
                 
-                <button className="p-2 text-gray-400 hover:text-gray-600">
+                <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -382,7 +382,7 @@ const Pacientes = () => {
               
               <div className="flex items-center space-x-2">
                 <span className="text-gray-600">Mostrar</span>
-                <select className="border border-gray-300 rounded px-2 py-1">
+                <select className="border-2 border-gray-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
                   <option>20</option>
                   <option>50</option>
                   <option>100</option>
