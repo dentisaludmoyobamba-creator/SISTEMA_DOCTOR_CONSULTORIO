@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { doctores, estadosCita } from '../data/mockData';
+import AddUserModal from './AddUserModal';
 
 const Sidebar = ({ 
   filtroDoctor, 
@@ -8,6 +9,18 @@ const Sidebar = ({
   setFiltroEstado,
   onAddDoctor 
 }) => {
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+
+  const handleAddUser = () => {
+    setIsAddUserModalOpen(true);
+  };
+
+  const handleSaveUser = async (userData) => {
+    // Aquí iría la lógica para guardar el usuario
+    console.log('Guardando usuario:', userData);
+    // Simular guardado
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  };
   
   return (
     <div className="w-80 bg-white border-l shadow-lg flex flex-col h-full">
@@ -62,12 +75,12 @@ const Sidebar = ({
         </div>
       </div>
 
-      {/* Lista de doctores */}
+      {/* Lista de usuarios */}
       <div className="flex-1 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold text-[#4A3C7B]">Doctores</h3>
+          <h3 className="text-sm font-semibold text-[#4A3C7B]">Usuarios</h3>
           <button
-            onClick={onAddDoctor}
+            onClick={handleAddUser}
             className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-3 py-1 rounded-lg hover:from-[#4A3C7B] hover:to-[#2D1B69] transition-all duration-200 text-sm font-medium flex items-center shadow-sm"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +102,7 @@ const Sidebar = ({
           >
             <div className="w-4 h-4 rounded-full bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] mr-3 shadow-sm"></div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-[#4A3C7B]">Todos los doctores</div>
+              <div className="text-sm font-semibold text-[#4A3C7B]">Todos los usuarios</div>
               <div className="text-xs text-gray-500">Ver todas las citas</div>
             </div>
             {filtroDoctor === null && (
@@ -150,6 +163,13 @@ const Sidebar = ({
           </div>
         </div>
       </div>
+
+      {/* Modal para agregar usuario */}
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onSave={handleSaveUser}
+      />
     </div>
   );
 };
