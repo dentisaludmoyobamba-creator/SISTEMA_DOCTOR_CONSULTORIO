@@ -30,7 +30,7 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
+    @apply bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] hover:from-[#2D1B69] hover:to-[#1A0F3D] text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5;
   }
   
   .btn-secondary {
@@ -38,11 +38,11 @@
   }
   
   .input-field {
-    @apply w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+    @apply w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300 bg-gray-50 focus:bg-white;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100;
   }
   
   .modal-overlay {
@@ -50,7 +50,28 @@
   }
   
   .modal-content {
-    @apply bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-screen overflow-y-auto;
+    @apply bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-screen overflow-y-auto;
+  }
+  
+  /* Estilos específicos para Denti Salud */
+  .denti-primary {
+    @apply text-[#4A3C7B];
+  }
+  
+  .denti-secondary {
+    @apply text-[#30B0B0];
+  }
+  
+  .denti-accent {
+    @apply text-[#706B80];
+  }
+  
+  .denti-bg-primary {
+    @apply bg-gradient-to-br from-[#4A3C7B] to-[#2D1B69];
+  }
+  
+  .denti-bg-secondary {
+    @apply bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B];
   }
 }
 
@@ -140,6 +161,19 @@
   nav {
     @apply shadow-md;
   }
+  
+  /* Mejoras para el login en móviles */
+  .login-form {
+    @apply p-6;
+  }
+  
+  .login-input {
+    @apply py-3 text-base;
+  }
+  
+  .login-button {
+    @apply py-3 text-base;
+  }
 }
 
 /* Diseño para pantallas muy pequeñas */
@@ -156,4 +190,82 @@
   .appointment-card {
     @apply p-0.5 text-xs;
   }
+  
+  /* Login en pantallas muy pequeñas */
+  .login-form {
+    @apply p-4;
+  }
+  
+  .login-input {
+    @apply py-2.5 text-sm;
+  }
+  
+  .login-button {
+    @apply py-2.5 text-sm;
+  }
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible para mejor accesibilidad */
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-[#30B0B0] ring-offset-2;
+}
+
+/* Estilos para modo oscuro (preparación futura) */
+@media (prefers-color-scheme: dark) {
+  .denti-dark {
+    @apply bg-gray-900 text-white;
+  }
+}
+
+/* Animaciones personalizadas para Denti Salud */
+@keyframes dentiFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dentiSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dentiPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.denti-animate-fade-in {
+  animation: dentiFadeIn 0.6s ease-out;
+}
+
+.denti-animate-slide-in {
+  animation: dentiSlideIn 0.6s ease-out;
+}
+
+.denti-animate-pulse {
+  animation: dentiPulse 2s infinite;
 }
