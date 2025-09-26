@@ -5,6 +5,7 @@ import DailyDetailView from '../components/DailyDetailView';
 import Sidebar from '../components/Sidebar';
 import AppointmentModal from '../components/AppointmentModal';
 import DetailsModal from '../components/DetailsModal';
+import CalendarModal from '../components/CalendarModal';
 import { citas as citasIniciales, diasSemana } from '../data/mockData';
 
 const Agenda = () => {
@@ -14,6 +15,8 @@ const Agenda = () => {
   const [vistaActual, setVistaActual] = useState('semana');
   const [estadosSeleccionados, setEstadosSeleccionados] = useState(['todos']);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [fechaActual, setFechaActual] = useState(new Date());
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   
   // Estados para modales
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
@@ -80,6 +83,56 @@ const Agenda = () => {
     setIsSidebarVisible(!isSidebarVisible);
   };
 
+  // Manejar navegación de fechas
+  const handlePreviousPeriod = () => {
+    const nuevaFecha = new Date(fechaActual);
+    switch (vistaActual) {
+      case 'semana':
+        nuevaFecha.setDate(nuevaFecha.getDate() - 7);
+        break;
+      case 'mes':
+        nuevaFecha.setMonth(nuevaFecha.getMonth() - 1);
+        break;
+      case 'detallado-diario':
+        nuevaFecha.setDate(nuevaFecha.getDate() - 1);
+        break;
+      default:
+        nuevaFecha.setDate(nuevaFecha.getDate() - 7);
+    }
+    setFechaActual(nuevaFecha);
+  };
+
+  const handleNextPeriod = () => {
+    const nuevaFecha = new Date(fechaActual);
+    switch (vistaActual) {
+      case 'semana':
+        nuevaFecha.setDate(nuevaFecha.getDate() + 7);
+        break;
+      case 'mes':
+        nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
+        break;
+      case 'detallado-diario':
+        nuevaFecha.setDate(nuevaFecha.getDate() + 1);
+        break;
+      default:
+        nuevaFecha.setDate(nuevaFecha.getDate() + 7);
+    }
+    setFechaActual(nuevaFecha);
+  };
+
+  const handleGoToToday = () => {
+    setFechaActual(new Date());
+  };
+
+  const handleCalendarOpen = () => {
+    setShowCalendarModal(true);
+  };
+
+  const handleDateSelect = (selectedDate) => {
+    setFechaActual(selectedDate);
+    setShowCalendarModal(false);
+  };
+
   // Manejar selección de estados (checkboxes)
   const handleEstadoToggle = (estado) => {
     if (estado === 'todos') {
@@ -97,12 +150,48 @@ const Agenda = () => {
     }
   };
 
-  // Obtener fecha actual formateada
-  const getCurrentWeekRange = () => {
-    const firstDay = diasSemana[0];
-    const lastDay = diasSemana[diasSemana.length - 1];
+  // Formatear fecha según el tipo de vista
+  const getFormattedDate = () => {
+    const date = fechaActual;
     
-    return `${firstDay.dia} - ${lastDay.dia} ${new Date(lastDay.fecha).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}`;
+    switch (vistaActual) {
+      case 'semana':
+        // Calcular inicio y fin de semana
+        const startOfWeek = new Date(date);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Ajustar para que lunes sea el primer día
+        startOfWeek.setDate(diff);
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        const startDay = startOfWeek.getDate();
+        const endDay = endOfWeek.getDate();
+        const month = startOfWeek.toLocaleDateString('es-ES', { month: 'short' });
+        const year = startOfWeek.getFullYear();
+        
+        return `${startDay} ${month} - ${endDay} ${month} ${year}`;
+        
+      case 'mes':
+        return date.toLocaleDateString('es-ES', { 
+          month: 'long', 
+          year: 'numeric' 
+        });
+        
+      case 'detallado-diario':
+        return date.toLocaleDateString('es-ES', { 
+          weekday: 'long',
+          day: 'numeric',
+          month: 'short'
+        });
+        
+      default:
+        return date.toLocaleDateString('es-ES', { 
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+    }
   };
 
   // Opciones de vista
@@ -135,30 +224,46 @@ const Agenda = () => {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
             {/* Sección izquierda: Navegación de fechas */}
             <div className="flex items-center space-x-3">
-              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+              <button 
+                onClick={handlePreviousPeriod}
+                className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200"
+                title="Período anterior"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               
-              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+              <button 
+                onClick={handleCalendarOpen}
+                className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200"
+                title="Abrir calendario"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </button>
               
-              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+              <button 
+                onClick={handleNextPeriod}
+                className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200"
+                title="Siguiente período"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
               
-              <div className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-lg">
+              <button 
+                onClick={handleGoToToday}
+                className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-lg hover:from-[#4A3C7B] hover:to-[#2D1B69] transition-all duration-300"
+                title="Ir a hoy"
+              >
                 Hoy
-              </div>
+              </button>
               
               <div className="text-sm text-[#4A3C7B] font-medium">
-                {getCurrentWeekRange()}
+                {getFormattedDate()}
               </div>
             </div>
 
@@ -313,6 +418,13 @@ const Agenda = () => {
         cita={selectedCita}
         onEdit={handleAppointmentEdit}
         onDelete={handleAppointmentDelete}
+      />
+
+      <CalendarModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        onDateSelect={handleDateSelect}
+        currentDate={fechaActual}
       />
     </div>
   );
