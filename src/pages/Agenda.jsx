@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import CalendarGrid from '../components/CalendarGrid';
+import MonthlyView from '../components/MonthlyView';
+import DailyDetailView from '../components/DailyDetailView';
 import Sidebar from '../components/Sidebar';
 import AppointmentModal from '../components/AppointmentModal';
 import DetailsModal from '../components/DetailsModal';
@@ -102,8 +104,7 @@ const Agenda = () => {
     { value: 'semana', label: 'Por semana' },
     { value: 'mes', label: 'Por mes' },
     { value: 'detallado-diario', label: 'Detallado diario' },
-    { value: 'detallado-doctor', label: 'Detallado por doctor' },
-    { value: 'diaria-consultorio', label: 'Diaria por consultorio' }
+    { value: 'detallado-doctor', label: 'Detallado por doctor' }
   ];
 
   // Opciones de estado
@@ -220,15 +221,43 @@ const Agenda = () => {
 
         {/* Calendario */}
         <div className="flex-1 p-1 sm:p-2 lg:p-4 xl:p-6 overflow-auto">
-          <CalendarGrid
-            citas={citas}
-            filtroDoctor={filtroDoctor}
-            filtroEstado={filtroEstado}
-            onAppointmentClick={handleAppointmentClick}
-            onAppointmentEdit={handleAppointmentEdit}
-            onAppointmentDelete={handleAppointmentDelete}
-            onSlotClick={handleSlotClick}
-          />
+          {vistaActual === 'semana' && (
+            <CalendarGrid
+              citas={citas}
+              filtroDoctor={filtroDoctor}
+              filtroEstado={filtroEstado}
+              onAppointmentClick={handleAppointmentClick}
+              onAppointmentEdit={handleAppointmentEdit}
+              onAppointmentDelete={handleAppointmentDelete}
+              onSlotClick={handleSlotClick}
+            />
+          )}
+          
+          {vistaActual === 'mes' && (
+            <MonthlyView
+              citas={citas}
+              onAppointmentClick={handleAppointmentClick}
+            />
+          )}
+          
+          {vistaActual === 'detallado-diario' && (
+            <DailyDetailView
+              citas={citas}
+              onAppointmentClick={handleAppointmentClick}
+            />
+          )}
+          
+          {vistaActual === 'detallado-doctor' && (
+            <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+              <div className="w-16 h-16 bg-[#30B0B0]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#30B0B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-[#4A3C7B] mb-2">Vista por Doctor</h3>
+              <p className="text-gray-500">Esta funcionalidad estará disponible próximamente</p>
+            </div>
+          )}
         </div>
       </div>
 
