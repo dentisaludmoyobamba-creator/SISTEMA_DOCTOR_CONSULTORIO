@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
+import NuevoIngresoModal from '../components/NuevoIngresoModal';
+import NuevoEgresoModal from '../components/NuevoEgresoModal';
 
 const Caja = () => {
   const [activeTab, setActiveTab] = useState('ingresos-egresos');
   const [periodo, setPeriodo] = useState('Esta semana');
   const [doctor, setDoctor] = useState('Todos');
+  const [showNuevoIngresoModal, setShowNuevoIngresoModal] = useState(false);
+  const [showNuevoEgresoModal, setShowNuevoEgresoModal] = useState(false);
   
   // Datos de ejemplo basados en la imagen
   const transacciones = [
@@ -67,6 +71,28 @@ const Caja = () => {
     return hora; // Ya viene formateada desde los datos
   };
 
+  const handleNuevoIngreso = () => {
+    setShowNuevoIngresoModal(true);
+  };
+
+  const handleSaveIngreso = async (ingresoData) => {
+    // Aquí iría la lógica para guardar el ingreso
+    console.log('Guardando ingreso:', ingresoData);
+    // Simular guardado
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  };
+
+  const handleNuevoEgreso = () => {
+    setShowNuevoEgresoModal(true);
+  };
+
+  const handleSaveEgreso = async (egresoData) => {
+    // Aquí iría la lógica para guardar el egreso
+    console.log('Guardando egreso:', egresoData);
+    // Simular guardado
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'ingresos-egresos':
@@ -84,32 +110,32 @@ const Caja = () => {
       <div className="bg-white px-6 py-4 border-b">
         <div className="grid grid-cols-4 gap-6">
           <div className="text-center">
-            <div className="text-sm text-gray-600">Ingreso</div>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-sm text-[#4A3C7B] font-semibold">Ingreso</div>
+            <div className="text-2xl font-bold text-emerald-600">
               S/ {resumenFinanciero.ingresoHoy.toFixed(2)}
             </div>
-            <div className="text-xs text-gray-500">US$ {(resumenFinanciero.ingresoHoy / 3.8).toFixed(2)}</div>
+            <div className="text-xs text-[#30B0B0] font-medium">US$ {(resumenFinanciero.ingresoHoy / 3.8).toFixed(2)}</div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-600">Egreso</div>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-sm text-[#4A3C7B] font-semibold">Egreso</div>
+            <div className="text-2xl font-bold text-rose-600">
               S/ -{resumenFinanciero.egresoHoy.toFixed(2)}
             </div>
-            <div className="text-xs text-gray-500">US$ -{(resumenFinanciero.egresoHoy / 3.8).toFixed(2)}</div>
+            <div className="text-xs text-[#30B0B0] font-medium">US$ -{(resumenFinanciero.egresoHoy / 3.8).toFixed(2)}</div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-600">Balance Hoy</div>
-            <div className={`text-2xl font-bold ${resumenFinanciero.balanceHoy >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="text-sm text-[#4A3C7B] font-semibold">Balance Hoy</div>
+            <div className={`text-2xl font-bold ${resumenFinanciero.balanceHoy >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               S/ {resumenFinanciero.balanceHoy.toFixed(2)}
             </div>
-            <div className="text-xs text-gray-500">US$ {(resumenFinanciero.balanceHoy / 3.8).toFixed(2)}</div>
+            <div className="text-xs text-[#30B0B0] font-medium">US$ {(resumenFinanciero.balanceHoy / 3.8).toFixed(2)}</div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-600">Balance Mes</div>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-sm text-[#4A3C7B] font-semibold">Balance Mes</div>
+            <div className="text-2xl font-bold text-emerald-600">
               S/ {resumenFinanciero.balanceMes.toFixed(2)}
             </div>
-            <div className="text-xs text-gray-500">US$ {(resumenFinanciero.balanceMes / 3.8).toFixed(2)}</div>
+            <div className="text-xs text-[#30B0B0] font-medium">US$ {(resumenFinanciero.balanceMes / 3.8).toFixed(2)}</div>
           </div>
         </div>
       </div>
@@ -119,21 +145,21 @@ const Caja = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <button className="p-2 text-gray-400 hover:text-gray-600">
+              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               
-              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-sm font-medium">
+              <div className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-lg">
                 Hoy
               </div>
               
-              <span className="text-gray-700 font-medium">
-                21 sept 2025
+              <span className="text-[#4A3C7B] font-semibold">
+                25 sep 2025
               </span>
               
-              <button className="p-2 text-gray-400 hover:text-gray-600">
+              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -142,13 +168,13 @@ const Caja = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <select className="border border-gray-300 rounded px-3 py-2">
+            <select className="border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
               <option>Ver todo</option>
               <option>Solo ingresos</option>
               <option>Solo egresos</option>
             </select>
             
-            <button className="p-2 text-gray-400 hover:text-gray-600">
+            <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
@@ -161,27 +187,27 @@ const Caja = () => {
       <div className="flex-1 overflow-auto bg-white">
         {transacciones.length > 0 ? (
           <table className="w-full">
-            <thead className="bg-slate-700 text-white sticky top-0">
+            <thead className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white sticky top-0">
               <tr>
-                <th className="text-left p-4 font-medium">Hora</th>
-                <th className="text-left p-4 font-medium">Doctor</th>
-                <th className="text-left p-4 font-medium">Paciente</th>
-                <th className="text-left p-4 font-medium">Concepto</th>
-                <th className="text-left p-4 font-medium">Medio de pago</th>
-                <th className="text-left p-4 font-medium">Comentario</th>
-                <th className="text-left p-4 font-medium">Monto</th>
-                <th className="text-left p-4 font-medium">Estado</th>
+                <th className="text-left p-4 font-semibold">Hora</th>
+                <th className="text-left p-4 font-semibold">Doctor</th>
+                <th className="text-left p-4 font-semibold">Paciente</th>
+                <th className="text-left p-4 font-semibold">Concepto</th>
+                <th className="text-left p-4 font-semibold">Medio de pago</th>
+                <th className="text-left p-4 font-semibold">Comentario</th>
+                <th className="text-left p-4 font-semibold">Monto</th>
+                <th className="text-left p-4 font-semibold">Estado</th>
               </tr>
             </thead>
             <tbody>
               {transacciones.map((transaccion, index) => (
                 <tr 
                   key={transaccion.id} 
-                  className={`border-b hover:bg-gray-50 ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                  className={`border-b hover:bg-[#30B0B0]/5 transition-colors duration-200 ${
+                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                   }`}
                 >
-                  <td className="p-4 text-gray-700">
+                  <td className="p-4 text-[#4A3C7B] font-medium">
                     {formatearHora(transaccion.hora)}
                   </td>
                   <td className="p-4 text-gray-700">
@@ -199,11 +225,11 @@ const Caja = () => {
                   <td className="p-4 text-gray-700">
                     {transaccion.comentario}
                   </td>
-                  <td className="p-4 font-medium">
+                  <td className="p-4 font-semibold">
                     {formatearMonto(transaccion.monto, transaccion.tipo)}
                   </td>
                   <td className="p-4">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
                       {transaccion.estado}
                     </span>
                   </td>
@@ -212,12 +238,14 @@ const Caja = () => {
             </tbody>
           </table>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <p className="text-lg font-medium mb-2">No se encontró ninguna información</p>
-            <p className="text-sm">No hay transacciones para la fecha seleccionada</p>
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <p className="text-lg font-semibold text-[#4A3C7B] mb-2">No se encontró ninguna información</p>
+            <p className="text-sm text-gray-500">No hay transacciones para la fecha seleccionada</p>
           </div>
         )}
       </div>
@@ -355,15 +383,21 @@ const Caja = () => {
         {/* Header */}
         <div className="bg-white shadow-sm border-b px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Caja</h1>
+            <h1 className="text-2xl font-bold text-[#4A3C7B]">Caja</h1>
             <div className="flex items-center space-x-3">
-              <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2">
+              <button 
+                onClick={handleNuevoIngreso}
+                className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-4 py-2 rounded-xl hover:from-[#4A3C7B] hover:to-[#2D1B69] transition-all duration-300 flex items-center space-x-2 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span>+ Nuevo ingreso</span>
               </button>
-              <button className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+              <button 
+                onClick={handleNuevoEgreso}
+                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
                 Egreso
               </button>
             </div>
@@ -373,20 +407,20 @@ const Caja = () => {
           <div className="flex space-x-8 border-b">
             <button
               onClick={() => setActiveTab('ingresos-egresos')}
-              className={`pb-3 px-1 relative ${
+              className={`pb-3 px-1 relative font-semibold transition-all duration-200 ${
                 activeTab === 'ingresos-egresos'
-                  ? 'text-teal-600 border-b-2 border-teal-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-[#30B0B0] border-b-3 border-[#30B0B0]'
+                  : 'text-gray-500 hover:text-[#4A3C7B] hover:border-b-2 hover:border-gray-300'
               }`}
             >
               Ingresos y egresos
             </button>
             <button
               onClick={() => setActiveTab('comisiones')}
-              className={`pb-3 px-1 relative ${
+              className={`pb-3 px-1 relative font-semibold transition-all duration-200 ${
                 activeTab === 'comisiones'
-                  ? 'text-teal-600 border-b-2 border-teal-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-[#30B0B0] border-b-3 border-[#30B0B0]'
+                  : 'text-gray-500 hover:text-[#4A3C7B] hover:border-b-2 hover:border-gray-300'
               }`}
             >
               Comisiones
@@ -401,24 +435,38 @@ const Caja = () => {
         <div className="bg-white border-t px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <div className="bg-teal-500 text-white px-4 py-2 rounded-md flex items-center space-x-2">
+              <div className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-4 py-2 rounded-lg flex items-center space-x-2 shadow-lg">
                 <span>😊</span>
-                <span>¡Comienza aquí!</span>
+                <span className="font-semibold">¡Comienza aquí!</span>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Mostrar</span>
-              <select className="border border-gray-300 rounded px-2 py-1">
+              <span className="text-[#4A3C7B] font-semibold">Mostrar</span>
+              <select className="border-2 border-gray-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
                 <option>20</option>
                 <option>50</option>
                 <option>100</option>
               </select>
-              <span className="text-gray-600">resultados por página</span>
+              <span className="text-[#4A3C7B] font-semibold">resultados por página</span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal Nuevo Ingreso */}
+      <NuevoIngresoModal
+        isOpen={showNuevoIngresoModal}
+        onClose={() => setShowNuevoIngresoModal(false)}
+        onSave={handleSaveIngreso}
+      />
+
+      {/* Modal Nuevo Egreso */}
+      <NuevoEgresoModal
+        isOpen={showNuevoEgresoModal}
+        onClose={() => setShowNuevoEgresoModal(false)}
+        onSave={handleSaveEgreso}
+      />
     </div>
   );
 };
