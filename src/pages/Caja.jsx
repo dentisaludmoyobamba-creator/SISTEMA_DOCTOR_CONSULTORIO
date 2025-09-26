@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import NuevoIngresoModal from '../components/NuevoIngresoModal';
 import NuevoEgresoModal from '../components/NuevoEgresoModal';
+import ContextMenu from '../components/ContextMenu';
+import DetallesIngresoModal from '../components/DetallesIngresoModal';
 
 const Caja = () => {
   const [activeTab, setActiveTab] = useState('ingresos-egresos');
@@ -8,6 +10,10 @@ const Caja = () => {
   const [doctor, setDoctor] = useState('Todos');
   const [showNuevoIngresoModal, setShowNuevoIngresoModal] = useState(false);
   const [showNuevoEgresoModal, setShowNuevoEgresoModal] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showDetallesModal, setShowDetallesModal] = useState(false);
   
   // Datos de ejemplo basados en la imagen
   const transacciones = [
@@ -45,6 +51,42 @@ const Caja = () => {
       comentario: 'Compra de insumos',
       monto: 250.00,
       tipo: 'egreso',
+      estado: 'completado'
+    },
+    {
+      id: 4,
+      hora: '23:21',
+      doctor: 'Eduardo Carmin',
+      paciente: 'Julieta Prueba',
+      concepto: 'Ortodoncia cuota inicial',
+      medioPago: 'Efectivo',
+      comentario: 'ingreso de prueba',
+      monto: 500.00,
+      tipo: 'ingreso',
+      estado: 'completado'
+    },
+    {
+      id: 5,
+      hora: '14:30 p. m.',
+      doctor: 'Dr. García',
+      paciente: 'Carlos López',
+      concepto: 'Endodoncia',
+      medioPago: 'Yape',
+      comentario: 'Tratamiento de conducto',
+      monto: 350.00,
+      tipo: 'ingreso',
+      estado: 'completado'
+    },
+    {
+      id: 6,
+      hora: '16:45 p. m.',
+      doctor: 'Dra. López',
+      paciente: 'María González',
+      concepto: 'Blanqueamiento dental',
+      medioPago: 'Tarjeta',
+      comentario: 'Sesión de blanqueamiento',
+      monto: 200.00,
+      tipo: 'ingreso',
       estado: 'completado'
     }
   ];
@@ -91,6 +133,39 @@ const Caja = () => {
     console.log('Guardando egreso:', egresoData);
     // Simular guardado
     await new Promise(resolve => setTimeout(resolve, 1000));
+  };
+
+  const handleContextMenu = (e, transaction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setSelectedTransaction(transaction);
+    setShowContextMenu(true);
+  };
+
+  const handleCloseContextMenu = () => {
+    setShowContextMenu(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleEditarIngreso = () => {
+    console.log('Editar ingreso:', selectedTransaction);
+    handleCloseContextMenu();
+  };
+
+  const handleVerDetalles = () => {
+    setShowDetallesModal(true);
+    handleCloseContextMenu();
+  };
+
+  const handleImprimir = () => {
+    console.log('Imprimir:', selectedTransaction);
+    handleCloseContextMenu();
+  };
+
+  const handleEliminar = () => {
+    console.log('Eliminar:', selectedTransaction);
+    handleCloseContextMenu();
   };
 
   const renderTabContent = () => {
@@ -208,7 +283,18 @@ const Caja = () => {
                   }`}
                 >
                   <td className="p-4 text-[#4A3C7B] font-medium">
-                    {formatearHora(transaccion.hora)}
+                    <div className="flex items-center space-x-2">
+                      <span>{formatearHora(transaccion.hora)}</span>
+                      <button
+                        onClick={(e) => handleContextMenu(e, transaccion)}
+                        className="p-1 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded transition-all duration-200"
+                        title="Opciones"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                   <td className="p-4 text-gray-700">
                     {transaccion.doctor}
@@ -466,6 +552,26 @@ const Caja = () => {
         isOpen={showNuevoEgresoModal}
         onClose={() => setShowNuevoEgresoModal(false)}
         onSave={handleSaveEgreso}
+      />
+
+      {/* Menú Contextual */}
+      <ContextMenu
+        isOpen={showContextMenu}
+        position={contextMenuPosition}
+        onClose={handleCloseContextMenu}
+        onEditar={handleEditarIngreso}
+        onVerDetalles={handleVerDetalles}
+        onImprimir={handleImprimir}
+        onEliminar={handleEliminar}
+        transaction={selectedTransaction}
+      />
+
+      {/* Modal Detalles */}
+      <DetallesIngresoModal
+        isOpen={showDetallesModal}
+        onClose={() => setShowDetallesModal(false)}
+        transaction={selectedTransaction}
+        onSave={handleSaveIngreso}
       />
     </div>
   );
