@@ -70,9 +70,9 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
   };
 
   return (
-    <nav className="text-white shadow-lg fixed top-0 left-0 right-0 z-50">
+    <nav className="text-white shadow-xl fixed top-0 left-0 right-0 z-50">
       {/* Fila superior (más oscura): Marca y Usuario */}
-      <div className="bg-slate-800">
+      <div className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69]">
         <div className="px-2 sm:px-4 lg:px-6">
           <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
@@ -80,21 +80,21 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             {/* Botón hamburguesa para móvil */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-1 text-slate-300 hover:text-white"
+              className="md:hidden p-1 text-white/80 hover:text-white transition-colors duration-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             
-            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 sm:w-5 sm:h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
+              <svg className="w-3 h-3 sm:w-5 sm:h-5 text-[#4A3C7B]" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
               </svg>
             </div>
             <div className="hidden sm:block flex-shrink-0">
               <h1 className="text-lg sm:text-xl font-bold text-white">DENTI SALUD</h1>
-              <p className="text-xs text-gray-300">ODONTOLOGÍA</p>
+              <p className="text-xs text-[#30B0B0] font-medium">ODONTOLOGÍA</p>
             </div>
             <div className="sm:hidden flex-shrink-0">
               <h1 className="text-sm font-bold text-white">DENTI SALUD</h1>
@@ -106,11 +106,11 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 text-sm bg-slate-700 rounded-md px-3 py-2 hover:bg-slate-600 transition-colors"
+                  className="flex items-center space-x-2 text-sm bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 hover:bg-white/30 transition-all duration-200 border border-white/20"
                 >
-                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nombre || 'Usuario')}&background=0ea5e9&color=fff`}
+                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nombre || 'Usuario')}&background=30B0B0&color=fff`}
                        alt="avatar" className="w-6 h-6 rounded-full hidden sm:block" />
-                  <span className="hidden sm:inline">{user?.nombre || 'Usuario'}</span>
+                  <span className="hidden sm:inline font-medium">{user?.nombre || 'Usuario'}</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -139,7 +139,7 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
       </div>
 
       {/* Fila inferior (más clara): Tabs e iconos + buscador */}
-      <div className="bg-slate-700">
+      <div className="bg-gradient-to-r from-[#2D1B69] to-[#1A0F3D]">
         <div className="px-2 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between h-12">
             {/* Pestañas de navegación */}
@@ -148,10 +148,10 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-slate-600 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                    ? 'bg-[#30B0B0] text-white shadow-lg'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {tab.name}
@@ -162,12 +162,12 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             <div className="relative" ref={marketingMenuRef}>
               <button
                 onClick={handleMarketingMenuClick}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-1 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1 ${
                   activeTab.startsWith('marketing') || activeTab.startsWith('segmentaciones') || 
                   activeTab.startsWith('cumpleanos') || activeTab.startsWith('automatizaciones') ||
                   activeTab.startsWith('campanas') || activeTab.startsWith('embudo') || activeTab.startsWith('soyla')
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                    ? 'bg-[#30B0B0] text-white shadow-lg'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <span>Marketing</span>
@@ -261,10 +261,10 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-slate-600 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                    ? 'bg-[#30B0B0] text-white shadow-lg'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {tab.name}
@@ -276,7 +276,7 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             <div className="flex items-center space-x-2 sm:space-x-3">
               {/* Engranaje */}
               <div className="relative" ref={settingsRef}>
-                <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="p-2 text-slate-300 hover:text-white">
+                <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -291,7 +291,12 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                     >
                       Servicios
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Usuarios</button>
+                    <button 
+                      onClick={() => { setIsSettingsOpen(false); handleTabClick('usuarios'); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Usuarios
+                    </button>
                     <div className="border-t my-1" />
                     <button 
                       onClick={() => { setIsSettingsOpen(false); handleTabClick('configuracion'); }}
@@ -305,7 +310,7 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
 
               {/* Botón suma - Acciones rápidas */}
               <div className="relative" ref={quickMenuRef}>
-                <button onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)} className="p-2 text-slate-300 hover:text-white">
+                <button onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -355,11 +360,11 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                   placeholder="Buscar paciente"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-slate-600 text-white placeholder-slate-400 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-500 w-48 lg:w-64"
+                  className="bg-white/20 backdrop-blur-sm text-white placeholder-white/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#30B0B0] focus:bg-white/30 border border-white/20 w-48 lg:w-64 transition-all duration-200"
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-300 hover:text-white"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/80 hover:text-white transition-colors duration-200"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -374,16 +379,16 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
       {/* Menú móvil - Solo visible cuando está abierto */}
       {isMobileMenuOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-1 pb-2 space-y-1 bg-slate-800 max-h-64 overflow-y-auto">
+          <div className="px-2 pt-1 pb-2 space-y-1 bg-gradient-to-b from-[#2D1B69] to-[#1A0F3D] max-h-64 overflow-y-auto">
             {/* Solo mostrar las pestañas más importantes en móvil */}
             {tabs.slice(0, 4).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`block w-full text-left px-3 py-1.5 rounded-md text-sm font-medium ${
+                className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-slate-600 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                    ? 'bg-[#30B0B0] text-white shadow-lg'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {tab.name}
@@ -391,23 +396,23 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
             ))}
             
             {/* Dropdown compacto de Marketing en móvil */}
-            <div className="border-t border-slate-600 pt-1">
-              <div className="text-xs text-slate-400 px-3 py-1">Marketing</div>
+            <div className="border-t border-white/20 pt-1">
+              <div className="text-xs text-[#30B0B0] px-3 py-1 font-medium">Marketing</div>
               <button
                 onClick={() => handleTabClick('embudo-ventas')}
-                className="block w-full text-left px-6 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-600"
+                className="block w-full text-left px-6 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
               >
                 Embudo de ventas
               </button>
               <button
                 onClick={() => handleTabClick('cumpleanos')}
-                className="block w-full text-left px-6 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-600"
+                className="block w-full text-left px-6 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
               >
                 Cumpleaños
               </button>
               <button
                 onClick={() => handleTabClick('segmentaciones')}
-                className="block w-full text-left px-6 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-600"
+                className="block w-full text-left px-6 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
               >
                 Segmentaciones
               </button>
