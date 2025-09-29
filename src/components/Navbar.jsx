@@ -136,7 +136,15 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate }) => {
                     >
                       Mi Perfil
                     </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Configuración</button>
+                    <button 
+                      onClick={() => {
+                        handleTabClick('configuracion');
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Configuración
+                    </button>
                     <div className="border-t" />
                     <button onClick={onLogout} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Cerrar Sesión</button>
                   </div>
@@ -301,7 +309,18 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate }) => {
                       Servicios
                     </button>
                     <button 
-                      onClick={() => { setIsSettingsOpen(false); handleTabClick('usuarios'); }}
+                      onClick={() => { 
+                        setIsSettingsOpen(false); 
+                        handleTabClick('configuracion'); 
+                        // Navegar a configuración con sección de usuarios activa
+                        setTimeout(() => {
+                          window.history.pushState({}, '', '/configuracion?section=usuarios');
+                          // Disparar evento personalizado para notificar al componente
+                          window.dispatchEvent(new CustomEvent('configSectionChange', { 
+                            detail: { section: 'usuarios' } 
+                          }));
+                        }, 100);
+                      }}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                     >
                       Usuarios
