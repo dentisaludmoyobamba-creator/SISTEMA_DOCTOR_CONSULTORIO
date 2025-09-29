@@ -276,12 +276,422 @@ def actualizar_perfil(request, headers):
         conn.rollback()
         return (json.dumps({"error": f"Error al actualizar perfil: {str(e)}"}), 500, headers)
 
+def crear_usuario(request, headers):
+    """Función para crear un nuevo usuario"""
+    try:
+        # Verificar token de autorización
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return (json.dumps({"error": "Token de autorización requerido"}), 401, headers)
+        
+        token = auth_header.replace('Bearer ', '')
+        payload = verify_token(token)
+        
+        if not payload:
+            return (json.dumps({"error": "Token inválido o expirado"}), 401, headers)
+        
+        # Verificar que sea administrador
+        user_role = payload.get('role')
+        if user_role != 'Administrador':
+            return (json.dumps({"error": "Solo administradores pueden crear usuarios"}), 403, headers)
+        
+        # Obtener datos del request
+        data = request.get_json()
+        if not data:
+            return (json.dumps({"error": "No se enviaron datos"}), 400, headers)
+        
+        # Validar campos requeridos
+        required_fields = ['username', 'email', 'password', 'role_id']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return (json.dumps({"error": f"Campo {field} es requerido"}), 400, headers)
+        
+        username = data['username'].strip()
+        email = data['email'].strip()
+        password = data['password'].strip()
+        role_id = data['role_id']
+        
+        # Datos opcionales para doctor
+        doctor_data = {}
+        if 'doctor_info' in data and data['doctor_info']:
+            doctor_info = data['doctor_info']
+            required_doctor_fields = ['nombres', 'apellidos', 'dni', 'colegiatura']
+            for field in required_doctor_fields:
+                if field not in doctor_info or not doctor_info[field]:
+                    return (json.dumps({"error": f"Campo doctor {field} es requerido para doctores"}), 400, headers)
+            doctor_data = doctor_info
+        
+        # Conectar a la base de datos
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Verificar que el username y email no existan
+        check_query = "SELECT id_usuario FROM usuarios WHERE nombre_usuario = %s OR email = %s"
+        cursor.execute(check_query, (username, email))
+        if cursor.fetchone():
+            return (json.dumps({"error": "El username o email ya están en uso"}), 400, headers)
+        
+        # Verificar que el rol existe
+        role_check = "SELECT nombre_rol FROM roles WHERE id_rol = %s"
+        cursor.execute(role_check, (role_id,))
+        role_result = cursor.fetchone()
+        if not role_result:
+            return (json.dumps({"error": "Rol no válido"}), 400, headers)
+        
+        # Hash de la contraseña
+        password_hash = hash_password(password)
+        
+        # Insertar usuario
+        user_query = """
+            INSERT INTO usuarios (nombre_usuario, contrasena_hash, email, id_rol, activo, fecha_creacion)
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            RETURNING id_usuario
+        """
+        cursor.execute(user_query, (username, password_hash, email, role_id, True))
+        user_id = cursor.fetchone()['id_usuario']
+        
+        # Si es doctor, insertar datos del doctor
+        if doctor_data and role_result['nombre_rol'] == 'Doctor':
+            doctor_query = """
+                INSERT INTO doctores (nombres, apellidos, dni, colegiatura, telefono, id_usuario)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(doctor_query, (
+                doctor_data['nombres'], 
+                doctor_data['apellidos'], 
+                doctor_data['dni'], 
+                doctor_data['colegiatura'], 
+                doctor_data.get('telefono', ''), 
+                user_id
+            ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return (json.dumps({
+            "success": True, 
+            "message": "Usuario creado exitosamente",
+            "user_id": user_id
+        }), 200, headers)
+        
+    except Exception as e:
+        conn.rollback()
+        return (json.dumps({"error": f"Error al crear usuario: {str(e)}"}), 500, headers)
+
+def obtener_usuarios(request, headers):
+    """Función para obtener lista de usuarios"""
+    try:
+        # Verificar token de autorización
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return (json.dumps({"error": "Token de autorización requerido"}), 401, headers)
+        
+        token = auth_header.replace('Bearer ', '')
+        payload = verify_token(token)
+        
+        if not payload:
+            return (json.dumps({"error": "Token inválido o expirado"}), 401, headers)
+        
+        # Conectar a la base de datos
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Obtener parámetros de consulta
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 10))
+        search = request.args.get('search', '')
+        role_filter = request.args.get('role', '')
+        
+        # Construir consulta base
+        base_query = """
+            SELECT u.id_usuario, u.nombre_usuario, u.email, u.id_rol, u.activo,
+                   u.ultimo_login, u.fecha_creacion,
+                   r.nombre_rol, r.descripcion as rol_descripcion,
+                   d.id_doctor, d.nombres as doctor_nombres, d.apellidos as doctor_apellidos,
+                   d.dni as doctor_dni, d.colegiatura, d.telefono as doctor_telefono
+            FROM usuarios u
+            LEFT JOIN roles r ON u.id_rol = r.id_rol
+            LEFT JOIN doctores d ON u.id_usuario = d.id_usuario
+            WHERE 1=1
+        """
+        
+        params = []
+        
+        # Filtros
+        if search:
+            base_query += " AND (u.nombre_usuario ILIKE %s OR u.email ILIKE %s OR d.nombres ILIKE %s OR d.apellidos ILIKE %s)"
+            search_param = f"%{search}%"
+            params.extend([search_param, search_param, search_param, search_param])
+        
+        if role_filter:
+            base_query += " AND r.nombre_rol = %s"
+            params.append(role_filter)
+        
+        # Contar total de registros
+        count_query = f"SELECT COUNT(*) as total FROM ({base_query}) as subquery"
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()['total']
+        
+        # Agregar paginación
+        offset = (page - 1) * limit
+        base_query += " ORDER BY u.fecha_creacion DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cursor.execute(base_query, params)
+        usuarios = cursor.fetchall()
+        
+        # Formatear respuesta
+        usuarios_formateados = []
+        for usuario in usuarios:
+            usuarios_formateados.append({
+                "id": usuario['id_usuario'],
+                "username": usuario['nombre_usuario'],
+                "email": usuario['email'],
+                "role": usuario['nombre_rol'],
+                "role_description": usuario['rol_descripcion'],
+                "active": usuario['activo'],
+                "last_login": usuario['ultimo_login'].isoformat() if usuario['ultimo_login'] else None,
+                "created_at": usuario['fecha_creacion'].isoformat() if usuario['fecha_creacion'] else None,
+                "is_doctor": usuario['id_doctor'] is not None,
+                "doctor_info": {
+                    "id": usuario['id_doctor'],
+                    "nombres": usuario['doctor_nombres'],
+                    "apellidos": usuario['doctor_apellidos'],
+                    "dni": usuario['doctor_dni'],
+                    "colegiatura": usuario['colegiatura'],
+                    "telefono": usuario['doctor_telefono']
+                } if usuario['id_doctor'] else None
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return (json.dumps({
+            "success": True,
+            "users": usuarios_formateados,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total_count,
+                "pages": (total_count + limit - 1) // limit
+            }
+        }), 200, headers)
+        
+    except Exception as e:
+        return (json.dumps({"error": f"Error al obtener usuarios: {str(e)}"}), 500, headers)
+
+def actualizar_usuario(request, headers):
+    """Función para actualizar un usuario (por administrador)"""
+    try:
+        # Verificar token de autorización
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return (json.dumps({"error": "Token de autorización requerido"}), 401, headers)
+        
+        token = auth_header.replace('Bearer ', '')
+        payload = verify_token(token)
+        
+        if not payload:
+            return (json.dumps({"error": "Token inválido o expirado"}), 401, headers)
+        
+        # Verificar que sea administrador
+        user_role = payload.get('role')
+        if user_role != 'Administrador':
+            return (json.dumps({"error": "Solo administradores pueden actualizar usuarios"}), 403, headers)
+        
+        # Obtener ID del usuario a actualizar
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return (json.dumps({"error": "ID de usuario requerido"}), 400, headers)
+        
+        # Obtener datos del request
+        data = request.get_json()
+        if not data:
+            return (json.dumps({"error": "No se enviaron datos"}), 400, headers)
+        
+        # Conectar a la base de datos
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Verificar que el usuario existe
+        check_query = "SELECT id_usuario FROM usuarios WHERE id_usuario = %s"
+        cursor.execute(check_query, (user_id,))
+        if not cursor.fetchone():
+            return (json.dumps({"error": "Usuario no encontrado"}), 404, headers)
+        
+        # Campos que se pueden actualizar
+        updates = []
+        params = []
+        
+        if 'email' in data and data['email'].strip():
+            # Verificar que el email no esté en uso por otro usuario
+            email_check = "SELECT id_usuario FROM usuarios WHERE email = %s AND id_usuario != %s"
+            cursor.execute(email_check, (data['email'].strip(), user_id))
+            if cursor.fetchone():
+                return (json.dumps({"error": "El email ya está en uso"}), 400, headers)
+            
+            updates.append("email = %s")
+            params.append(data['email'].strip())
+        
+        if 'password' in data and data['password'].strip():
+            updates.append("contrasena_hash = %s")
+            params.append(hash_password(data['password'].strip()))
+        
+        if 'role_id' in data:
+            # Verificar que el rol existe
+            role_check = "SELECT id_rol FROM roles WHERE id_rol = %s"
+            cursor.execute(role_check, (data['role_id'],))
+            if not cursor.fetchone():
+                return (json.dumps({"error": "Rol no válido"}), 400, headers)
+            
+            updates.append("id_rol = %s")
+            params.append(data['role_id'])
+        
+        if 'active' in data:
+            updates.append("activo = %s")
+            params.append(data['active'])
+        
+        if updates:
+            params.append(user_id)
+            update_query = f"UPDATE usuarios SET {', '.join(updates)} WHERE id_usuario = %s"
+            cursor.execute(update_query, params)
+        
+        # Actualizar datos del doctor si se proporcionan y es doctor
+        if 'doctor_info' in data and data['doctor_info']:
+            doctor_info = data['doctor_info']
+            doctor_updates = []
+            doctor_params = []
+            
+            if 'nombres' in doctor_info and doctor_info['nombres'].strip():
+                doctor_updates.append("nombres = %s")
+                doctor_params.append(doctor_info['nombres'].strip())
+            
+            if 'apellidos' in doctor_info and doctor_info['apellidos'].strip():
+                doctor_updates.append("apellidos = %s")
+                doctor_params.append(doctor_info['apellidos'].strip())
+            
+            if 'telefono' in doctor_info:
+                doctor_updates.append("telefono = %s")
+                doctor_params.append(doctor_info['telefono'] or '')
+            
+            if doctor_updates:
+                doctor_params.append(user_id)
+                doctor_query = f"UPDATE doctores SET {', '.join(doctor_updates)} WHERE id_usuario = %s"
+                cursor.execute(doctor_query, doctor_params)
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return (json.dumps({"success": True, "message": "Usuario actualizado exitosamente"}), 200, headers)
+        
+    except Exception as e:
+        conn.rollback()
+        return (json.dumps({"error": f"Error al actualizar usuario: {str(e)}"}), 500, headers)
+
+def eliminar_usuario(request, headers):
+    """Función para eliminar (desactivar) un usuario"""
+    try:
+        # Verificar token de autorización
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return (json.dumps({"error": "Token de autorización requerido"}), 401, headers)
+        
+        token = auth_header.replace('Bearer ', '')
+        payload = verify_token(token)
+        
+        if not payload:
+            return (json.dumps({"error": "Token inválido o expirado"}), 401, headers)
+        
+        # Verificar que sea administrador
+        user_role = payload.get('role')
+        if user_role != 'Administrador':
+            return (json.dumps({"error": "Solo administradores pueden eliminar usuarios"}), 403, headers)
+        
+        # Obtener ID del usuario a eliminar
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return (json.dumps({"error": "ID de usuario requerido"}), 400, headers)
+        
+        # No permitir eliminar al propio usuario
+        current_user_id = payload.get('user_id')
+        if str(user_id) == str(current_user_id):
+            return (json.dumps({"error": "No puedes eliminar tu propio usuario"}), 400, headers)
+        
+        # Conectar a la base de datos
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Verificar que el usuario existe
+        check_query = "SELECT id_usuario FROM usuarios WHERE id_usuario = %s"
+        cursor.execute(check_query, (user_id,))
+        if not cursor.fetchone():
+            return (json.dumps({"error": "Usuario no encontrado"}), 404, headers)
+        
+        # Desactivar usuario en lugar de eliminarlo
+        update_query = "UPDATE usuarios SET activo = FALSE WHERE id_usuario = %s"
+        cursor.execute(update_query, (user_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return (json.dumps({"success": True, "message": "Usuario desactivado exitosamente"}), 200, headers)
+        
+    except Exception as e:
+        conn.rollback()
+        return (json.dumps({"error": f"Error al eliminar usuario: {str(e)}"}), 500, headers)
+
+def obtener_roles(request, headers):
+    """Función para obtener lista de roles disponibles"""
+    try:
+        # Verificar token de autorización
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return (json.dumps({"error": "Token de autorización requerido"}), 401, headers)
+        
+        token = auth_header.replace('Bearer ', '')
+        payload = verify_token(token)
+        
+        if not payload:
+            return (json.dumps({"error": "Token inválido o expirado"}), 401, headers)
+        
+        # Conectar a la base de datos
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Obtener roles
+        query = "SELECT id_rol, nombre_rol, descripcion FROM roles ORDER BY nombre_rol"
+        cursor.execute(query)
+        roles = cursor.fetchall()
+        
+        # Formatear respuesta
+        roles_formateados = []
+        for rol in roles:
+            roles_formateados.append({
+                "id": rol['id_rol'],
+                "name": rol['nombre_rol'],
+                "description": rol['descripcion']
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return (json.dumps({
+            "success": True,
+            "roles": roles_formateados
+        }), 200, headers)
+        
+    except Exception as e:
+        return (json.dumps({"error": f"Error al obtener roles: {str(e)}"}), 500, headers)
+
 @functions_framework.http
 def hello_http(request):
 
     headers={
         "Access-Control-Allow-Origin":"*",
-        "Access-Control-Allow-Methods":"GET,POST,PUT,OPTIONS",
+        "Access-Control-Allow-Methods":"GET,POST,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers":"Content-Type,Authorization"
     }
 
@@ -296,20 +706,34 @@ def hello_http(request):
         if request.method == "POST":
             if action == "login" or "login" in path:
                 return login_usuario(request, headers)
+            elif action == "create_user" or "create_user" in path:
+                return crear_usuario(request, headers)
             else:
-                return (json.dumps({"error": "Acción no válida para POST. Use ?action=login"}), 400, headers)
+                return (json.dumps({"error": "Acción no válida para POST. Use ?action=login o ?action=create_user"}), 400, headers)
         
         elif request.method == "GET":
             if action == "profile" or "profile" in path:
                 return obtener_perfil(request, headers)
+            elif action == "users" or "users" in path:
+                return obtener_usuarios(request, headers)
+            elif action == "roles" or "roles" in path:
+                return obtener_roles(request, headers)
             else:
-                return (json.dumps({"error": "Acción no válida para GET. Use ?action=profile"}), 400, headers)
+                return (json.dumps({"error": "Acción no válida para GET. Use ?action=profile, ?action=users o ?action=roles"}), 400, headers)
         
         elif request.method == "PUT":
             if action == "profile" or "profile" in path:
                 return actualizar_perfil(request, headers)
+            elif action == "update_user" or "update_user" in path:
+                return actualizar_usuario(request, headers)
             else:
-                return (json.dumps({"error": "Acción no válida para PUT. Use ?action=profile"}), 400, headers)
+                return (json.dumps({"error": "Acción no válida para PUT. Use ?action=profile o ?action=update_user"}), 400, headers)
+        
+        elif request.method == "DELETE":
+            if action == "delete_user" or "delete_user" in path:
+                return eliminar_usuario(request, headers)
+            else:
+                return (json.dumps({"error": "Acción no válida para DELETE. Use ?action=delete_user"}), 400, headers)
         
         else:
             return (json.dumps({"error":"Método HTTP no soportado"}), 405, headers)

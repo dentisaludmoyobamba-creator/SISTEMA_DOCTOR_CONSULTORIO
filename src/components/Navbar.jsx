@@ -108,9 +108,18 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate }) => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 text-sm bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 hover:bg-white/30 transition-all duration-200 border border-white/20"
                 >
-                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nombre || 'Usuario')}&background=30B0B0&color=fff`}
+                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user?.doctor_info ? 
+                    `${user.doctor_info.nombres} ${user.doctor_info.apellidos}` : 
+                    user?.username || 'Usuario'
+                  )}&background=30B0B0&color=fff`}
                        alt="avatar" className="w-6 h-6 rounded-full hidden sm:block" />
-                  <span className="hidden sm:inline font-medium">{user?.nombre || 'Usuario'}</span>
+                  <span className="hidden sm:inline font-medium">
+                    {user?.doctor_info ? 
+                      `${user.doctor_info.nombres} ${user.doctor_info.apellidos}` : 
+                      user?.username || 'Usuario'
+                    }
+                  </span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
