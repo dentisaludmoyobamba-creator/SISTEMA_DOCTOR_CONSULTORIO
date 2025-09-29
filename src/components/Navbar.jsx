@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileModal from './ProfileModal';
 
-const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
+const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMarketingMenuOpen, setIsMarketingMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -108,9 +108,18 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 text-sm bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 hover:bg-white/30 transition-all duration-200 border border-white/20"
                 >
-                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nombre || 'Usuario')}&background=30B0B0&color=fff`}
+                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user?.doctor_info ? 
+                    `${user.doctor_info.nombres} ${user.doctor_info.apellidos}` : 
+                    user?.username || 'Usuario'
+                  )}&background=30B0B0&color=fff`}
                        alt="avatar" className="w-6 h-6 rounded-full hidden sm:block" />
-                  <span className="hidden sm:inline font-medium">{user?.nombre || 'Usuario'}</span>
+                  <span className="hidden sm:inline font-medium">
+                    {user?.doctor_info ? 
+                      `${user.doctor_info.nombres} ${user.doctor_info.apellidos}` : 
+                      user?.username || 'Usuario'
+                    }
+                  </span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -127,7 +136,15 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                     >
                       Mi Perfil
                     </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Configuración</button>
+                    <button 
+                      onClick={() => {
+                        handleTabClick('configuracion');
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Configuración
+                    </button>
                     <div className="border-t" />
                     <button onClick={onLogout} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Cerrar Sesión</button>
                   </div>
@@ -292,7 +309,18 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
                       Servicios
                     </button>
                     <button 
-                      onClick={() => { setIsSettingsOpen(false); handleTabClick('usuarios'); }}
+                      onClick={() => { 
+                        setIsSettingsOpen(false); 
+                        handleTabClick('configuracion'); 
+                        // Navegar a configuración con sección de usuarios activa
+                        setTimeout(() => {
+                          window.history.pushState({}, '', '/configuracion?section=usuarios');
+                          // Disparar evento personalizado para notificar al componente
+                          window.dispatchEvent(new CustomEvent('configSectionChange', { 
+                            detail: { section: 'usuarios' } 
+                          }));
+                        }, 100);
+                      }}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                     >
                       Usuarios
@@ -426,6 +454,7 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         user={user}
+        onUserUpdate={onUserUpdate}
       />
     </nav>
   );

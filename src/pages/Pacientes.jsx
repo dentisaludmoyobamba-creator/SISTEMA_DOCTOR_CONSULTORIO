@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { pacientes as pacientesData } from '../data/mockData';
+import patientsService from '../services/patientsService';
+import authService from '../services/authService';
 import NewPatientModal from '../components/NewPatientModal';
 import HistoriaClinica from '../components/HistoriaClinica';
 
 const Pacientes = () => {
   const [activeTab, setActiveTab] = useState('mis-pacientes');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pacientes] = useState(pacientesData);
+  const [pacientes, setPacientes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
   const [isPatientProfileOpen, setIsPatientProfileOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -32,12 +36,46 @@ const Pacientes = () => {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  // Filtrar pacientes según búsqueda
-  const pacientesFiltrados = pacientes.filter(paciente => 
-    paciente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    paciente.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    paciente.documento.includes(searchTerm)
-  );
+  // Cargar pacientes desde API
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        patientsService.setAuthService(authService);
+        const result = await patientsService.list({ page: pagination.page, limit: pagination.limit, search: searchTerm });
+        if (result.success) {
+          const mapped = result.patients.map(p => ({
+            id: p.id,
+            nombre: p.nombres,
+            apellido: p.apellidos,
+            documento: p.documento || '',
+            ultimaCita: p.ultima_cita,
+            proximaCita: p.proxima_cita,
+            tarea: '',
+            presupuesto: p.presupuesto || 0,
+            fuenteCaptacion: p.fuente_captacion || '',
+            comentario: p.comentario || '',
+            avatar: (p.nombres && p.nombres[0]) ? p.nombres[0].toUpperCase() : 'P',
+            etiqueta: null,
+            etiquetaColor: 'bg-slate-200'
+          }));
+          setPacientes(mapped);
+          setPagination(result.pagination);
+        } else {
+          setError(result.error || 'Error al cargar pacientes');
+        }
+      } catch (e) {
+        setError('Error de conexión con el servidor');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [pagination.page, pagination.limit, searchTerm]);
+
+  // Lista ya viene filtrada desde backend
+  const pacientesFiltrados = pacientes;
 
   const formatearFecha = (fecha) => {
     const hoy = new Date();
@@ -135,7 +173,7 @@ const Pacientes = () => {
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-3 lg:space-y-0">
               <div className="flex items-center space-x-4">
                 <span className="text-sm sm:text-base text-[#4A3C7B] font-semibold">Todos los pacientes</span>
-                <span className="text-sm text-[#30B0B0] font-medium bg-[#30B0B0]/10 px-2 py-1 rounded-full">{pacientesFiltrados.length} pacientes</span>
+                <span className="text-sm text-[#30B0B0] font-medium bg-[#30B0B0]/10 px-2 py-1 rounded-full">{pagination.total} pacientes</span>
               </div>
               
               <div className="flex items-center space-x-2 sm:space-x-4">
@@ -260,6 +298,18 @@ const Pacientes = () => {
         {/* Tabla de pacientes / contenido por tab */}
         {activeTab === 'mis-pacientes' && (
           <div className="flex-1 overflow-auto bg-white">
+            {error && (
+              <div className="p-4 text-red-700 bg-red-50 border-b">{error}</div>
+            )}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <svg className="animate-spin h-8 w-8 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="ml-2 text-gray-600">Cargando pacientes...</span>
+              </div>
+            ) : (
             <table className="w-full min-w-[800px]">
               <thead className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white sticky top-0">
                 <tr>
@@ -301,6 +351,7 @@ const Pacientes = () => {
                 ))}
               </tbody>
             </table>
+            )}
           </div>
         )}
 
@@ -361,19 +412,19 @@ const Pacientes = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-[#4A3C7B] font-medium">{pacientesFiltrados.length} resultados</span>
+              <div className="flex items-center space-x-4">
+              <span className="text-[#4A3C7B] font-medium">{pagination.total} resultados</span>
               
               <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+                <button disabled={pagination.page <= 1} onClick={() => setPagination(p => ({ ...p, page: Math.max(1, p.page - 1) }))} className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200 disabled:opacity-50">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 
-                <span className="px-3 py-1 bg-[#4A3C7B] text-white rounded-lg font-medium">1</span>
+                <span className="px-3 py-1 bg-[#4A3C7B] text-white rounded-lg font-medium">{pagination.page}</span>
                 
-                <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+                <button disabled={pagination.page >= pagination.pages} onClick={() => setPagination(p => ({ ...p, page: Math.min(p.pages, p.page + 1) }))} className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200 disabled:opacity-50">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -382,10 +433,10 @@ const Pacientes = () => {
               
               <div className="flex items-center space-x-2">
                 <span className="text-gray-600">Mostrar</span>
-                <select className="border-2 border-gray-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
-                  <option>20</option>
-                  <option>50</option>
-                  <option>100</option>
+                <select value={pagination.limit} onChange={(e) => setPagination(p => ({ ...p, limit: Number(e.target.value), page: 1 }))} className="border-2 border-gray-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
                 </select>
                 <span className="text-gray-600">resultados por página</span>
               </div>
@@ -398,7 +449,32 @@ const Pacientes = () => {
       <NewPatientModal
         isOpen={isNewPatientOpen}
         onClose={() => setIsNewPatientOpen(false)}
-        onCreate={() => setIsNewPatientOpen(false)}
+        onCreate={async (form) => {
+          try {
+            patientsService.setAuthService(authService);
+            const payload = {
+              documento: form.documento,
+              nombres: form.nombres,
+              apellidos: form.apellidos,
+              telefono: form.telefono,
+              email: form.email,
+              nacimiento: form.nacimiento,
+              fuente: form.fuente,
+              aseguradora: form.aseguradora,
+              genero: 'Hombre'
+            };
+            const res = await patientsService.create(payload);
+            if (res.success) {
+              setIsNewPatientOpen(false);
+              // recargar lista
+              setPagination(p => ({ ...p }));
+            } else {
+              alert(res.error || 'Error al crear paciente');
+            }
+          } catch (e) {
+            alert('Error de conexión con el servidor');
+          }
+        }}
       />
 
       {/* Modal: Perfil de Paciente */}

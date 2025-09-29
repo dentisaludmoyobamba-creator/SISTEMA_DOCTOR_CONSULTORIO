@@ -1,7 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import authService from '../services/authService';
+import usersService from '../services/usersService';
+import UserModal from '../components/UserModal';
 
 const Configuracion = () => {
   const [activeSection, setActiveSection] = useState('mi-perfil');
+  
+  // Verificar si hay un parámetro en la URL para activar una sección específica
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    if (section && ['mi-perfil', 'usuarios', 'historia-clinica', 'administracion'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, []);
+
+  // Escuchar eventos personalizados para cambiar sección
+  useEffect(() => {
+    const handleSectionChange = (event) => {
+      const { section } = event.detail;
+      if (['mi-perfil', 'usuarios', 'historia-clinica', 'administracion'].includes(section)) {
+        setActiveSection(section);
+      }
+    };
+
+    window.addEventListener('configSectionChange', handleSectionChange);
+    return () => {
+      window.removeEventListener('configSectionChange', handleSectionChange);
+    };
+  }, []);
 
   const sections = [
     { id: 'mi-perfil', name: 'Mi perfil' },
@@ -304,23 +331,131 @@ const MiPerfil = () => {
 // Componente Usuarios
 const Usuarios = () => {
   const [activeSubTab, setActiveSubTab] = useState('todos');
-
-  const usuarios = [
-    {
-      id: 1,
-      nombre: 'Eduardo Carmin',
-      email: 'eduardo.carmin@tecsup.edu.pe',
-      tipoUsuario: 'Doctor principal',
-      sucursal: '1',
-      estado: 'Activo',
-      permisos: 'Todos los permisos'
-    }
-  ];
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
 
   const subTabs = [
     { id: 'todos', label: 'Todos' },
     { id: 'staff-medico', label: 'Staff médico' }
   ];
+
+  const loadUsers = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Configurar el servicio de usuarios con authService
+      usersService.setAuthService(authService);
+      
+      const roleFilter = activeSubTab === 'staff-medico' ? 'Doctor' : '';
+      console.log('Cargando usuarios con filtros:', { page: pagination.page, limit: pagination.limit, search: searchTerm, role: roleFilter });
+      
+      const result = await usersService.getUsers(
+        pagination.page,
+        pagination.limit,
+        searchTerm,
+        roleFilter
+      );
+
+      console.log('Resultado de getUsers:', result);
+
+      if (result.success) {
+        const formattedUsers = result.users.map(user => usersService.formatUserForDisplay(user));
+        setUsuarios(formattedUsers);
+        setPagination(result.pagination);
+        console.log('Usuarios cargados exitosamente:', formattedUsers);
+      } else {
+        console.error('Error al cargar usuarios:', result.error);
+        setError(result.error || 'Error al cargar usuarios');
+      }
+    } catch (error) {
+      console.error('Error en loadUsers:', error);
+      setError('Error de conexión con el servidor: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  // Cargar usuarios cuando cambien los filtros
+  useEffect(() => {
+    if (activeSubTab || searchTerm) {
+      setPagination(prev => ({ ...prev, page: 1 })); // Reset a página 1
+      loadUsers();
+    }
+  }, [activeSubTab, searchTerm]);
+
+  // Cargar usuarios cuando cambie la página
+  useEffect(() => {
+    if (pagination.page > 1) {
+      loadUsers();
+    }
+  }, [pagination.page]);
+
+  const handleNewUser = () => {
+    setEditingUser(null);
+    setIsUserModalOpen(true);
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (window.confirm(`¿Estás seguro de que deseas desactivar al usuario ${user.displayName}?`)) {
+      try {
+        const result = await usersService.deleteUser(user.id);
+        if (result.success) {
+          loadUsers(); // Recargar lista
+        } else {
+          alert(result.error || 'Error al desactivar usuario');
+        }
+      } catch (error) {
+        alert('Error de conexión con el servidor');
+      }
+    }
+  };
+
+  const handleToggleUserStatus = async (user) => {
+    try {
+      const result = await usersService.toggleUserStatus(user.id, !user.active);
+      if (result.success) {
+        loadUsers(); // Recargar lista
+      } else {
+        alert(result.error || 'Error al cambiar estado del usuario');
+      }
+    } catch (error) {
+      alert('Error de conexión con el servidor');
+    }
+  };
+
+  const handleUserSaved = () => {
+    loadUsers(); // Recargar lista después de guardar
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset a página 1
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -345,108 +480,226 @@ const Usuarios = () => {
         {/* User Summary and New User Button */}
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center space-x-4 text-sm text-gray-700">
-            <span>Doctor principal contratados: <span className="font-semibold">1</span></span>
-            <span>Usados: <span className="font-semibold">1</span></span>
-            <div className="flex items-center space-x-1 text-yellow-600">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.3 2.647-1.3 3.412 0l7.66 13.139A1 1 0 0118 18H2a1 1 0 01-.824-1.559L8.257 3.099zM10 8a1 1 0 011 1v3a1 1 0 11-2 0V9a1 1 0 011-1zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-              </svg>
-              <span>Disponibles: <span className="font-semibold">0</span></span>
-              <a href="#" className="text-blue-600 hover:underline">Contratar más</a>
-            </div>
-            <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
+            <span>Total usuarios: <span className="font-semibold">{pagination.total}</span></span>
+            <span>Página: <span className="font-semibold">{pagination.page} de {pagination.pages}</span></span>
+            {error && (
+              <div className="text-red-600 text-sm">
+                <span>{error}</span>
+              </div>
+            )}
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span>Nuevo usuario</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Buscador */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar usuarios..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+              />
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <button 
+              onClick={handleNewUser}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>Nuevo usuario</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* User Table */}
       <div className="p-4 sm:p-6">
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-slate-700">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Usuario
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  E-mail
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Tipo usuario
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Sucursal
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Estado
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {usuarios.map((usuario) => (
-                <tr key={usuario.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-100 rounded-full text-blue-600 text-sm font-medium">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="ml-4">
-                        <div className="flex items-center space-x-2">
-                          <div className="text-sm font-medium text-blue-600">Superadmin.</div>
-                          <div className="text-sm font-medium text-gray-900">{usuario.nombre}</div>
-                          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="text-sm text-gray-500">{usuario.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{usuario.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{usuario.tipoUsuario}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {usuario.sucursal}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                        <div className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6"></div>
-                      </div>
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm text-green-800 font-medium">{usuario.estado}</span>
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {usuario.permisos}
-                  </td>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="ml-2 text-gray-600">Cargando usuarios...</span>
+          </div>
+        ) : usuarios.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay usuarios</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchTerm ? 'No se encontraron usuarios con ese criterio de búsqueda.' : 'Comienza creando un nuevo usuario.'}
+            </p>
+            {!searchTerm && (
+              <div className="mt-6">
+                <button
+                  onClick={handleNewUser}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Nuevo Usuario
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-slate-700">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Usuario
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    E-mail
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Tipo usuario
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Último acceso
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {usuarios.map((usuario) => (
+                  <tr key={usuario.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <img 
+                            className="h-10 w-10 rounded-full" 
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(usuario.displayName)}&background=4A3C7B&color=fff`}
+                            alt="Avatar"
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm font-medium text-gray-900">{usuario.displayName}</div>
+                            {usuario.isDoctor && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Doctor
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500">@{usuario.username}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{usuario.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{usuario.role}</div>
+                      <div className="text-sm text-gray-500">{usuario.roleDescription}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {usuario.lastLogin}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleToggleUserStatus(usuario)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            usuario.active ? 'bg-green-600' : 'bg-gray-200'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              usuario.active ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                        <span className={`text-sm font-medium ${usuario.active ? 'text-green-800' : 'text-gray-500'}`}>
+                          {usuario.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditUser(usuario)}
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
+                          title="Editar usuario"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(usuario)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+                          title="Desactivar usuario"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Paginación */}
+            {pagination.pages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700">
+                      Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} resultados
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page <= 1}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      Página {pagination.page} de {pagination.pages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page >= pagination.pages}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Modal de Usuario */}
+      <UserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onUserSaved={handleUserSaved}
+        editingUser={editingUser}
+      />
     </div>
   );
 };
