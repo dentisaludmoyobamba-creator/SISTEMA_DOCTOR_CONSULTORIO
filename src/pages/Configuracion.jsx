@@ -5,6 +5,30 @@ import UserModal from '../components/UserModal';
 
 const Configuracion = () => {
   const [activeSection, setActiveSection] = useState('mi-perfil');
+  
+  // Verificar si hay un parámetro en la URL para activar una sección específica
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    if (section && ['mi-perfil', 'usuarios', 'historia-clinica', 'administracion'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, []);
+
+  // Escuchar eventos personalizados para cambiar sección
+  useEffect(() => {
+    const handleSectionChange = (event) => {
+      const { section } = event.detail;
+      if (['mi-perfil', 'usuarios', 'historia-clinica', 'administracion'].includes(section)) {
+        setActiveSection(section);
+      }
+    };
+
+    window.addEventListener('configSectionChange', handleSectionChange);
+    return () => {
+      window.removeEventListener('configSectionChange', handleSectionChange);
+    };
+  }, []);
 
   const sections = [
     { id: 'mi-perfil', name: 'Mi perfil' },

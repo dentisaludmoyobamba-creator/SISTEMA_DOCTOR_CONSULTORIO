@@ -19,9 +19,15 @@ class UsersService {
 
     if (includeAuth && this.authService) {
       const token = this.authService.getToken();
+      console.log('Token obtenido:', token);
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('Authorization header:', headers['Authorization']);
+      } else {
+        console.log('No se encontró token');
       }
+    } else {
+      console.log('AuthService no disponible o includeAuth es false');
     }
 
     return headers;
@@ -39,12 +45,20 @@ class UsersService {
       if (search) params.append('search', search);
       if (role) params.append('role', role);
 
+      const headers = this.getHeaders();
+      console.log('Headers enviados:', headers);
+      console.log('URL completa:', `${API_URL}?${params}`);
+
       const response = await fetch(`${API_URL}?${params}`, {
         method: 'GET',
-        headers: this.getHeaders()
+        headers: headers
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok && data.success) {
         return {
@@ -62,7 +76,7 @@ class UsersService {
       console.error('Error al obtener usuarios:', error);
       return {
         success: false,
-        error: 'Error de conexión con el servidor'
+        error: 'Error de conexión con el servidor: ' + error.message
       };
     }
   }

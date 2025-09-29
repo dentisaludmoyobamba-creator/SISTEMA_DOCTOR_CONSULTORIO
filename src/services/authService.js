@@ -7,6 +7,11 @@ class AuthService {
     this.user = JSON.parse(localStorage.getItem('userData') || 'null');
   }
 
+  // Obtener el token actual
+  getToken() {
+    return this.token || localStorage.getItem('authToken');
+  }
+
   // Headers base para las peticiones
   getHeaders(includeAuth = false) {
     const headers = {
