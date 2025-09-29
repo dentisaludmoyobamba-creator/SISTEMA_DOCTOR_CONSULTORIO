@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import authService from '../services/authService';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -7,29 +8,44 @@ const Login = ({ onLogin }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simular carga de login
-    setTimeout(() => {
-      if (formData.usuario && formData.password) {
+    try {
+      const result = await authService.login(formData.usuario, formData.password);
+      
+      if (result.success) {
+        // Llamar al callback con los datos del usuario
         onLogin({
-          nombre: 'Eduardo Carmin',
-          usuario: formData.usuario,
-          consultorio: 'Denti Salud'
+          nombre: result.user.doctor_info ? 
+            `${result.user.doctor_info.nombres} ${result.user.doctor_info.apellidos}` : 
+            result.user.username,
+          usuario: result.user.username,
+          consultorio: 'Denti Salud',
+          userData: result.user
         });
+      } else {
+        setError(result.error || 'Error al iniciar sesión');
       }
+    } catch (error) {
+      console.error('Error en login:', error);
+      setError('Error de conexión. Intenta nuevamente.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -158,6 +174,22 @@ const Login = ({ onLogin }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Mensaje de error */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700 font-medium">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Campo Usuario */}
               <div>
                 <label className="block text-sm font-semibold text-[#4A3C7B] mb-2">

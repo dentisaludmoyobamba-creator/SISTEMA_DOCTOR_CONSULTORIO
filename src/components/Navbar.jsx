@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileModal from './ProfileModal';
 
-const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
+const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMarketingMenuOpen, setIsMarketingMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -426,6 +426,7 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout }) => {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         user={user}
+        onUserUpdate={onUserUpdate}
       />
     </nav>
   );

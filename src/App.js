@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
+import authService from './services/authService';
 import Agenda from './pages/Agenda';
 import Pacientes from './pages/Pacientes';
 import Caja from './pages/Caja';
@@ -53,15 +54,37 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('agenda');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
 
   // Verificar si hay una sesión guardada al cargar la app
   useEffect(() => {
-    const savedUser = localStorage.getItem('doctocliq_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
-    }
+    const checkAuth = async () => {
+      setIsLoading(true);
+      
+      if (authService.isAuthenticated() && !authService.isTokenExpired()) {
+        // Verificar con el servidor que el token sigue siendo válido
+        const result = await authService.getProfile();
+        if (result.success) {
+          setUser(result.user);
+          setIsAuthenticated(true);
+        } else {
+          // Token inválido, limpiar sesión
+          authService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } else {
+        // No hay token o está expirado
+        authService.logout();
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   // Sincronizar activeTab con la URL actual
@@ -77,17 +100,36 @@ function AppContent() {
   };
 
   const handleLogin = (userData) => {
-    setUser(userData);
+    setUser(userData.userData || userData);
     setIsAuthenticated(true);
-    localStorage.setItem('doctocliq_user', JSON.stringify(userData));
+    // El authService ya maneja el almacenamiento del token
   };
 
   const handleLogout = () => {
+    authService.logout();
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('doctocliq_user');
     setActiveTab('agenda');
   };
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <svg className="animate-spin h-12 w-12 text-[#4A3C7B] mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-[#4A3C7B] font-medium">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
@@ -97,6 +139,7 @@ function AppContent() {
           onTabChange={handleTabChange}
           user={user}
           onLogout={handleLogout}
+          onUserUpdate={handleUserUpdate}
         />
       )}
       
