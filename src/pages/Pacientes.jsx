@@ -22,6 +22,11 @@ const Pacientes = () => {
   const [loadingFiliacion, setLoadingFiliacion] = useState(false);
   const [editingFiliacion, setEditingFiliacion] = useState(false);
   const [filiacionForm, setFiliacionForm] = useState({});
+  const [tareasManuales, setTareasManuales] = useState([]);
+  const [tareasAutomaticas, setTareasAutomaticas] = useState([]);
+  const [loadingTareas, setLoadingTareas] = useState(false);
+  const [expandedManuales, setExpandedManuales] = useState(true);
+  const [expandedAutomaticas, setExpandedAutomaticas] = useState(true);
   // Asistencias - filtros y popovers
   const [lineaNegocio, setLineaNegocio] = useState('Todos los pacientes');
   const [estadoFiltro, setEstadoFiltro] = useState('Selecciona una opción');
@@ -155,6 +160,26 @@ const Pacientes = () => {
       setPatientFiliacion(null);
     } finally {
       setLoadingFiliacion(false);
+    }
+
+    // Cargar tareas del paciente
+    setLoadingTareas(true);
+    try {
+      const result = await patientsService.getTareas(paciente.id);
+      if (result.success) {
+        setTareasManuales(result.tareas_manuales || []);
+        setTareasAutomaticas(result.tareas_automaticas || []);
+      } else {
+        console.error('Error al cargar tareas:', result.error);
+        setTareasManuales([]);
+        setTareasAutomaticas([]);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar tareas:', e);
+      setTareasManuales([]);
+      setTareasAutomaticas([]);
+    } finally {
+      setLoadingTareas(false);
     }
   };
 
@@ -1114,22 +1139,160 @@ const Pacientes = () => {
               )}
 
               {activeProfileTab === 'tareas' && (
-                <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex flex-col items-center justify-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-full flex items-center justify-center mb-6 shadow-lg">
-                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-[#4A3C7B] mb-2">Tareas Pendientes</h3>
-                  <p className="text-gray-500 text-center mb-6 max-w-md">
-                    Organiza y gestiona las tareas relacionadas con este paciente.
-                  </p>
-                  <button className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Agregar Tarea</span>
-                  </button>
+                <div className="space-y-6">
+                  {loadingTareas ? (
+                    <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex items-center justify-center py-16">
+                      <div className="flex items-center space-x-3">
+                        <svg className="animate-spin h-6 w-6 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-gray-600">Cargando tareas...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Tareas Manuales */}
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white px-6 py-4 cursor-pointer flex items-center justify-between"
+                          onClick={() => setExpandedManuales(!expandedManuales)}
+                        >
+                          <h3 className="text-lg font-semibold">Manuales</h3>
+                          <svg 
+                            className={`w-5 h-5 transition-transform duration-200 ${expandedManuales ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                        
+                        {expandedManuales && (
+                          <div>
+                            {/* Header de la tabla */}
+                            <div className="bg-gray-50 border-b">
+                              <div className="grid grid-cols-5 gap-4 px-6 py-3 text-sm font-semibold text-gray-700">
+                                <div>Nombre de la tarea</div>
+                                <div>F. creación</div>
+                                <div>Estado</div>
+                                <div>Responsable</div>
+                                <div>Descripción</div>
+                              </div>
+                            </div>
+                            
+                            {/* Contenido de la tabla */}
+                            {tareasManuales.length > 0 ? (
+                              <div className="divide-y divide-gray-200">
+                                {tareasManuales.map((tarea) => (
+                                  <div key={tarea.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                                    <div className="grid grid-cols-5 gap-4 items-center">
+                                      <div className="font-medium text-[#4A3C7B]">{tarea.nombre}</div>
+                                      <div className="text-gray-700">{tarea.fecha_creacion}</div>
+                                      <div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                          tarea.estado === 'Completada' 
+                                            ? 'bg-green-100 text-green-800'
+                                            : tarea.estado === 'Pendiente'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                          {tarea.estado}
+                                        </span>
+                                      </div>
+                                      <div className="text-gray-700">{tarea.responsable}</div>
+                                      <div className="text-gray-700 text-sm">{tarea.descripcion}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-12 flex flex-col items-center justify-center">
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                  <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
+                                </div>
+                                <p className="text-gray-500 text-center">No se encontró ninguna información</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tareas Automáticas */}
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white px-6 py-4 cursor-pointer flex items-center justify-between"
+                          onClick={() => setExpandedAutomaticas(!expandedAutomaticas)}
+                        >
+                          <h3 className="text-lg font-semibold">Automáticas</h3>
+                          <svg 
+                            className={`w-5 h-5 transition-transform duration-200 ${expandedAutomaticas ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                        
+                        {expandedAutomaticas && (
+                          <div>
+                            {/* Header de la tabla */}
+                            <div className="bg-gray-50 border-b">
+                              <div className="grid grid-cols-6 gap-4 px-6 py-3 text-sm font-semibold text-gray-700">
+                                <div>Tipo de mensaje</div>
+                                <div>Plantilla enviada</div>
+                                <div>Enviado por</div>
+                                <div>F. envío</div>
+                                <div>Hora envío</div>
+                                <div>Estado</div>
+                              </div>
+                            </div>
+                            
+                            {/* Contenido de la tabla */}
+                            {tareasAutomaticas.length > 0 ? (
+                              <div className="divide-y divide-gray-200">
+                                {tareasAutomaticas.map((tarea) => (
+                                  <div key={tarea.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                                    <div className="grid grid-cols-6 gap-4 items-center">
+                                      <div className="font-medium text-[#4A3C7B]">{tarea.tipo_mensaje}</div>
+                                      <div className="text-gray-700">{tarea.plantilla}</div>
+                                      <div className="text-gray-700">{tarea.enviado_por}</div>
+                                      <div className="text-gray-700">{tarea.fecha_envio}</div>
+                                      <div className="text-gray-700">{tarea.hora_envio}</div>
+                                      <div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                          tarea.estado === 'Enviado' 
+                                            ? 'bg-green-100 text-green-800'
+                                            : tarea.estado === 'Pendiente'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                          {tarea.estado}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-12 flex flex-col items-center justify-center">
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                  <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
+                                </div>
+                                <p className="text-gray-500 text-center">No se encontró ninguna información</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
