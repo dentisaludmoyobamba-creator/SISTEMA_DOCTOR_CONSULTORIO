@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import patientsService from '../services/patientsService';
+import authService from '../services/authService';
 import NuevoArchivoModal from './NuevoArchivoModal';
 import NotaEvolucionModal from './NotaEvolucionModal';
 import AgregarEvolucionModal from './AgregarEvolucionModal';
@@ -11,6 +13,26 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [activeSection, setActiveSection] = useState('filiacion');
   const [activeTab, setActiveTab] = useState('datos-personales');
   const [isEditing, setIsEditing] = useState(false);
+  const [datosPersonales, setDatosPersonales] = useState({
+    nombres: '',
+    apellidos: '',
+    documento: '',
+    tipo_documento: 'DNI',
+    fecha_nacimiento: '',
+    numero_hc: '',
+    sexo: 'Hombre',
+    grupo: '',
+    ultima_cita: '',
+    telefono: '',
+    email: '',
+    nacionalidad: 'Perú',
+    telefono_fijo: '',
+    direccion: '',
+    fuente_captacion: '',
+    aseguradora: ''
+  });
+  const [loadingDatos, setLoadingDatos] = useState(false);
+  const [savingDatos, setSavingDatos] = useState(false);
   const [isNuevoArchivoOpen, setIsNuevoArchivoOpen] = useState(false);
   const [archivos, setArchivos] = useState([]);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
@@ -44,6 +66,82 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     { id: 'prescripciones', label: 'Prescripciones', icon: '📋' },
     { id: 'archivos', label: 'Archivos', icon: '📁' }
   ];
+
+  // Cargar datos del paciente al abrir el componente
+  useEffect(() => {
+    if (paciente?.id) {
+      loadDatosPersonales();
+    }
+  }, [paciente?.id]);
+
+  const loadDatosPersonales = async () => {
+    try {
+      setLoadingDatos(true);
+      patientsService.setAuthService(authService);
+      const result = await patientsService.getFiliacion(paciente.id);
+      if (result.success) {
+        const filiacion = result.filiacion;
+        setDatosPersonales({
+          nombres: filiacion.nombres || '',
+          apellidos: filiacion.apellidos || '',
+          documento: filiacion.dni || '',
+          tipo_documento: 'DNI',
+          fecha_nacimiento: filiacion.fecha_nacimiento ? filiacion.fecha_nacimiento.split('T')[0] : '',
+          numero_hc: filiacion.id || '',
+          sexo: filiacion.genero === 'M' ? 'Hombre' : filiacion.genero === 'F' ? 'Mujer' : 'Otro',
+          grupo: filiacion.aseguradora || '',
+          ultima_cita: filiacion.ultima_cita ? filiacion.ultima_cita.split('T')[0] : '',
+          telefono: filiacion.telefono || '',
+          email: filiacion.email || '',
+          nacionalidad: 'Perú',
+          telefono_fijo: '',
+          direccion: filiacion.direccion || '',
+          fuente_captacion: filiacion.fuente_captacion || '',
+          aseguradora: filiacion.aseguradora || ''
+        });
+      } else {
+        console.error('Error al cargar datos personales:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar datos personales:', e);
+    } finally {
+      setLoadingDatos(false);
+    }
+  };
+
+  const handleDatosPersonalesChange = (field, value) => {
+    setDatosPersonales(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveDatosPersonales = async () => {
+    try {
+      setSavingDatos(true);
+      const updateData = {
+        id: paciente.id,
+        telefono: datosPersonales.telefono,
+        email: datosPersonales.email,
+        direccion: datosPersonales.direccion,
+        fuente_captacion: datosPersonales.fuente_captacion,
+        aseguradora: datosPersonales.aseguradora
+      };
+      
+      const result = await patientsService.updateFiliacion(updateData);
+      if (result.success) {
+        setIsEditing(false);
+        // Recargar datos actualizados
+        await loadDatosPersonales();
+      } else {
+        alert(result.error || 'Error al actualizar datos personales');
+      }
+    } catch (e) {
+      alert('Error de conexión con el servidor');
+    } finally {
+      setSavingDatos(false);
+    }
+  };
 
   const handleOpenHistoria = () => {
     setActiveSection('historia-clinica');
@@ -318,15 +416,43 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           {activeSection === 'filiacion' && activeTab === 'datos-personales' && (
             <div className="flex-1 bg-white p-4 sm:p-6 overflow-y-auto">
               <div className="flex justify-end mb-4">
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                  </svg>
-                  <span>Editar campos</span>
-                </button>
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    <span>Editar campos</span>
+                  </button>
+                ) : (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSaveDatosPersonales}
+                      disabled={savingDatos}
+                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      {savingDatos ? (
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      <span>Guardar</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -336,21 +462,25 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombres*</label>
                     <input
                       type="text"
-                      value="Elias Jesus"
-                      disabled={!isEditing}
+                      value={datosPersonales.nombres}
+                      disabled={true}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Documento</label>
                     <div className="flex space-x-2">
-                      <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option>DNI</option>
+                      <select 
+                        value={datosPersonales.tipo_documento}
+                        disabled={true}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                      >
+                        <option value="DNI">DNI</option>
                       </select>
                       <input
                         type="text"
-                        value="75403442"
-                        disabled={!isEditing}
+                        value={datosPersonales.documento}
+                        disabled={true}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                       />
                     </div>
@@ -359,9 +489,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">F. nacimiento</label>
                     <div className="relative">
                       <input
-                        type="text"
-                        value="04/07/2003"
-                        disabled={!isEditing}
+                        type="date"
+                        value={datosPersonales.fecha_nacimiento}
+                        disabled={true}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                       />
                       <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,29 +503,45 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">N° HC</label>
                     <input
                       type="text"
-                      value="3"
-                      disabled={!isEditing}
+                      value={datosPersonales.numero_hc}
+                      disabled={true}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Hombre</option>
+                    <select 
+                      value={datosPersonales.sexo}
+                      disabled={true}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="Hombre">Hombre</option>
+                      <option value="Mujer">Mujer</option>
+                      <option value="Otro">Otro</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Grupo</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Seleccionar</option>
+                    <select 
+                      value={datosPersonales.grupo}
+                      disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('grupo', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="">Seleccionar</option>
+                      <option value="Rimac">Rimac</option>
+                      <option value="Pacífico">Pacífico</option>
+                      <option value="La Positiva">La Positiva</option>
+                      <option value="Mapfre">Mapfre</option>
+                      <option value="Otros">Otros</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Última cita</label>
                     <input
-                      type="text"
-                      placeholder=""
-                      disabled={!isEditing}
+                      type="date"
+                      value={datosPersonales.ultima_cita}
+                      disabled={true}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
                   </div>
@@ -407,8 +553,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Apellidos*</label>
                     <input
                       type="text"
-                      value="Leandro"
-                      disabled={!isEditing}
+                      value={datosPersonales.apellidos}
+                      disabled={true}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
                   </div>
@@ -421,8 +567,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       </div>
                       <input
                         type="text"
-                        value="956224010"
+                        value={datosPersonales.telefono}
                         disabled={!isEditing}
+                        onChange={(e) => handleDatosPersonalesChange('telefono', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                       />
                     </div>
@@ -431,51 +578,91 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input
                       type="email"
-                      value="eliasjesuscarmin@gmail.com"
+                      value={datosPersonales.email}
                       disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('email', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nacionalidad</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Perú</option>
+                    <select 
+                      value={datosPersonales.nacionalidad}
+                      disabled={true}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="Perú">Perú</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tel. Fijo</label>
                     <input
                       type="text"
-                      placeholder=""
+                      value={datosPersonales.telefono_fijo}
                       disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('telefono_fijo', e.target.value)}
+                      placeholder=""
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                    <button className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm flex items-center space-x-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                      </svg>
-                      <span>Agregar</span>
-                    </button>
+                    <input
+                      type="text"
+                      value={datosPersonales.direccion}
+                      disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('direccion', e.target.value)}
+                      placeholder="Ingrese la dirección"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Fuente captación</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Referido por paciente</option>
+                    <select 
+                      value={datosPersonales.fuente_captacion}
+                      disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('fuente_captacion', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="">Seleccionar</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Recomendación">Recomendación</option>
+                      <option value="Google">Google</option>
+                      <option value="Referido por paciente">Referido por paciente</option>
+                      <option value="Otros">Otros</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Aseguradora</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Seleccionar</option>
+                    <select 
+                      value={datosPersonales.aseguradora}
+                      disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('aseguradora', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="">Seleccionar</option>
+                      <option value="Rimac">Rimac</option>
+                      <option value="Pacífico">Pacífico</option>
+                      <option value="La Positiva">La Positiva</option>
+                      <option value="Mapfre">Mapfre</option>
+                      <option value="Otros">Otros</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Línea de negocio</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Seleccionar</option>
+                    <select 
+                      value={datosPersonales.linea_negocio || ''}
+                      disabled={!isEditing}
+                      onChange={(e) => handleDatosPersonalesChange('linea_negocio', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="">Seleccionar</option>
+                      <option value="Ortodoncia">Ortodoncia</option>
+                      <option value="Estética">Estética</option>
+                      <option value="General">General</option>
+                      <option value="Endodoncia">Endodoncia</option>
+                      <option value="Cirugía">Cirugía</option>
                     </select>
                   </div>
                   <div>
