@@ -72,6 +72,76 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getFiliacion(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'filiacion', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, filiacion: data.filiacion };
+      }
+      return { success: false, error: data.error || 'Error al obtener filiación' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async updateFiliacion(filiacionData) {
+    try {
+      const res = await fetch(`${API_URL}?action=update_filiacion`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(filiacionData)
+      });
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async getTareas(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'tareas', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, tareas_manuales: data.tareas_manuales, tareas_automaticas: data.tareas_automaticas };
+      }
+      return { success: false, error: data.error || 'Error al obtener tareas' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async getLookupOptions() {
+    try {
+      const params = new URLSearchParams({ action: 'lookup_options' });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { 
+          success: true, 
+          fuentes_captacion: data.fuentes_captacion,
+          aseguradoras: data.aseguradoras,
+          lineas_negocio: data.lineas_negocio
+        };
+      }
+      return { success: false, error: data.error || 'Error al obtener opciones' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
