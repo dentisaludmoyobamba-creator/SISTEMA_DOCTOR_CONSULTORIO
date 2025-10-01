@@ -534,6 +534,48 @@ def handle_get_patient_tareas(request):
             pass
         return json_response({"error": f"Error al obtener tareas: {str(e)}"}, 500)
 
+def handle_get_lookup_options(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener fuentes de captación
+        cur.execute("SELECT id, nombre FROM fuente_captacion WHERE estado = '1' OR estado IS NULL ORDER BY nombre")
+        fuentes_captacion = [{"id": row['id'], "nombre": row['nombre']} for row in cur.fetchall()]
+
+        # Obtener aseguradoras
+        cur.execute("SELECT id, nombre FROM aseguradora WHERE estado = '1' OR estado IS NULL ORDER BY nombre")
+        aseguradoras = [{"id": row['id'], "nombre": row['nombre']} for row in cur.fetchall()]
+
+        # Obtener líneas de negocio
+        cur.execute("SELECT id, nombre FROM linea_negocio WHERE estado = '1' OR estado IS NULL ORDER BY nombre")
+        lineas_negocio = [{"id": row['id'], "nombre": row['nombre']} for row in cur.fetchall()]
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "fuentes_captacion": fuentes_captacion,
+            "aseguradoras": aseguradoras,
+            "lineas_negocio": lineas_negocio
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener opciones: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -557,8 +599,10 @@ def hello_http(request):
                 return handle_get_patient_filiacion(request)
             elif action in ('tareas', 'tasks'):
                 return handle_get_patient_tareas(request)
+            elif action in ('lookup_options', 'opciones'):
+                return handle_get_lookup_options(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion o tareas"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas o lookup_options"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):

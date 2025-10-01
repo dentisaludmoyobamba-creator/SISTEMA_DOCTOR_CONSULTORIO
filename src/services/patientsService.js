@@ -120,6 +120,28 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getLookupOptions() {
+    try {
+      const params = new URLSearchParams({ action: 'lookup_options' });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { 
+          success: true, 
+          fuentes_captacion: data.fuentes_captacion,
+          aseguradoras: data.aseguradoras,
+          lineas_negocio: data.lineas_negocio
+        };
+      }
+      return { success: false, error: data.error || 'Error al obtener opciones' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
