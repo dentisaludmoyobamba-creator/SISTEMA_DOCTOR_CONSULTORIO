@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { doctores, estadosCita } from '../data/mockData';
 import AddUserModal from './AddUserModal';
 
 const Sidebar = ({ 
+  doctores = [],
   filtroDoctor, 
   setFiltroDoctor, 
   filtroEstado, 
@@ -21,6 +21,17 @@ const Sidebar = ({
     // Simular guardado
     await new Promise(resolve => setTimeout(resolve, 1000));
   };
+
+  const estadosCita = [
+    { value: "todos", label: "Todos", color: "bg-gray-100" },
+    { value: "confirmado", label: "Confirmado", color: "bg-green-100" },
+    { value: "pendiente", label: "Pendiente", color: "bg-yellow-100" },
+    { value: "cancelado", label: "Cancelado", color: "bg-red-100" },
+    { value: "atendida", label: "Atendida", color: "bg-blue-100" },
+    { value: "en-consulta", label: "En consulta", color: "bg-purple-100" },
+    { value: "ausente", label: "Ausente", color: "bg-gray-100" },
+    { value: "reprogramada", label: "Reprogramada", color: "bg-orange-100" }
+  ];
   
   return (
     <div className="w-80 bg-white border-l shadow-lg flex flex-col h-full">
@@ -123,12 +134,11 @@ const Sidebar = ({
                   : 'hover:bg-gray-50 border-2 border-transparent'
               }`}
             >
-              <div className={`w-4 h-4 rounded-full ${doctor.color} mr-3 shadow-sm`}></div>
+              <div className={`w-4 h-4 rounded-full ${doctor.color || 'bg-blue-500'} mr-3 shadow-sm`}></div>
               <div className="flex-1">
                 <div className="text-sm font-semibold text-[#4A3C7B]">{doctor.nombre}</div>
                 <div className="text-xs text-gray-500">
-                  {doctor.id === 1 ? 'Médico General' : 
-                   doctor.id === 2 ? 'Área Especializada' : 'Especialista'}
+                  Especialista
                 </div>
               </div>
               {filtroDoctor === doctor.id && (

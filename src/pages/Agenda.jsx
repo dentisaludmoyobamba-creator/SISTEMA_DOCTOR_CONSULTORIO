@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import CalendarGrid from '../components/CalendarGrid';
 import MonthlyView from '../components/MonthlyView';
 import DailyDetailView from '../components/DailyDetailView';
@@ -6,10 +6,14 @@ import Sidebar from '../components/Sidebar';
 import AppointmentModal from '../components/AppointmentModal';
 import DetailsModal from '../components/DetailsModal';
 import CalendarModal from '../components/CalendarModal';
-import { citas as citasIniciales, diasSemana } from '../data/mockData';
+import citasService from '../services/citasService';
+import authService from '../services/authService';
 
 const Agenda = () => {
-  const [citas, setCitas] = useState(citasIniciales);
+  const [citas, setCitas] = useState([]);
+  const [doctores, setDoctores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filtroDoctor, setFiltroDoctor] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [vistaActual, setVistaActual] = useState('semana');
@@ -25,6 +29,158 @@ const Agenda = () => {
   const [editingCita, setEditingCita] = useState(null);
   const [newAppointmentSlot, setNewAppointmentSlot] = useState(null);
 
+  // Configurar servicio de citas
+  useEffect(() => {
+    citasService.setAuthService(authService);
+  }, []);
+
+  // Cargar doctores
+  const loadDoctores = useCallback(async () => {
+    try {
+      const result = await citasService.getDoctores();
+      if (result.success) {
+        // Mapear doctores para compatibilidad con el frontend
+        const doctoresMapped = result.doctores.map((doctor, index) => ({
+          id: doctor.id,
+          nombre: doctor.nombre,
+          nombres: doctor.nombres,
+          apellidos: doctor.apellidos,
+          color: `bg-${['blue', 'red', 'green', 'purple', 'yellow', 'pink'][index % 6]}-500`,
+          colorLight: `bg-${['blue', 'red', 'green', 'purple', 'yellow', 'pink'][index % 6]}-100`,
+          textColor: `text-${['blue', 'red', 'green', 'purple', 'yellow', 'pink'][index % 6]}-700`
+        }));
+        setDoctores(doctoresMapped);
+      } else {
+        console.error('Error al cargar doctores:', result.error);
+        setError('Error al cargar doctores');
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar doctores:', e);
+      setError('Error de conexión al cargar doctores');
+    }
+  }, []);
+
+  // Cargar citas según la vista actual
+  const loadCitas = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let result;
+      const today = new Date(fechaActual);
+      
+      switch (vistaActual) {
+        case 'semana':
+          // Calcular inicio de semana (lunes)
+          const startOfWeek = new Date(today);
+          const day = startOfWeek.getDay();
+          const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+          startOfWeek.setDate(diff);
+          result = await citasService.getCitasSemana(startOfWeek.toISOString().split('T')[0]);
+          break;
+        case 'mes':
+          result = await citasService.getCitasMes(today.getFullYear(), today.getMonth() + 1);
+          break;
+        case 'detallado-diario':
+          result = await citasService.getCitasDia(today.toISOString().split('T')[0]);
+          break;
+        default:
+          result = await citasService.getCitasSemana(today.toISOString().split('T')[0]);
+      }
+
+      if (result.success) {
+        // Mapear citas para compatibilidad con el frontend
+        const citasMapped = result.citas.map(cita => ({
+          id: cita.id,
+          paciente: cita.paciente,
+          paciente_id: cita.paciente_id,
+          doctorId: cita.doctor_id,
+          doctor: cita.doctor,
+          fecha: cita.fecha,
+          hora: cita.hora,
+          duracion: cita.duracion,
+          estado: mapEstadoFromAPI(cita.estado),
+          telefono: cita.telefono,
+          motivo: cita.motivo,
+          notas: cita.notas,
+          fecha_hora: cita.fecha_hora
+        }));
+        setCitas(citasMapped);
+      } else {
+        console.error('Error al cargar citas:', result.error);
+        setError('Error al cargar citas');
+        setCitas([]);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar citas:', e);
+      setError('Error de conexión al cargar citas');
+      setCitas([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [fechaActual, vistaActual, filtroDoctor, filtroEstado]);
+
+  // Mapear estados de la API al frontend
+  const mapEstadoFromAPI = (estado) => {
+    const estadoMap = {
+      'Programada': 'confirmado',
+      'Confirmada': 'confirmado',
+      'Realizada': 'atendida',
+      'Cancelada': 'cancelado',
+      'Pendiente': 'pendiente',
+      'En consulta': 'en-consulta',
+      'Ausente': 'ausente',
+      'Reprogramada': 'reprogramada'
+    };
+    return estadoMap[estado] || 'pendiente';
+  };
+
+  // Mapear estados del frontend a la API
+  const mapEstadoToAPI = (estado) => {
+    const estadoMap = {
+      'confirmado': 'Confirmada',
+      'atendida': 'Realizada',
+      'cancelado': 'Cancelada',
+      'pendiente': 'Pendiente',
+      'en-consulta': 'En consulta',
+      'ausente': 'Ausente',
+      'reprogramada': 'Reprogramada'
+    };
+    return estadoMap[estado] || 'Programada';
+  };
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadDoctores();
+  }, [loadDoctores]);
+
+  useEffect(() => {
+    loadCitas();
+  }, [loadCitas]);
+
+  // Generar días de la semana basados en fechaActual
+  const getDiasSemana = useCallback(() => {
+    const today = new Date(fechaActual);
+    const startOfWeek = new Date(today);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Lunes como primer día
+    startOfWeek.setDate(diff);
+    
+    const diasSemana = [];
+    const nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    
+    for (let i = 0; i < 6; i++) {
+      const fecha = new Date(startOfWeek);
+      fecha.setDate(startOfWeek.getDate() + i);
+      diasSemana.push({
+        nombre: nombresDias[i],
+        fecha: fecha.toISOString().split('T')[0],
+        dia: fecha.getDate()
+      });
+    }
+    
+    return diasSemana;
+  }, [fechaActual]);
+
   // Manejar click en cita para ver detalles
   const handleAppointmentClick = (cita) => {
     setSelectedCita(cita);
@@ -38,9 +194,19 @@ const Agenda = () => {
   };
 
   // Manejar eliminación de cita
-  const handleAppointmentDelete = (cita) => {
+  const handleAppointmentDelete = async (cita) => {
     if (window.confirm(`¿Estás seguro de que quieres eliminar la cita de ${cita.paciente}?`)) {
-      setCitas(prev => prev.filter(c => c.id !== cita.id));
+      try {
+        const result = await citasService.deleteCita(cita.id);
+        if (result.success) {
+          // Recargar las citas después de eliminar
+          loadCitas();
+        } else {
+          alert(`Error al eliminar cita: ${result.error}`);
+        }
+      } catch (e) {
+        alert('Error de conexión al eliminar cita');
+      }
     }
   };
 
@@ -52,20 +218,57 @@ const Agenda = () => {
   };
 
   // Guardar cita (crear o editar)
-  const handleSaveCita = (citaData) => {
-    if (editingCita) {
-      // Editar cita existente
-      setCitas(prev => prev.map(c => 
-        c.id === editingCita.id ? citaData : c
-      ));
-    } else {
-      // Crear nueva cita
-      setCitas(prev => [...prev, citaData]);
+  const handleSaveCita = async (citaData) => {
+    try {
+      if (editingCita) {
+        // Editar cita existente
+        const dataToUpdate = {
+          id: editingCita.id,
+          id_paciente: citaData.paciente_id,
+          id_doctor: citaData.doctorId,
+          fecha_hora: `${citaData.fecha}T${citaData.hora}:00`,
+          motivo: citaData.motivo,
+          estado: mapEstadoToAPI(citaData.estado),
+          duracion: citaData.duracion,
+          notas: citaData.notas || ''
+        };
+        
+        const result = await citasService.updateCita(dataToUpdate);
+        if (result.success) {
+          // Recargar las citas después de actualizar
+          loadCitas();
+        } else {
+          alert(`Error al actualizar cita: ${result.error}`);
+          return; // No cerrar el modal si hay error
+        }
+      } else {
+        // Crear nueva cita
+        const dataToCreate = {
+          id_paciente: citaData.paciente_id,
+          id_doctor: citaData.doctorId,
+          fecha_hora: `${citaData.fecha}T${citaData.hora}:00`,
+          motivo: citaData.motivo,
+          estado: mapEstadoToAPI(citaData.estado),
+          duracion: citaData.duracion,
+          notas: citaData.notas || ''
+        };
+        
+        const result = await citasService.createCita(dataToCreate);
+        if (result.success) {
+          // Recargar las citas después de crear
+          loadCitas();
+        } else {
+          alert(`Error al crear cita: ${result.error}`);
+          return; // No cerrar el modal si hay error
+        }
+      }
+      
+      // Limpiar estados solo si la operación fue exitosa
+      setEditingCita(null);
+      setNewAppointmentSlot(null);
+    } catch (e) {
+      alert('Error de conexión al guardar cita');
     }
-    
-    // Limpiar estados
-    setEditingCita(null);
-    setNewAppointmentSlot(null);
   };
 
   // Función placeholder para agregar doctor
@@ -342,42 +545,68 @@ const Agenda = () => {
 
         {/* Calendario */}
         <div className="flex-1 p-1 sm:p-2 lg:p-4 xl:p-6 overflow-auto">
-          {vistaActual === 'semana' && (
-            <CalendarGrid
-              citas={citas}
-              filtroDoctor={filtroDoctor}
-              filtroEstado={filtroEstado}
-              onAppointmentClick={handleAppointmentClick}
-              onAppointmentEdit={handleAppointmentEdit}
-              onAppointmentDelete={handleAppointmentDelete}
-              onSlotClick={handleSlotClick}
-            />
-          )}
-          
-          {vistaActual === 'mes' && (
-            <MonthlyView
-              citas={citas}
-              onAppointmentClick={handleAppointmentClick}
-            />
-          )}
-          
-          {vistaActual === 'detallado-diario' && (
-            <DailyDetailView
-              citas={citas}
-              onAppointmentClick={handleAppointmentClick}
-            />
-          )}
-          
-          {vistaActual === 'detallado-doctor' && (
-            <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
-              <div className="w-16 h-16 bg-[#30B0B0]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-[#30B0B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
+                <span className="text-red-700 font-medium">{error}</span>
               </div>
-              <h3 className="text-lg font-semibold text-[#4A3C7B] mb-2">Vista por Doctor</h3>
-              <p className="text-gray-500">Esta funcionalidad estará disponible próximamente</p>
             </div>
+          )}
+          
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="ml-2 text-gray-600">Cargando citas...</span>
+            </div>
+          ) : (
+            <>
+              {vistaActual === 'semana' && (
+                <CalendarGrid
+                  citas={citas}
+                  doctores={doctores}
+                  diasSemana={getDiasSemana()}
+                  filtroDoctor={filtroDoctor}
+                  filtroEstado={filtroEstado}
+                  onAppointmentClick={handleAppointmentClick}
+                  onAppointmentEdit={handleAppointmentEdit}
+                  onAppointmentDelete={handleAppointmentDelete}
+                  onSlotClick={handleSlotClick}
+                />
+              )}
+          
+              {vistaActual === 'mes' && (
+                <MonthlyView
+                  citas={citas}
+                  onAppointmentClick={handleAppointmentClick}
+                />
+              )}
+              
+              {vistaActual === 'detallado-diario' && (
+                <DailyDetailView
+                  citas={citas}
+                  fechaActual={fechaActual}
+                  onAppointmentClick={handleAppointmentClick}
+                />
+              )}
+              
+              {vistaActual === 'detallado-doctor' && (
+                <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+                  <div className="w-16 h-16 bg-[#30B0B0]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-[#30B0B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#4A3C7B] mb-2">Vista por Doctor</h3>
+                  <p className="text-gray-500">Esta funcionalidad estará disponible próximamente</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -387,6 +616,7 @@ const Agenda = () => {
         isSidebarVisible ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'
       }`}>
         <Sidebar
+          doctores={doctores}
           filtroDoctor={filtroDoctor}
           setFiltroDoctor={setFiltroDoctor}
           filtroEstado={filtroEstado}
@@ -405,8 +635,10 @@ const Agenda = () => {
         }}
         onSave={handleSaveCita}
         cita={editingCita}
+        doctores={doctores}
         fechaInicial={newAppointmentSlot?.fecha}
         horaInicial={newAppointmentSlot?.hora}
+        citasService={citasService}
       />
 
       <DetailsModal

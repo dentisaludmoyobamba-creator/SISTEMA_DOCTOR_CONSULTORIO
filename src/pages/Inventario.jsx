@@ -1,5 +1,7 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import AddOptionModal from '../components/AddOptionModal';
+import inventarioService from '../services/inventarioService';
+import authService from '../services/authService';
 
 const Inventario = () => {
   const [activeTab, setActiveTab] = useState('productos');
@@ -17,6 +19,72 @@ const Inventario = () => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isAddCategoriaOpen, setIsAddCategoriaOpen] = useState(false);
   const [isDeleteCategoriaOpen, setIsDeleteCategoriaOpen] = useState(false);
+
+  // Estado para datos de la API
+  const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
+
+  // Estado para formulario de nuevo producto
+  const [nuevoProducto, setNuevoProducto] = useState({
+    nombre: '',
+    descripcion: '',
+    stock: 0,
+    stock_minimo: 0,
+    proveedor: '',
+    costo_unitario: 0
+  });
+
+  // Estado para datos de Compras
+  const [compras, setCompras] = useState([]);
+  const [loadingCompras, setLoadingCompras] = useState(true);
+  const [errorCompras, setErrorCompras] = useState(null);
+  const [paginationCompras, setPaginationCompras] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
+
+  // Estado para formulario de nueva compra
+  const [nuevaCompra, setNuevaCompra] = useState({
+    nombre_interno: '',
+    proveedor: '',
+    estado: 'Orden ingresada a almacén',
+    monto_total: 0,
+    fecha_entrega: '',
+    fecha_pago: '',
+    nota_interna: ''
+  });
+
+  // Estado para datos de Consumo
+  const [consumos, setConsumos] = useState([]);
+  const [loadingConsumos, setLoadingConsumos] = useState(true);
+  const [errorConsumos, setErrorConsumos] = useState(null);
+  const [paginationConsumos, setPaginationConsumos] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
+
+  // Estado para formulario de nuevo consumo
+  const [nuevoConsumo, setNuevoConsumo] = useState({
+    id_producto: '',
+    lote: '',
+    cantidad: 0,
+    almacen: 'Principal',
+    paciente: '',
+    servicio: '',
+    comentario: '',
+    estado: 'Confirmada'
+  });
 
   const tabs = [
     { id: 'productos', label: 'Productos', active: true },
@@ -53,6 +121,240 @@ const Inventario = () => {
       [filterType]: value
     }));
   };
+
+  // Cargar productos desde la API
+  const loadProductos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      inventarioService.setAuthService(authService);
+      const result = await inventarioService.getProductos({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+        tipo: filters.tipo !== 'Ver todos' ? filters.tipo : '',
+        categoria: filters.categoria !== 'Ver todos' ? filters.categoria : '',
+        almacen: filters.almacen !== 'Ver todos' ? filters.almacen : '',
+        alerta_stock: filters.alertaStock
+      });
+
+      if (result.success) {
+        setProductos(result.productos);
+        setPagination(prev => ({
+          ...prev,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages,
+        }));
+      } else {
+        setError(result.error);
+        setProductos([]);
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor.');
+      setProductos([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.page, pagination.limit, searchTerm, filters]);
+
+  // Manejar guardado de nuevo producto
+  const handleSaveProducto = async () => {
+    try {
+      const result = await inventarioService.createProducto(nuevoProducto);
+      if (result.success) {
+        setIsNuevoProductoOpen(false);
+        setNuevoProducto({
+          nombre: '',
+          descripcion: '',
+          stock: 0,
+          stock_minimo: 0,
+          proveedor: '',
+          costo_unitario: 0
+        });
+        loadProductos();
+      } else {
+        alert(`Error al crear producto: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Error de conexión al crear producto.');
+    }
+  };
+
+  // Manejar cambio de página
+  const handlePageChange = (newPage) => {
+    if (newPage > 0 && newPage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  // Manejar cambio de límite
+  const handleLimitChange = (e) => {
+    setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
+  };
+
+  // ===== FUNCIONES PARA COMPRAS =====
+  const loadCompras = useCallback(async () => {
+    setLoadingCompras(true);
+    setErrorCompras(null);
+    try {
+      inventarioService.setAuthService(authService);
+      const result = await inventarioService.getCompras({
+        page: paginationCompras.page,
+        limit: paginationCompras.limit,
+        search: searchTerm
+      });
+
+      if (result.success) {
+        setCompras(result.compras);
+        setPaginationCompras(prev => ({
+          ...prev,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages,
+        }));
+      } else {
+        setErrorCompras(result.error);
+        setCompras([]);
+      }
+    } catch (err) {
+      setErrorCompras('Error de conexión con el servidor.');
+      setCompras([]);
+    } finally {
+      setLoadingCompras(false);
+    }
+  }, [paginationCompras.page, paginationCompras.limit, searchTerm]);
+
+  // Manejar guardado de nueva compra
+  const handleSaveCompra = async () => {
+    try {
+      const result = await inventarioService.createCompra(nuevaCompra);
+      if (result.success) {
+        setIsNuevaCompraOpen(false);
+        setNuevaCompra({
+          nombre_interno: '',
+          proveedor: '',
+          estado: 'Orden ingresada a almacén',
+          monto_total: 0,
+          fecha_entrega: '',
+          fecha_pago: '',
+          nota_interna: ''
+        });
+        loadCompras();
+      } else {
+        alert(`Error al crear compra: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Error de conexión al crear compra.');
+    }
+  };
+
+  // Manejar cambio de página para compras
+  const handlePageChangeCompras = (newPage) => {
+    if (newPage > 0 && newPage <= paginationCompras.totalPages) {
+      setPaginationCompras(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  // Manejar cambio de límite para compras
+  const handleLimitChangeCompras = (e) => {
+    setPaginationCompras(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
+  };
+
+  // ===== FUNCIONES PARA CONSUMO =====
+  const loadConsumos = useCallback(async () => {
+    setLoadingConsumos(true);
+    setErrorConsumos(null);
+    try {
+      inventarioService.setAuthService(authService);
+      const result = await inventarioService.getConsumos({
+        page: paginationConsumos.page,
+        limit: paginationConsumos.limit,
+        search: searchTerm,
+        almacen: filters.almacen !== 'Ver todos' ? filters.almacen : ''
+      });
+
+      if (result.success) {
+        setConsumos(result.consumos);
+        setPaginationConsumos(prev => ({
+          ...prev,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages,
+        }));
+      } else {
+        setErrorConsumos(result.error);
+        setConsumos([]);
+      }
+    } catch (err) {
+      setErrorConsumos('Error de conexión con el servidor.');
+      setConsumos([]);
+    } finally {
+      setLoadingConsumos(false);
+    }
+  }, [paginationConsumos.page, paginationConsumos.limit, searchTerm, filters.almacen]);
+
+  // Manejar guardado de nuevo consumo
+  const handleSaveConsumo = async () => {
+    try {
+      const result = await inventarioService.createConsumo(nuevoConsumo);
+      if (result.success) {
+        setIsNuevoConsumoOpen(false);
+        setNuevoConsumo({
+          id_producto: '',
+          lote: '',
+          cantidad: 0,
+          almacen: 'Principal',
+          paciente: '',
+          servicio: '',
+          comentario: '',
+          estado: 'Confirmada'
+        });
+        loadConsumos();
+      } else {
+        alert(`Error al crear consumo: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Error de conexión al crear consumo.');
+    }
+  };
+
+  // Manejar cambio de página para consumos
+  const handlePageChangeConsumos = (newPage) => {
+    if (newPage > 0 && newPage <= paginationConsumos.totalPages) {
+      setPaginationConsumos(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  // Manejar cambio de límite para consumos
+  const handleLimitChangeConsumos = (e) => {
+    setPaginationConsumos(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
+  };
+
+  // Efectos para cargar datos
+  useEffect(() => {
+    if (activeTab === 'productos') {
+      loadProductos();
+    } else if (activeTab === 'compras') {
+      loadCompras();
+    } else if (activeTab === 'consumo') {
+      loadConsumos();
+    }
+  }, [activeTab, loadProductos, loadCompras, loadConsumos]);
+
+  // Manejar búsqueda
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (activeTab === 'productos') {
+        setPagination(prev => ({ ...prev, page: 1 }));
+        loadProductos();
+      } else if (activeTab === 'compras') {
+        setPaginationCompras(prev => ({ ...prev, page: 1 }));
+        loadCompras();
+      } else if (activeTab === 'consumo') {
+        setPaginationConsumos(prev => ({ ...prev, page: 1 }));
+        loadConsumos();
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, filters, loadProductos, loadCompras, loadConsumos]);
 
   const renderProductosContent = () => (
     <>
@@ -187,16 +489,105 @@ const Inventario = () => {
             </div>
           </div>
 
-          <div className="min-h-96 flex flex-col items-center justify-center py-12">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          {error && (
+            <div className="p-4 text-red-700 bg-red-50 border-b">{error}</div>
+          )}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
+              <span className="ml-2 text-gray-600">Cargando productos...</span>
             </div>
-            <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
-          </div>
+          ) : productos.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {productos.map((producto, index) => (
+                <div key={producto.id} className={`p-4 hover:bg-gray-50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <div className="grid grid-cols-7 gap-4 items-center">
+                    <div>
+                      <div className="font-medium text-gray-900">{producto.nombre}</div>
+                      <div className="text-sm text-gray-500">{producto.descripcion}</div>
+                    </div>
+                    <div className="text-sm text-gray-700">Unidad</div>
+                    <div className="text-sm text-gray-700">-</div>
+                    <div className="text-sm text-gray-700">S/ {producto.costo_unitario.toFixed(2)}</div>
+                    <div className="text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        producto.alerta_stock 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {producto.stock}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-700">{producto.stock_minimo}</div>
+                    <div className="text-sm text-gray-700">{producto.proveedor || '-'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="min-h-96 flex flex-col items-center justify-center py-12">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Controles de paginación */}
+      {productos.length > 0 && (
+        <div className="bg-white border-t px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">
+                Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} productos
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">Mostrar</span>
+              <select 
+                value={pagination.limit} 
+                onChange={handleLimitChange}
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-gray-700">por página</span>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <span className="text-sm text-gray-700">
+                  Página {pagination.page} de {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal lateral: Nuevo Producto */}
       {isNuevoProductoOpen && (
         <div className="fixed inset-0 z-[100]">
@@ -217,68 +608,89 @@ const Inventario = () => {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Tipo de producto y Agregar categoría */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">Tipo de producto</label>
-                  <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500">
-                    <option>Insumos</option>
-                    <option>Medicamentos</option>
-                    <option>Materiales</option>
-                  </select>
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => setIsAddCategoriaOpen(true)}
-                    className="text-teal-600 hover:text-teal-700 text-sm font-medium flex items-center space-x-2"
-                  >
-                    <span>+</span>
-                    <span>Agregar categoría</span>
-                  </button>
-                </div>
+              {/* Nombre del producto */}
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Nombre del producto *</label>
+                <input 
+                  type="text" 
+                  value={nuevoProducto.nombre}
+                  onChange={(e) => setNuevoProducto(prev => ({ ...prev, nombre: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  placeholder="Ingrese el nombre del producto"
+                />
               </div>
 
-              {/* Nombre y Presentación */}
+              {/* Descripción */}
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Descripción</label>
+                <input 
+                  type="text" 
+                  value={nuevoProducto.descripcion}
+                  onChange={(e) => setNuevoProducto(prev => ({ ...prev, descripcion: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  placeholder="Descripción del producto"
+                />
+              </div>
+
+              {/* Stock inicial y stock mínimo */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Nombre</label>
-                  <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                  <label className="block text-sm text-gray-700 mb-1">Stock inicial</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={nuevoProducto.stock}
+                    onChange={(e) => setNuevoProducto(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Presentación</label>
-                  <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500">
-                    <option>Unidad</option>
-                    <option>Caja</option>
-                    <option>Paquete</option>
-                  </select>
+                  <label className="block text-sm text-gray-700 mb-1">Stock mínimo</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={nuevoProducto.stock_minimo}
+                    onChange={(e) => setNuevoProducto(prev => ({ ...prev, stock_minimo: parseInt(e.target.value) || 0 }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
                 </div>
               </div>
 
-              {/* Alerta de stock mínimo */}
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Alerta de stock mínimo</label>
-                <div className="flex items-center space-x-2">
-                  <input type="number" min="0" className="w-32 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
-                  <span className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm">uni</span>
+              {/* Proveedor y costo unitario */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Proveedor</label>
+                  <input 
+                    type="text" 
+                    value={nuevoProducto.proveedor}
+                    onChange={(e) => setNuevoProducto(prev => ({ ...prev, proveedor: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                    placeholder="Nombre del proveedor"
+                  />
                 </div>
-              </div>
-
-              {/* Configurar capacidad */}
-              <div className="flex items-start space-x-3">
-                <input type="checkbox" className="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
-                <div className="text-sm text-gray-700">Configurar capacidad por aplicación o dosis</div>
-              </div>
-
-              {/* Comentario */}
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Comentario</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Costo unitario (S/)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    value={nuevoProducto.costo_unitario}
+                    onChange={(e) => setNuevoProducto(prev => ({ ...prev, costo_unitario: parseFloat(e.target.value) || 0 }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
+                </div>
               </div>
             </div>
 
             <div className="p-6 border-t flex justify-end space-x-3">
               <button onClick={() => setIsNuevoProductoOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
-              <button className="px-4 py-2 rounded-md bg-teal-500 text-white hover:bg-teal-600">Confirmar</button>
+              <button 
+                onClick={handleSaveProducto}
+                disabled={!nuevoProducto.nombre.trim()}
+                className="px-4 py-2 rounded-md bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </div>
@@ -364,16 +776,111 @@ const Inventario = () => {
                   </div>
                 </div>
 
-                <div className="min-h-96 flex flex-col items-center justify-center py-12">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                {errorCompras && (
+                  <div className="p-4 text-red-700 bg-red-50 border-b">{errorCompras}</div>
+                )}
+                {loadingCompras ? (
+                  <div className="flex items-center justify-center py-12">
+                    <svg className="animate-spin h-8 w-8 text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
+                    <span className="ml-2 text-gray-600">Cargando compras...</span>
                   </div>
-                  <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
-                </div>
+                ) : compras.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {compras.map((compra, index) => (
+                      <div key={compra.id} className={`p-4 hover:bg-gray-50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <div className="grid grid-cols-9 gap-4 items-center">
+                          <div className="text-sm font-medium text-gray-900">{compra.id}</div>
+                          <div className="text-sm text-gray-700">{compra.nombre_interno}</div>
+                          <div className="text-sm text-gray-700">
+                            {compra.fecha_creacion ? new Date(compra.fecha_creacion).toLocaleDateString('es-PE') : '-'}
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            {compra.fecha_entrega ? new Date(compra.fecha_entrega).toLocaleDateString('es-PE') : '-'}
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            {compra.fecha_pago ? new Date(compra.fecha_pago).toLocaleDateString('es-PE') : '-'}
+                          </div>
+                          <div className="text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              compra.estado === 'Orden ingresada a almacén' 
+                                ? 'bg-green-100 text-green-800'
+                                : compra.estado === 'En proceso'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {compra.estado}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-700">S/ {compra.monto_total.toFixed(2)}</div>
+                          <div className="text-sm text-gray-700">{compra.proveedor || '-'}</div>
+                          <div className="text-sm text-gray-700">{compra.nota_interna || '-'}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="min-h-96 flex flex-col items-center justify-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
+                  </div>
+                )}
               </div>
           </div>
+
+          {/* Controles de paginación para compras */}
+          {compras.length > 0 && (
+            <div className="bg-white border-t px-6 py-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-700">
+                    Mostrando {((paginationCompras.page - 1) * paginationCompras.limit) + 1} a {Math.min(paginationCompras.page * paginationCompras.limit, paginationCompras.total)} de {paginationCompras.total} compras
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-700">Mostrar</span>
+                  <select 
+                    value={paginationCompras.limit} 
+                    onChange={handleLimitChangeCompras}
+                    className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-sm text-gray-700">por página</span>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChangeCompras(paginationCompras.page - 1)}
+                      disabled={paginationCompras.page <= 1}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Anterior
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      Página {paginationCompras.page} de {paginationCompras.totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChangeCompras(paginationCompras.page + 1)}
+                      disabled={paginationCompras.page >= paginationCompras.totalPages}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           </>
         )}
 
@@ -410,51 +917,74 @@ const Inventario = () => {
             {/* Form principal */}
             <div className="p-6 space-y-6">
               {/* Fila 1 */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de creación de orden</label>
-                  <input type="date" placeholder="dd/mm/aaaa" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre interno</label>
-                  <input type="text" placeholder="Nombre interno" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre interno *</label>
+                  <input 
+                    type="text" 
+                    value={nuevaCompra.nombre_interno}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, nombre_interno: e.target.value }))}
+                    placeholder="Nombre interno" 
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
-                  <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500">
-                    <option>— Seleccionar —</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nº factura</label>
-                  <input type="text" placeholder="000-000" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                  <input 
+                    type="text" 
+                    value={nuevaCompra.proveedor}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, proveedor: e.target.value }))}
+                    placeholder="Nombre del proveedor" 
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
                 </div>
               </div>
 
               {/* Fila 2 */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                  <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500">
-                    <option>Orden ingresada a almacén</option>
-                    <option>En proceso</option>
-                    <option>Emitida</option>
+                  <select 
+                    value={nuevaCompra.estado}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, estado: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="Orden ingresada a almacén">Orden ingresada a almacén</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Emitida">Emitida</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha pago al proveedor</label>
-                  <input type="date" placeholder="dd/mm/aaaa" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
+                  <input 
+                    type="date" 
+                    value={nuevaCompra.fecha_entrega}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_entrega: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
-                  <input type="date" placeholder="dd/mm/aaaa" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha pago al proveedor</label>
+                  <input 
+                    type="date" 
+                    value={nuevaCompra.fecha_pago}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_pago: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  />
                 </div>
-                <div className="flex items-end">
-                  <label className="inline-flex items-center space-x-2">
-                    <input type="checkbox" className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
-                    <span className="text-sm text-gray-700">Esta orden ya fue pagada al proveedor.</span>
-                  </label>
-                </div>
+              </div>
+
+              {/* Monto total */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Monto total (S/)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  value={nuevaCompra.monto_total}
+                  onChange={(e) => setNuevaCompra(prev => ({ ...prev, monto_total: parseFloat(e.target.value) || 0 }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                />
               </div>
 
               {/* Alerta informativa */}
@@ -466,7 +996,13 @@ const Inventario = () => {
               {/* Nota interna */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nota interna</label>
-                <textarea className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" rows="3" placeholder="Escribe una nota para uso interno" />
+                <textarea 
+                  value={nuevaCompra.nota_interna}
+                  onChange={(e) => setNuevaCompra(prev => ({ ...prev, nota_interna: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
+                  rows="3" 
+                  placeholder="Escribe una nota para uso interno" 
+                />
               </div>
 
               {/* Agregar producto */}
@@ -545,7 +1081,13 @@ const Inventario = () => {
             {/* Footer */}
             <div className="sticky bottom-0 z-10 bg-white px-6 py-4 border-t flex justify-end space-x-3">
               <button onClick={() => setIsNuevaCompraOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
-              <button className="px-4 py-2 rounded-md bg-teal-500 text-white hover:bg-teal-600">Confirmar</button>
+              <button 
+                onClick={handleSaveCompra}
+                disabled={!nuevaCompra.nombre_interno.trim()}
+                className="px-4 py-2 rounded-md bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </div>
@@ -645,14 +1187,58 @@ const Inventario = () => {
             </div>
           </div>
 
-          <div className="min-h-96 flex flex-col items-center justify-center py-12">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          {errorConsumos && (
+            <div className="p-4 text-red-700 bg-red-50 border-b">{errorConsumos}</div>
+          )}
+          {loadingConsumos ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
+              <span className="ml-2 text-gray-600">Cargando consumos...</span>
             </div>
-            <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
-          </div>
+          ) : consumos.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {consumos.map((consumo, index) => (
+                <div key={consumo.id} className={`p-4 hover:bg-gray-50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <div className="grid grid-cols-10 gap-4 items-center">
+                    <div className="text-sm text-gray-700">
+                      {consumo.fecha_consumo ? new Date(consumo.fecha_consumo).toLocaleDateString('es-PE') : '-'}
+                    </div>
+                    <div className="text-sm text-gray-700">{consumo.producto || '-'}</div>
+                    <div className="text-sm text-gray-700">{consumo.fuente || '-'}</div>
+                    <div className="text-sm text-gray-700">{consumo.tipo || '-'}</div>
+                    <div className="text-sm text-gray-700">{consumo.lote || '-'}</div>
+                    <div className="text-sm text-gray-700">{consumo.cantidad}</div>
+                    <div className="text-sm text-gray-700">{consumo.paciente || '-'}</div>
+                    <div className="text-sm text-gray-700">{consumo.servicio || '-'}</div>
+                    <div className="text-sm text-gray-700">{consumo.comentario || '-'}</div>
+                    <div className="text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        consumo.estado === 'Confirmada' 
+                          ? 'bg-green-100 text-green-800'
+                          : consumo.estado === 'Pendiente'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {consumo.estado}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="min-h-96 flex flex-col items-center justify-center py-12">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg">No se encontró ninguna información</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -712,73 +1298,96 @@ const Inventario = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Producto:*</label>
                         <div className="relative">
-                          <input type="text" placeholder="Buscar producto" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                          <input 
+                            type="text" 
+                            value={nuevoConsumo.id_producto}
+                            onChange={(e) => setNuevoConsumo(prev => ({ ...prev, id_producto: e.target.value }))}
+                            placeholder="ID del producto" 
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                          />
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                           </div>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Lote:*</label>
-                        <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                          <option>— Seleccionar —</option>
-                          <option>LOTE-001</option>
-                          <option>LOTE-002</option>
-                          <option>LOTE-003</option>
-                        </select>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Lote:</label>
+                        <input 
+                          type="text" 
+                          value={nuevoConsumo.lote}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, lote: e.target.value }))}
+                          placeholder="Número de lote" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Servicio:</label>
-                        <div className="relative">
-                          <input type="text" placeholder="Buscar servicio" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                          </div>
-                        </div>
+                        <input 
+                          type="text" 
+                          value={nuevoConsumo.servicio}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, servicio: e.target.value }))}
+                          placeholder="Nombre del servicio" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad:*</label>
-                        <div className="flex items-center space-x-2">
-                          <input type="number" step="0.01" placeholder="00.00" className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
-                          <select className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                            <option>Aplicaciones</option>
-                            <option>Unidades</option>
-                            <option>Gramos</option>
-                            <option>Mililitros</option>
-                          </select>
-                        </div>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          value={nuevoConsumo.cantidad}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, cantidad: parseFloat(e.target.value) || 0 }))}
+                          placeholder="00.00" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Almacén:*</label>
-                        <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                          <option>Principal</option>
-                          <option>Secundario</option>
-                          <option>Emergencia</option>
+                        <select 
+                          value={nuevoConsumo.almacen}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, almacen: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                          <option value="Principal">Principal</option>
+                          <option value="Secundario">Secundario</option>
+                          <option value="Emergencia">Emergencia</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
-                        <div className="relative">
-                          <input type="text" placeholder="Seleccione un paciente" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                          </div>
-                        </div>
+                        <input 
+                          type="text" 
+                          value={nuevoConsumo.paciente}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, paciente: e.target.value }))}
+                          placeholder="Nombre del paciente" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Estado:</label>
-                        <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                          <option>Confirmada</option>
-                          <option>Pendiente</option>
-                          <option>Cancelada</option>
+                        <select 
+                          value={nuevoConsumo.estado}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, estado: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                          <option value="Confirmada">Confirmada</option>
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Cancelada">Cancelada</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Comentario:</label>
-                        <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                        <input 
+                          type="text" 
+                          value={nuevoConsumo.comentario}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, comentario: e.target.value }))}
+                          placeholder="Comentario adicional" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
                       </div>
                     </div>
                   </div>
@@ -791,13 +1400,67 @@ const Inventario = () => {
 
                 <div className="sticky bottom-0 z-10 bg-white px-6 py-4 border-t flex justify-end space-x-3">
                   <button onClick={() => setIsNuevoConsumoOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
-                  <button className="px-4 py-2 rounded-md bg-cyan-500 text-white hover:bg-cyan-600">Confirmar</button>
+                  <button 
+                    onClick={handleSaveConsumo}
+                    disabled={!nuevoConsumo.id_producto.trim() || nuevoConsumo.cantidad <= 0}
+                    className="px-4 py-2 rounded-md bg-cyan-500 text-white hover:bg-cyan-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Confirmar
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Controles de paginación para consumos */}
+      {consumos.length > 0 && (
+        <div className="bg-white border-t px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">
+                Mostrando {((paginationConsumos.page - 1) * paginationConsumos.limit) + 1} a {Math.min(paginationConsumos.page * paginationConsumos.limit, paginationConsumos.total)} de {paginationConsumos.total} consumos
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">Mostrar</span>
+              <select 
+                value={paginationConsumos.limit} 
+                onChange={handleLimitChangeConsumos}
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-gray-700">por página</span>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handlePageChangeConsumos(paginationConsumos.page - 1)}
+                  disabled={paginationConsumos.page <= 1}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <span className="text-sm text-gray-700">
+                  Página {paginationConsumos.page} de {paginationConsumos.totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChangeConsumos(paginationConsumos.page + 1)}
+                  disabled={paginationConsumos.page >= paginationConsumos.totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,8 +1,8 @@
 import React from 'react';
 
-const DailyDetailView = ({ citas = [], onAppointmentClick }) => {
-  // Obtener fecha actual
-  const currentDate = new Date();
+const DailyDetailView = ({ citas = [], fechaActual, onAppointmentClick }) => {
+  // Usar fechaActual si se proporciona, sino usar fecha actual
+  const currentDate = fechaActual ? new Date(fechaActual) : new Date();
   const dateStr = currentDate.toISOString().split('T')[0];
   
   // Filtrar citas del día actual
@@ -97,12 +97,16 @@ const DailyDetailView = ({ citas = [], onAppointmentClick }) => {
                   </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      cita.estado === 'confirmada' 
+                      cita.estado === 'confirmado' 
                         ? 'bg-emerald-100 text-emerald-700'
                         : cita.estado === 'pendiente'
                         ? 'bg-amber-100 text-amber-700'
-                        : cita.estado === 'cancelada'
+                        : cita.estado === 'cancelado'
                         ? 'bg-rose-100 text-rose-700'
+                        : cita.estado === 'atendida'
+                        ? 'bg-blue-100 text-blue-700'
+                        : cita.estado === 'en-consulta'
+                        ? 'bg-purple-100 text-purple-700'
                         : 'bg-gray-100 text-gray-700'
                     }`}>
                       {cita.estado || 'Pendiente'}
@@ -115,7 +119,7 @@ const DailyDetailView = ({ citas = [], onAppointmentClick }) => {
                   </td>
                   <td className="p-4">
                     <span className="text-gray-500 text-sm">
-                      {cita.notaCita || 'Sin notas'}
+                      {cita.notas || 'Sin notas'}
                     </span>
                   </td>
                 </tr>

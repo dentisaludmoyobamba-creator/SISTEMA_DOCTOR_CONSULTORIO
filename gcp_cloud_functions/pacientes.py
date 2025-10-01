@@ -67,8 +67,9 @@ def handle_list_pacientes(request):
 
         base_query = (
             "SELECT p.id_paciente, p.nombres, p.apellidos, p.dni, p.telefono, p.email, "
-            "p.fecha_registro, p.estado_paciente, p.presupuesto, p.comentario, "
-            "fc.nombre as fuente_captacion, a.nombre as aseguradora "
+            "p.fecha_registro, p.estado_paciente, p.presupuesto, p.comentario, p.tarea, "
+            "fc.nombre as fuente_captacion, a.nombre as aseguradora, "
+            "p.ultima_cita, p.proxima_cita "
             "FROM pacientes p "
             "LEFT JOIN fuente_captacion fc ON p.id_fuente_captacion = fc.id "
             "LEFT JOIN aseguradora a ON p.id_aseguradora = a.id "
@@ -104,9 +105,9 @@ def handle_list_pacientes(request):
                 "fuente_captacion": r['fuente_captacion'],
                 "aseguradora": r['aseguradora'],
                 "fecha_registro": r['fecha_registro'].isoformat() if r['fecha_registro'] else None,
-                # Estos campos no están aún calculados en backend
-                "ultima_cita": None,
-                "proxima_cita": None,
+                "ultima_cita": r['ultima_cita'].isoformat() if r['ultima_cita'] else None,
+                "proxima_cita": r['proxima_cita'].isoformat() if r['proxima_cita'] else None,
+                "tarea": r['tarea'],
                 "comentario": r['comentario']
             })
 
@@ -216,6 +217,62 @@ def handle_create_paciente(request):
             pass
         return json_response({"error": f"Error al crear paciente: {str(e)}"}, 500)
 
+def handle_get_patient_citas(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener citas del paciente
+        citas_query = """
+            SELECT c.id_cita, c.fecha_hora, c.motivo_consulta, c.estado, c.notas_recepcion,
+                   d.nombres as doctor_nombres, d.apellidos as doctor_apellidos
+            FROM citas_medicas c
+            LEFT JOIN doctores d ON c.id_doctor = d.id_doctor
+            WHERE c.id_paciente = %s
+            ORDER BY c.fecha_hora DESC
+        """
+        
+        cur.execute(citas_query, (patient_id,))
+        citas_rows = cur.fetchall()
+
+        citas = []
+        for c in citas_rows:
+            citas.append({
+                "id": c['id_cita'],
+                "fecha_hora": c['fecha_hora'].isoformat() if c['fecha_hora'] else None,
+                "motivo": c['motivo_consulta'],
+                "estado": c['estado'],
+                "doctor": f"{c['doctor_nombres']} {c['doctor_apellidos']}" if c['doctor_nombres'] else None,
+                "comentario": c['notas_recepcion']
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "citas": citas
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener citas: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -233,8 +290,10 @@ def hello_http(request):
         if request.method == 'GET':
             if action in ('list', 'patients', 'pacientes'):
                 return handle_list_pacientes(request)
+            elif action in ('citas', 'appointments'):
+                return handle_get_patient_citas(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list o action=citas"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):

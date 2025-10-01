@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import NuevoIngresoModal from '../components/NuevoIngresoModal';
 import NuevoEgresoModal from '../components/NuevoEgresoModal';
 import ContextMenu from '../components/ContextMenu';
 import DetallesIngresoModal from '../components/DetallesIngresoModal';
+import cajaService from '../services/cajaService';
+import authService from '../services/authService';
 
 const Caja = () => {
   const [activeTab, setActiveTab] = useState('ingresos-egresos');
-  const [periodo, setPeriodo] = useState('Esta semana');
+  const [periodo, setPeriodo] = useState('Hoy');
   const [doctor, setDoctor] = useState('Todos');
   const [showNuevoIngresoModal, setShowNuevoIngresoModal] = useState(false);
   const [showNuevoEgresoModal, setShowNuevoEgresoModal] = useState(false);
@@ -14,90 +16,35 @@ const Caja = () => {
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
-  
-  // Datos de ejemplo basados en la imagen
-  const transacciones = [
-    {
-      id: 1,
-      hora: '09:30 a. m.',
-      doctor: 'Eduardo Carmin',
-      paciente: 'Homero Prueba',
-      concepto: 'Consulta general',
-      medioPago: 'Efectivo',
-      comentario: 'Pago completo',
-      monto: 80.00,
-      tipo: 'ingreso',
-      estado: 'completado'
-    },
-    {
-      id: 2,
-      hora: '11:15 a. m.',
-      doctor: 'Eduardo Carmin',
-      paciente: 'Julieta Prueba',
-      concepto: 'Limpieza dental',
-      medioPago: 'Tarjeta',
-      comentario: 'Tratamiento completo',
-      monto: 120.00,
-      tipo: 'ingreso',
-      estado: 'completado'
-    },
-    {
-      id: 3,
-      hora: '02:00 p. m.',
-      doctor: 'Eduardo Carmin',
-      paciente: '--',
-      concepto: 'Materiales dentales',
-      medioPago: 'Transferencia',
-      comentario: 'Compra de insumos',
-      monto: 250.00,
-      tipo: 'egreso',
-      estado: 'completado'
-    },
-    {
-      id: 4,
-      hora: '23:21',
-      doctor: 'Eduardo Carmin',
-      paciente: 'Julieta Prueba',
-      concepto: 'Ortodoncia cuota inicial',
-      medioPago: 'Efectivo',
-      comentario: 'ingreso de prueba',
-      monto: 500.00,
-      tipo: 'ingreso',
-      estado: 'completado'
-    },
-    {
-      id: 5,
-      hora: '14:30 p. m.',
-      doctor: 'Dr. García',
-      paciente: 'Carlos López',
-      concepto: 'Endodoncia',
-      medioPago: 'Yape',
-      comentario: 'Tratamiento de conducto',
-      monto: 350.00,
-      tipo: 'ingreso',
-      estado: 'completado'
-    },
-    {
-      id: 6,
-      hora: '16:45 p. m.',
-      doctor: 'Dra. López',
-      paciente: 'María González',
-      concepto: 'Blanqueamiento dental',
-      medioPago: 'Tarjeta',
-      comentario: 'Sesión de blanqueamiento',
-      monto: 200.00,
-      tipo: 'ingreso',
-      estado: 'completado'
-    }
-  ];
+  const [transactions, setTransactions] = useState([]);
+  const [summary, setSummary] = useState({ ingresoHoy: 0, egresoHoy: 0, balanceHoy: 0, balanceMes: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const dateISO = useMemo(() => currentDate.toISOString().slice(0,10), [currentDate]);
 
-  // Resumen financiero basado en la imagen
-  const resumenFinanciero = {
-    ingresoHoy: 200.00,
-    egresoHoy: 250.00,
-    balanceHoy: -50.00,
-    balanceMes: 5300.00
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      cajaService.setAuthService(authService);
+      const [listRes, sumRes] = await Promise.all([
+        cajaService.list({ date: dateISO, type: filterType }),
+        cajaService.summary({ date: dateISO })
+      ]);
+      if (listRes.success) setTransactions(listRes.transactions); else setError(listRes.error);
+      if (sumRes.success) setSummary(sumRes.summary); else setError(prev => prev || sumRes.error);
+    } catch (e) {
+      setError('Error de conexión con el servidor');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => { loadData(); }, [dateISO, filterType]);
+
+  const resumenFinanciero = summary;
 
   const formatearMonto = (monto, tipo) => {
     const signo = tipo === 'ingreso' ? '+' : '-';
@@ -109,19 +56,29 @@ const Caja = () => {
     );
   };
 
-  const formatearHora = (hora) => {
-    return hora; // Ya viene formateada desde los datos
-  };
+  const formatearHora = (hora) => hora;
 
   const handleNuevoIngreso = () => {
     setShowNuevoIngresoModal(true);
   };
 
   const handleSaveIngreso = async (ingresoData) => {
-    // Aquí iría la lógica para guardar el ingreso
-    console.log('Guardando ingreso:', ingresoData);
-    // Simular guardado
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    cajaService.setAuthService(authService);
+    const montoCalculado = Number(ingresoData.precioUnitario || 0) * Number(ingresoData.cantidad || 1);
+    const res = await cajaService.create({
+      tipo_transaccion: 'ingreso',
+      concepto: ingresoData.servicioProducto || 'Servicio',
+      monto: montoCalculado || 0,
+      medio_pago: ingresoData.medioPago || 'efectivo',
+      comentario: ingresoData.notaAdministrativa || '',
+      id_doctor: null,
+      id_paciente: null,
+      referencia_pago: null,
+      estado: 'completado',
+      fecha_transaccion: new Date().toISOString()
+    });
+    if (!res.success) throw new Error(res.error);
+    await loadData();
   };
 
   const handleNuevoEgreso = () => {
@@ -129,10 +86,21 @@ const Caja = () => {
   };
 
   const handleSaveEgreso = async (egresoData) => {
-    // Aquí iría la lógica para guardar el egreso
-    console.log('Guardando egreso:', egresoData);
-    // Simular guardado
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    cajaService.setAuthService(authService);
+    const res = await cajaService.create({
+      tipo_transaccion: 'egreso',
+      concepto: egresoData.concepto,
+      monto: Number(egresoData.monto || 0),
+      medio_pago: egresoData.medioPago,
+      comentario: egresoData.comentario || '',
+      id_doctor: null,
+      id_paciente: null,
+      referencia_pago: egresoData.numeroFactura || null,
+      estado: 'completado',
+      fecha_transaccion: new Date().toISOString()
+    });
+    if (!res.success) throw new Error(res.error);
+    await loadData();
   };
 
   const handleContextMenu = (e, transaction) => {
@@ -220,21 +188,21 @@ const Caja = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+              <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1))} className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               
               <div className="bg-gradient-to-r from-[#30B0B0] to-[#4A3C7B] text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-lg">
-                Hoy
+                {dateISO}
               </div>
               
               <span className="text-[#4A3C7B] font-semibold">
-                25 sep 2025
+                {new Date(dateISO).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
               </span>
               
-              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
+              <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1))} className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -243,10 +211,10 @@ const Caja = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <select className="border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
-              <option>Ver todo</option>
-              <option>Solo ingresos</option>
-              <option>Solo egresos</option>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200">
+              <option value="all">Ver todo</option>
+              <option value="ingreso">Solo ingresos</option>
+              <option value="egreso">Solo egresos</option>
             </select>
             
             <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200">
@@ -260,7 +228,18 @@ const Caja = () => {
 
       {/* Tabla de transacciones */}
       <div className="flex-1 overflow-auto bg-white">
-        {transacciones.length > 0 ? (
+        {error && (
+          <div className="p-4 text-red-700 bg-red-50 border-b">{error}</div>
+        )}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <svg className="animate-spin h-8 w-8 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="ml-2 text-gray-600">Cargando transacciones...</span>
+          </div>
+        ) : transactions.length > 0 ? (
           <table className="w-full">
             <thead className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white sticky top-0">
               <tr>
@@ -275,7 +254,7 @@ const Caja = () => {
               </tr>
             </thead>
             <tbody>
-              {transacciones.map((transaccion, index) => (
+              {transactions.map((transaccion, index) => (
                 <tr 
                   key={transaccion.id} 
                   className={`border-b hover:bg-[#30B0B0]/5 transition-colors duration-200 ${

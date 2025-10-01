@@ -1,26 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { doctores, estadosCita } from '../data/mockData';
 
 const AppointmentModal = ({ 
   isOpen, 
   onClose, 
   onSave, 
   cita = null,
+  doctores = [],
   fechaInicial = null,
-  horaInicial = null 
+  horaInicial = null,
+  citasService = null
 }) => {
   const [formData, setFormData] = useState({
     paciente: '',
+    paciente_id: null,
     doctorId: 1,
     fecha: '',
     hora: '',
     duracion: 60,
     estado: 'confirmado',
     telefono: '',
-    motivo: ''
+    motivo: '',
+    notas: ''
   });
 
   const [errors, setErrors] = useState({});
+  const [pacientesSugeridos, setPacientesSugeridos] = useState([]);
+  const [showPacientesSugeridos, setShowPacientesSugeridos] = useState(false);
+  const [searchingPacientes, setSearchingPacientes] = useState(false);
+
+  const estadosCita = [
+    { value: "confirmado", label: "Confirmado", color: "bg-green-100" },
+    { value: "pendiente", label: "Pendiente", color: "bg-yellow-100" },
+    { value: "cancelado", label: "Cancelado", color: "bg-red-100" },
+    { value: "atendida", label: "Atendida", color: "bg-blue-100" },
+    { value: "en-consulta", label: "En consulta", color: "bg-purple-100" },
+    { value: "ausente", label: "Ausente", color: "bg-gray-100" },
+    { value: "reprogramada", label: "Reprogramada", color: "bg-orange-100" }
+  ];
 
   // Inicializar formulario cuando se abre el modal
   useEffect(() => {
@@ -29,30 +45,36 @@ const AppointmentModal = ({
         // Modo edición
         setFormData({
           paciente: cita.paciente || '',
-          doctorId: cita.doctorId || 1,
+          paciente_id: cita.paciente_id || null,
+          doctorId: cita.doctorId || (doctores[0]?.id || 1),
           fecha: cita.fecha || '',
           hora: cita.hora || '',
           duracion: cita.duracion || 60,
           estado: cita.estado || 'confirmado',
           telefono: cita.telefono || '',
-          motivo: cita.motivo || ''
+          motivo: cita.motivo || '',
+          notas: cita.notas || ''
         });
       } else {
         // Modo creación
         setFormData({
           paciente: '',
-          doctorId: 1,
+          paciente_id: null,
+          doctorId: doctores[0]?.id || 1,
           fecha: fechaInicial || '',
           hora: horaInicial || '',
           duracion: 60,
           estado: 'confirmado',
           telefono: '',
-          motivo: ''
+          motivo: '',
+          notas: ''
         });
       }
       setErrors({});
+      setPacientesSugeridos([]);
+      setShowPacientesSugeridos(false);
     }
-  }, [isOpen, cita, fechaInicial, horaInicial]);
+  }, [isOpen, cita, fechaInicial, horaInicial, doctores]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,6 +90,47 @@ const AppointmentModal = ({
         [name]: ''
       }));
     }
+
+    // Buscar pacientes cuando se escriba en el campo paciente
+    if (name === 'paciente' && value.length >= 2 && citasService) {
+      searchPacientes(value);
+    } else if (name === 'paciente' && value.length < 2) {
+      setPacientesSugeridos([]);
+      setShowPacientesSugeridos(false);
+    }
+  };
+
+  // Buscar pacientes
+  const searchPacientes = async (searchTerm) => {
+    setSearchingPacientes(true);
+    try {
+      const result = await citasService.searchPacientes(searchTerm);
+      if (result.success) {
+        setPacientesSugeridos(result.pacientes);
+        setShowPacientesSugeridos(result.pacientes.length > 0);
+      } else {
+        setPacientesSugeridos([]);
+        setShowPacientesSugeridos(false);
+      }
+    } catch (e) {
+      console.error('Error al buscar pacientes:', e);
+      setPacientesSugeridos([]);
+      setShowPacientesSugeridos(false);
+    } finally {
+      setSearchingPacientes(false);
+    }
+  };
+
+  // Seleccionar paciente de la lista de sugeridos
+  const handleSelectPaciente = (paciente) => {
+    setFormData(prev => ({
+      ...prev,
+      paciente: paciente.nombre,
+      paciente_id: paciente.id,
+      telefono: paciente.telefono || ''
+    }));
+    setShowPacientesSugeridos(false);
+    setPacientesSugeridos([]);
   };
 
   const validateForm = () => {
@@ -77,16 +140,16 @@ const AppointmentModal = ({
       newErrors.paciente = 'El nombre del paciente es obligatorio';
     }
     
+    if (!formData.paciente_id) {
+      newErrors.paciente = 'Debe seleccionar un paciente válido de la lista';
+    }
+    
     if (!formData.fecha) {
       newErrors.fecha = 'La fecha es obligatoria';
     }
     
     if (!formData.hora) {
       newErrors.hora = 'La hora es obligatoria';
-    }
-    
-    if (!formData.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es obligatorio';
     }
 
     setErrors(newErrors);
@@ -135,20 +198,49 @@ const AppointmentModal = ({
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             {/* Nombre del paciente */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nombre del Paciente *
               </label>
-              <input
-                type="text"
-                name="paciente"
-                value={formData.paciente}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.paciente ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Ingrese el nombre completo"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="paciente"
+                  value={formData.paciente}
+                  onChange={handleChange}
+                  className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.paciente ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Escriba para buscar paciente..."
+                  autoComplete="off"
+                />
+                {searchingPacientes && (
+                  <div className="absolute right-3 top-3">
+                    <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+              </div>
+              
+              {/* Lista de pacientes sugeridos */}
+              {showPacientesSugeridos && pacientesSugeridos.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {pacientesSugeridos.map((paciente) => (
+                    <button
+                      key={paciente.id}
+                      type="button"
+                      onClick={() => handleSelectPaciente(paciente)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">{paciente.nombre}</div>
+                      <div className="text-sm text-gray-500">DNI: {paciente.dni} | Tel: {paciente.telefono}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
               {errors.paciente && (
                 <p className="text-red-500 text-sm mt-1">{errors.paciente}</p>
               )}
@@ -252,21 +344,16 @@ const AppointmentModal = ({
             {/* Teléfono */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono *
+                Teléfono
               </label>
               <input
                 type="tel"
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.telefono ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="999-123-456"
               />
-              {errors.telefono && (
-                <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>
-              )}
             </div>
 
             {/* Motivo */}
@@ -281,6 +368,21 @@ const AppointmentModal = ({
                 rows={3}
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe el motivo de la consulta..."
+              />
+            </div>
+
+            {/* Notas adicionales */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notas adicionales
+              </label>
+              <textarea
+                name="notas"
+                value={formData.notas}
+                onChange={handleChange}
+                rows={2}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Notas internas o recordatorios..."
               />
             </div>
           </div>

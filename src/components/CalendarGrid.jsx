@@ -1,9 +1,10 @@
 import React from 'react';
 import AppointmentCard from './AppointmentCard';
-import { diasSemana, horarios } from '../data/mockData';
 
 const CalendarGrid = ({ 
   citas = [], 
+  doctores = [],
+  diasSemana = [],
   filtroDoctor = null, 
   filtroEstado = 'todos',
   onAppointmentClick,
@@ -11,6 +12,11 @@ const CalendarGrid = ({
   onAppointmentDelete,
   onSlotClick 
 }) => {
+  
+  const horarios = [
+    "09:00", "10:00", "11:00", "12:00", "13:00", 
+    "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
+  ];
   
   // Filtrar citas según los filtros activos
   const citasFiltradas = citas.filter(cita => {
@@ -113,6 +119,7 @@ const CalendarGrid = ({
                       <AppointmentCard
                         key={cita.id}
                         cita={cita}
+                        doctores={doctores}
                         onClick={onAppointmentClick}
                         onEdit={onAppointmentEdit}
                         onDelete={onAppointmentDelete}
