@@ -16,6 +16,8 @@ const Pacientes = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [activeProfileTab, setActiveProfileTab] = useState('citas');
   const [isHistoriaClinicaOpen, setIsHistoriaClinicaOpen] = useState(false);
+  const [patientCitas, setPatientCitas] = useState([]);
+  const [loadingCitas, setLoadingCitas] = useState(false);
   // Asistencias - filtros y popovers
   const [lineaNegocio, setLineaNegocio] = useState('Todos los pacientes');
   const [estadoFiltro, setEstadoFiltro] = useState('Selecciona una opción');
@@ -52,7 +54,7 @@ const Pacientes = () => {
             documento: p.documento || '',
             ultimaCita: p.ultima_cita,
             proximaCita: p.proxima_cita,
-            tarea: '',
+            tarea: p.tarea || '',
             presupuesto: p.presupuesto || 0,
             fuenteCaptacion: p.fuente_captacion || '',
             comentario: p.comentario || '',
@@ -111,10 +113,27 @@ const Pacientes = () => {
     }
   };
 
-  const handlePatientClick = (paciente) => {
+  const handlePatientClick = async (paciente) => {
     setSelectedPatient(paciente);
     setIsPatientProfileOpen(true);
     setActiveProfileTab('citas');
+    
+    // Cargar citas del paciente
+    setLoadingCitas(true);
+    try {
+      const result = await patientsService.getCitas(paciente.id);
+      if (result.success) {
+        setPatientCitas(result.citas);
+      } else {
+        console.error('Error al cargar citas:', result.error);
+        setPatientCitas([]);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar citas:', e);
+      setPatientCitas([]);
+    } finally {
+      setLoadingCitas(false);
+    }
   };
 
   const handleOpenHistoriaClinica = () => {
@@ -662,44 +681,106 @@ const Pacientes = () => {
                     </div>
                   </div>
                   
-                  {/* Estado vacío mejorado */}
-                  <div className="bg-white rounded-b-xl border border-gray-200 min-h-96 flex flex-col items-center justify-center py-16">
-                    <div className="w-24 h-24 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-full flex items-center justify-center mb-6 shadow-lg">
-                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                  {/* Tabla de citas */}
+                  {loadingCitas ? (
+                    <div className="bg-white rounded-b-xl border border-gray-200 min-h-96 flex items-center justify-center py-16">
+                      <div className="flex items-center space-x-3">
+                        <svg className="animate-spin h-6 w-6 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-gray-600">Cargando citas...</span>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-[#4A3C7B] mb-2">No hay citas registradas</h3>
-                    <p className="text-gray-500 text-center mb-6 max-w-md">
-                      Este paciente aún no tiene citas programadas. Puedes agregar una nueva cita desde la agenda.
-                    </p>
-                    <button className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span>Agregar Cita</span>
-                    </button>
-                  </div>
+                  ) : patientCitas.length > 0 ? (
+                    <div className="bg-white rounded-b-xl border border-gray-200">
+                      <div className="divide-y divide-gray-200">
+                        {patientCitas.map((cita) => (
+                          <div key={cita.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                            <div className="grid grid-cols-5 gap-4 items-center">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-lg flex items-center justify-center">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <div className="font-medium text-[#4A3C7B]">
+                                    {cita.fecha_hora ? new Date(cita.fecha_hora).toLocaleDateString('es-PE') : '--'}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {cita.fecha_hora ? new Date(cita.fecha_hora).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '--'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{cita.doctor || '--'}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-700">{cita.motivo || '--'}</div>
+                              </div>
+                              <div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  cita.estado === 'Realizada' 
+                                    ? 'bg-green-100 text-green-800'
+                                    : cita.estado === 'Programada'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : cita.estado === 'Cancelada'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {cita.estado || '--'}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="text-gray-700 text-sm">{cita.comentario || '--'}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-b-xl border border-gray-200 min-h-96 flex flex-col items-center justify-center py-16">
+                      <div className="w-24 h-24 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-full flex items-center justify-center mb-6 shadow-lg">
+                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#4A3C7B] mb-2">No hay citas registradas</h3>
+                      <p className="text-gray-500 text-center mb-6 max-w-md">
+                        Este paciente aún no tiene citas programadas. Puedes agregar una nueva cita desde la agenda.
+                      </p>
+                      <button className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Agregar Cita</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Paginación mejorada */}
-                  <div className="flex justify-between items-center mt-6">
-                    <div className="text-sm text-gray-600">
-                      Mostrando 0 de 0 registros
+                  {patientCitas.length > 0 && (
+                    <div className="flex justify-between items-center mt-6">
+                      <div className="text-sm text-gray-600">
+                        Mostrando {patientCitas.length} de {patientCitas.length} citas
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-300">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <span className="px-3 py-1 bg-[#4A3C7B] text-white rounded-lg text-sm font-medium">1</span>
+                        <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-300">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-300">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                      </button>
-                      <span className="px-3 py-1 bg-[#4A3C7B] text-white rounded-lg text-sm font-medium">1</span>
-                      <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-300">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 
