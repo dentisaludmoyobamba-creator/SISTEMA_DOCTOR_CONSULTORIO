@@ -55,6 +55,23 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getCitas(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'citas', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, citas: data.citas };
+      }
+      return { success: false, error: data.error || 'Error al obtener citas' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();

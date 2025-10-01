@@ -4,6 +4,8 @@ const NuevoIngresoModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     tipo: 'servicios',
     itemSeleccionado: '',
+    cantidad: 1,
+    precioUnitario: '',
     items: [],
     comprobante: 'boleta',
     medioPago: 'efectivo',
@@ -36,6 +38,8 @@ const NuevoIngresoModal = ({ isOpen, onClose, onSave }) => {
       setFormData({
         tipo: 'servicios',
         itemSeleccionado: '',
+        cantidad: 1,
+        precioUnitario: '',
         items: [],
         comprobante: 'boleta',
         medioPago: 'efectivo',
@@ -106,6 +110,9 @@ const NuevoIngresoModal = ({ isOpen, onClose, onSave }) => {
                 <div className="relative">
                   <input
                     type="text"
+                    name="itemSeleccionado"
+                    value={formData.itemSeleccionado}
+                    onChange={handleInputChange}
                     placeholder="Buscar producto/servicio"
                     className="w-full p-3 pl-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200"
                   />
@@ -130,26 +137,37 @@ const NuevoIngresoModal = ({ isOpen, onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Tabla de ítems agregados */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left p-3 font-semibold text-[#4A3C7B]">Item</th>
-                  <th className="text-left p-3 font-semibold text-[#4A3C7B]">Cantidad</th>
-                  <th className="text-left p-3 font-semibold text-[#4A3C7B]">Precio Unit.</th>
-                  <th className="text-left p-3 font-semibold text-[#4A3C7B]">Laboratorio</th>
-                  <th className="text-left p-3 font-semibold text-[#4A3C7B]">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan="5" className="p-8 text-center text-gray-500">
-                    No hay ningún item agregado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          {/* Datos del ítem seleccionado */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-[#4A3C7B] mb-2">Cantidad</label>
+              <input
+                type="number"
+                name="cantidad"
+                min="1"
+                value={formData.cantidad}
+                onChange={handleInputChange}
+                className="w-full p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#4A3C7B] mb-2">Precio unitario</label>
+              <input
+                type="number"
+                name="precioUnitario"
+                step="0.01"
+                min="0"
+                value={formData.precioUnitario}
+                onChange={handleInputChange}
+                className="w-full p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#4A3C7B] mb-2">Subtotal</label>
+              <div className="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+                S/ {((Number(formData.precioUnitario || 0)) * Number(formData.cantidad || 0)).toFixed(2)}
+              </div>
+            </div>
           </div>
 
           {/* Comprobante */}
