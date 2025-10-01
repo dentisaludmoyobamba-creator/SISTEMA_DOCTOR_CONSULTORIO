@@ -459,6 +459,81 @@ def resolve_lookup_id(cursor, tabla, nombre):
     except Exception:
         return None
 
+def handle_get_patient_tareas(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener tareas manuales (simuladas por ahora)
+        tareas_manuales = [
+            {
+                "id": 1,
+                "nombre": "Seguimiento post-operatorio",
+                "fecha_creacion": "2024-12-20",
+                "estado": "Pendiente",
+                "responsable": "Dr. Gómez",
+                "descripcion": "Llamar al paciente para verificar su recuperación"
+            },
+            {
+                "id": 2,
+                "nombre": "Recordatorio de cita",
+                "fecha_creacion": "2024-12-18",
+                "estado": "Completada",
+                "responsable": "Recepcionista",
+                "descripcion": "Enviar recordatorio de cita programada"
+            }
+        ]
+
+        # Obtener tareas automáticas (simuladas por ahora)
+        tareas_automaticas = [
+            {
+                "id": 1,
+                "tipo_mensaje": "Recordatorio de cita",
+                "plantilla": "Recordatorio_Cita_24h",
+                "enviado_por": "Sistema",
+                "fecha_envio": "2024-12-19",
+                "hora_envio": "09:00",
+                "estado": "Enviado"
+            },
+            {
+                "id": 2,
+                "tipo_mensaje": "Seguimiento post-tratamiento",
+                "plantilla": "Seguimiento_Endodoncia",
+                "enviado_por": "Sistema",
+                "fecha_envio": "2024-12-17",
+                "hora_envio": "14:30",
+                "estado": "Enviado"
+            }
+        ]
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "tareas_manuales": tareas_manuales,
+            "tareas_automaticas": tareas_automaticas
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener tareas: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -480,8 +555,10 @@ def hello_http(request):
                 return handle_get_patient_citas(request)
             elif action in ('filiacion', 'filiation'):
                 return handle_get_patient_filiacion(request)
+            elif action in ('tareas', 'tasks'):
+                return handle_get_patient_tareas(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas o filiacion"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion o tareas"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):

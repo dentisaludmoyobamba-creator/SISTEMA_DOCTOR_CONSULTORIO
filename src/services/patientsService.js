@@ -103,6 +103,23 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getTareas(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'tareas', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, tareas_manuales: data.tareas_manuales, tareas_automaticas: data.tareas_automaticas };
+      }
+      return { success: false, error: data.error || 'Error al obtener tareas' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
