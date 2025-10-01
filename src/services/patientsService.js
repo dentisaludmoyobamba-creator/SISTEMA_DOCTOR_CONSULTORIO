@@ -72,6 +72,37 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getFiliacion(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'filiacion', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, filiacion: data.filiacion };
+      }
+      return { success: false, error: data.error || 'Error al obtener filiación' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async updateFiliacion(filiacionData) {
+    try {
+      const res = await fetch(`${API_URL}?action=update_filiacion`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(filiacionData)
+      });
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
