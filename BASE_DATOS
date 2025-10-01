@@ -229,14 +229,14 @@ ALTER TABLE pacientes
 
 [cite_start]-- Mejorar la tabla de citas médicas con campos adicionales [cite: 43]
 ALTER TABLE citas_medicas
-ADD COLUMN duracion_minutos INTEGER DEFAULT 60,
-ADD COLUMN telefono_contacto VARCHAR(20),
-ADD COLUMN email_contacto VARCHAR(100),
-ADD COLUMN recordatorio_enviado BOOLEAN DEFAULT FALSE,
-ADD COLUMN fecha_recordatorio TIMESTAMP WITH TIME ZONE,
-ADD COLUMN motivo_cancelacion TEXT,
-ADD COLUMN fecha_cancelacion TIMESTAMP WITH TIME ZONE,
-ADD COLUMN id_usuario_cancelo INTEGER;
+ADD COLUMN IF NOT EXISTS duracion_minutos INTEGER DEFAULT 60,
+ADD COLUMN IF NOT EXISTS telefono_contacto VARCHAR(20),
+ADD COLUMN IF NOT EXISTS email_contacto VARCHAR(100),
+ADD COLUMN IF NOT EXISTS recordatorio_enviado BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS fecha_recordatorio TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT,
+ADD COLUMN IF NOT EXISTS fecha_cancelacion TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS id_usuario_cancelo INTEGER;
 
 [cite_start]-- Agregar la foreign key para el usuario que cancela una cita [cite: 44]
 ALTER TABLE citas_medicas

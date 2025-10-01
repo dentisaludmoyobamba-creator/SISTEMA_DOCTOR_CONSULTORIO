@@ -48,18 +48,33 @@ INSERT INTO pacientes (nombres, apellidos, fecha_nacimiento, genero, dni, telefo
 ('Laura', 'Fernández Ruiz', '1995-07-08', 'F', '54321678E', '555-1111', 'Avenida Central 789', 'laura.fernandez@email.com', 1500.00, 'Tratamiento de endodoncia completado', 'Control post-tratamiento', '2024-12-18', '2025-02-01')
 ON CONFLICT (dni) DO NOTHING;
 
--- Citas médicas de prueba
-INSERT INTO citas_medicas (id_paciente, id_doctor, fecha_hora, motivo_consulta, estado, notas_recepcion) VALUES
-(1, 1, '2024-12-15 10:00:00-05', 'Limpieza dental y revisión general', 'Realizada', 'Paciente muy colaborativa, sin problemas'),
-(2, 2, '2024-12-10 15:30:00-05', 'Consulta para ortodoncia', 'Realizada', 'Necesita radiografías para plan de tratamiento'),
-(3, 2, '2024-12-20 12:00:00-05', 'Primera consulta de ortodoncia', 'Realizada', 'Paciente joven, muy motivada'),
-(1, 1, '2025-01-15 10:00:00-05', 'Seguimiento de limpieza', 'Programada', 'Recordar traer radiografías'),
-(2, 2, '2025-01-20 15:30:00-05', 'Evaluación de brackets', 'Programada', 'Revisar presupuesto de ortodoncia'),
-(3, 2, '2025-01-25 12:00:00-05', 'Radiografías panorámicas', 'Programada', 'Preparar plan de tratamiento'),
-(4, 1, '2025-01-30 09:00:00-05', 'Consulta inicial', 'Programada', 'Paciente nuevo, primera vez'),
-(5, 1, '2024-12-18 14:00:00-05', 'Control post-endodoncia', 'Realizada', 'Tratamiento exitoso, paciente satisfecha'),
-(5, 1, '2025-02-01 14:00:00-05', 'Control final', 'Programada', 'Última cita de seguimiento'),
-(1, 2, '2024-11-20 11:00:00-05', 'Consulta de emergencia', 'Cancelada', 'Paciente canceló por motivos personales')
+-- Citas médicas de prueba (incluye semana actual para agenda)
+INSERT INTO citas_medicas (id_paciente, id_doctor, fecha_hora, motivo_consulta, estado, notas_recepcion, duracion_minutos) VALUES
+-- Citas de la semana actual
+(1, 1, CURRENT_DATE + INTERVAL '0 days' + TIME '09:00', 'Limpieza dental programada', 'Programada', 'Cita de rutina', 60),
+(2, 2, CURRENT_DATE + INTERVAL '0 days' + TIME '10:00', 'Consulta de ortodoncia', 'Confirmada', 'Revisar progreso de brackets', 60),
+(3, 1, CURRENT_DATE + INTERVAL '1 days' + TIME '11:00', 'Control post-operatorio', 'Programada', 'Seguimiento después de cirugía', 60),
+(4, 2, CURRENT_DATE + INTERVAL '1 days' + TIME '14:00', 'Primera consulta', 'Pendiente', 'Paciente nuevo, evaluación inicial', 90),
+(5, 1, CURRENT_DATE + INTERVAL '2 days' + TIME '09:00', 'Endodoncia', 'Confirmada', 'Tratamiento de conducto', 120),
+(1, 2, CURRENT_DATE + INTERVAL '2 days' + TIME '15:00', 'Seguimiento de ortodoncia', 'Programada', 'Ajuste de brackets', 60),
+(2, 1, CURRENT_DATE + INTERVAL '3 days' + TIME '10:00', 'Extracción dental', 'Confirmada', 'Extracción de muela del juicio', 90),
+(3, 2, CURRENT_DATE + INTERVAL '4 days' + TIME '16:00', 'Consulta estética', 'Programada', 'Evaluación para blanqueamiento', 60),
+(4, 1, CURRENT_DATE + INTERVAL '5 days' + TIME '09:00', 'Revisión general', 'Programada', 'Chequeo anual', 60),
+(5, 2, CURRENT_DATE + INTERVAL '5 days' + TIME '11:00', 'Urgencia dental', 'Pendiente', 'Dolor agudo en molar', 60),
+
+-- Citas históricas
+(1, 1, '2024-12-15 10:00:00-05', 'Limpieza dental y revisión general', 'Realizada', 'Paciente muy colaborativa, sin problemas', 60),
+(2, 2, '2024-12-10 15:30:00-05', 'Consulta para ortodoncia', 'Realizada', 'Necesita radiografías para plan de tratamiento', 60),
+(3, 2, '2024-12-20 12:00:00-05', 'Primera consulta de ortodoncia', 'Realizada', 'Paciente joven, muy motivada', 60),
+(5, 1, '2024-12-18 14:00:00-05', 'Control post-endodoncia', 'Realizada', 'Tratamiento exitoso, paciente satisfecha', 60),
+(1, 2, '2024-11-20 11:00:00-05', 'Consulta de emergencia', 'Cancelada', 'Paciente canceló por motivos personales', 60),
+
+-- Citas futuras
+(1, 1, CURRENT_DATE + INTERVAL '7 days' + TIME '10:00', 'Seguimiento de limpieza', 'Programada', 'Recordar traer radiografías', 60),
+(2, 2, CURRENT_DATE + INTERVAL '14 days' + TIME '15:30', 'Evaluación de brackets', 'Programada', 'Revisar presupuesto de ortodoncia', 60),
+(3, 2, CURRENT_DATE + INTERVAL '21 days' + TIME '12:00', 'Radiografías panorámicas', 'Programada', 'Preparar plan de tratamiento', 60),
+(4, 1, CURRENT_DATE + INTERVAL '28 days' + TIME '09:00', 'Consulta de seguimiento', 'Programada', 'Evaluación de progreso', 60),
+(5, 1, CURRENT_DATE + INTERVAL '35 days' + TIME '14:00', 'Control final', 'Programada', 'Última cita de seguimiento', 60)
 ON CONFLICT DO NOTHING;
 
 -- Tratamientos
