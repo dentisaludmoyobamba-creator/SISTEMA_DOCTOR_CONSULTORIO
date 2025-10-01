@@ -318,6 +318,34 @@ CREATE TABLE movimientos_inventario (
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
 );
 
+-- Tabla para órdenes de compra (Inventario - Compras)
+CREATE TABLE ordenes_compra (
+    id_orden SERIAL PRIMARY KEY,
+    nombre_interno VARCHAR(100) NOT NULL,
+    proveedor VARCHAR(100),
+    estado VARCHAR(50) NOT NULL DEFAULT 'Orden ingresada a almacén',
+    monto_total NUMERIC(10,2) DEFAULT 0,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_entrega TIMESTAMP WITH TIME ZONE,
+    fecha_pago TIMESTAMP WITH TIME ZONE,
+    nota_interna TEXT
+);
+
+-- Tabla para consumos de inventario (descuenta stock)
+CREATE TABLE consumos (
+    id_consumo SERIAL PRIMARY KEY,
+    id_producto INTEGER NOT NULL,
+    lote VARCHAR(50),
+    cantidad NUMERIC(10,2) NOT NULL,
+    almacen VARCHAR(50) NOT NULL DEFAULT 'Principal',
+    paciente VARCHAR(150),
+    servicio VARCHAR(150),
+    comentario TEXT,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Confirmada',
+    fecha_consumo TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+);
+
 [cite_start]-- Tabla para campañas de marketing [cite: 51]
 CREATE TABLE campanas_marketing (
     id_campana SERIAL PRIMARY KEY,
@@ -542,6 +570,13 @@ INSERT INTO dias_no_laborables (fecha, motivo, aplica_todos_doctores) VALUES
 [cite_start]CREATE INDEX idx_productos_proveedor ON productos(proveedor); [cite: 61]
 [cite_start]CREATE INDEX idx_movimientos_fecha ON movimientos_inventario(fecha_movimiento); [cite: 62]
 [cite_start]CREATE INDEX idx_movimientos_producto ON movimientos_inventario(id_producto); [cite: 62]
+
+[cite_start]-- Índices adicionales para compras y consumos [cite: 123]
+CREATE INDEX IF NOT EXISTS idx_ordenes_fecha_creacion ON ordenes_compra(fecha_creacion);
+CREATE INDEX IF NOT EXISTS idx_ordenes_estado ON ordenes_compra(estado);
+CREATE INDEX IF NOT EXISTS idx_consumos_fecha ON consumos(fecha_consumo);
+CREATE INDEX IF NOT EXISTS idx_consumos_producto ON consumos(id_producto);
+CREATE INDEX IF NOT EXISTS idx_consumos_estado ON consumos(estado);
 
 
 -- =====================================================
