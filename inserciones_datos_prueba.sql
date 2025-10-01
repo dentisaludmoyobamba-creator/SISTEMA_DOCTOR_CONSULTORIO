@@ -39,13 +39,13 @@ INSERT INTO doctor_especialidad (id_doctor, id_especialidad) VALUES
 (2, 2)  -- Dra. Ávila también es Ortodoncista
 ON CONFLICT (id_doctor, id_especialidad) DO NOTHING;
 
--- Pacientes de prueba
-INSERT INTO pacientes (nombres, apellidos, fecha_nacimiento, genero, dni, telefono, direccion, email, presupuesto, comentario, tarea, ultima_cita, proxima_cita) VALUES
-('Ana', 'López García', '1990-05-15', 'F', '12345678A', '555-1234', 'Calle Falsa 123', 'ana.lopez@email.com', 500.00, 'Paciente regular, muy puntual', 'Seguimiento de limpieza', '2024-12-15', '2025-01-15'),
-('Juan', 'Martínez Pérez', '1985-11-20', 'M', '87654321B', '555-5678', 'Avenida Siempreviva 742', 'juan.martinez@email.com', 1200.00, 'Necesita tratamiento de ortodoncia', 'Evaluación de brackets', '2024-12-10', '2025-01-20'),
-('Sofía', 'Rodríguez Castillo', '2001-08-30', 'F', '45678912C', '555-8765', 'Plaza Mayor 1', 'sofia.rodriguez@email.com', 800.00, 'Primera consulta exitosa', 'Radiografías panorámicas', '2024-12-20', '2025-01-25'),
-('Miguel', 'García Torres', '1978-03-12', 'M', '98765432D', '555-9999', 'Calle Principal 456', 'miguel.garcia@email.com', 300.00, 'Paciente nuevo', 'Consulta inicial', NULL, '2025-01-30'),
-('Laura', 'Fernández Ruiz', '1995-07-08', 'F', '54321678E', '555-1111', 'Avenida Central 789', 'laura.fernandez@email.com', 1500.00, 'Tratamiento de endodoncia completado', 'Control post-tratamiento', '2024-12-18', '2025-02-01')
+-- Pacientes de prueba con datos de filiación completos
+INSERT INTO pacientes (nombres, apellidos, fecha_nacimiento, genero, dni, telefono, direccion, email, presupuesto, comentario, tarea, ultima_cita, proxima_cita, id_fuente_captacion, id_aseguradora, id_linea_negocio) VALUES
+('Ana', 'López García', '1990-05-15', 'F', '12345678A', '555-1234', 'Calle Falsa 123', 'ana.lopez@email.com', 500.00, 'Paciente regular, muy puntual', 'Seguimiento de limpieza', '2024-12-15', '2025-01-15', 1, 1, 3),
+('Juan', 'Martínez Pérez', '1985-11-20', 'M', '87654321B', '555-5678', 'Avenida Siempreviva 742', 'juan.martinez@email.com', 1200.00, 'Necesita tratamiento de ortodoncia', 'Evaluación de brackets', '2024-12-10', '2025-01-20', 3, 2, 1),
+('Sofía', 'Rodríguez Castillo', '2001-08-30', 'F', '45678912C', '555-8765', 'Plaza Mayor 1', 'sofia.rodriguez@email.com', 800.00, 'Primera consulta exitosa', 'Radiografías panorámicas', '2024-12-20', '2025-01-25', 2, 1, 2),
+('Miguel', 'García Torres', '1978-03-12', 'M', '98765432D', '555-9999', 'Calle Principal 456', 'miguel.garcia@email.com', 300.00, 'Paciente nuevo', 'Consulta inicial', NULL, '2025-01-30', 4, 3, 3),
+('Laura', 'Fernández Ruiz', '1995-07-08', 'F', '54321678E', '555-1111', 'Avenida Central 789', 'laura.fernandez@email.com', 1500.00, 'Tratamiento de endodoncia completado', 'Control post-tratamiento', '2024-12-18', '2025-02-01', 3, 1, 4)
 ON CONFLICT (dni) DO NOTHING;
 
 -- Citas médicas de prueba (incluye semana actual para agenda)
@@ -76,6 +76,33 @@ INSERT INTO citas_medicas (id_paciente, id_doctor, fecha_hora, motivo_consulta, 
 (4, 1, CURRENT_DATE + INTERVAL '28 days' + TIME '09:00', 'Consulta de seguimiento', 'Programada', 'Evaluación de progreso', 60),
 (5, 1, CURRENT_DATE + INTERVAL '35 days' + TIME '14:00', 'Control final', 'Programada', 'Última cita de seguimiento', 60)
 ON CONFLICT DO NOTHING;
+
+-- Fuentes de captación
+INSERT INTO fuente_captacion (nombre) VALUES 
+('Facebook'),
+('Instagram'),
+('Recomendación'),
+('Google'),
+('Otros')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Aseguradoras
+INSERT INTO aseguradora (nombre) VALUES 
+('Rimac'),
+('Pacífico'),
+('La Positiva'),
+('Mapfre'),
+('Otros')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Líneas de negocio
+INSERT INTO linea_negocio (nombre) VALUES 
+('Ortodoncia'),
+('Estética'),
+('General'),
+('Endodoncia'),
+('Cirugía')
+ON CONFLICT (nombre) DO NOTHING;
 
 -- Tratamientos
 INSERT INTO tratamientos (nombre_tratamiento, descripcion, costo_base) VALUES

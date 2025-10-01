@@ -18,6 +18,15 @@ const Pacientes = () => {
   const [isHistoriaClinicaOpen, setIsHistoriaClinicaOpen] = useState(false);
   const [patientCitas, setPatientCitas] = useState([]);
   const [loadingCitas, setLoadingCitas] = useState(false);
+  const [patientFiliacion, setPatientFiliacion] = useState(null);
+  const [loadingFiliacion, setLoadingFiliacion] = useState(false);
+  const [editingFiliacion, setEditingFiliacion] = useState(false);
+  const [filiacionForm, setFiliacionForm] = useState({});
+  const [tareasManuales, setTareasManuales] = useState([]);
+  const [tareasAutomaticas, setTareasAutomaticas] = useState([]);
+  const [loadingTareas, setLoadingTareas] = useState(false);
+  const [expandedManuales, setExpandedManuales] = useState(true);
+  const [expandedAutomaticas, setExpandedAutomaticas] = useState(true);
   // Asistencias - filtros y popovers
   const [lineaNegocio, setLineaNegocio] = useState('Todos los pacientes');
   const [estadoFiltro, setEstadoFiltro] = useState('Selecciona una opción');
@@ -134,11 +143,84 @@ const Pacientes = () => {
     } finally {
       setLoadingCitas(false);
     }
+
+    // Cargar filiación del paciente
+    setLoadingFiliacion(true);
+    try {
+      const result = await patientsService.getFiliacion(paciente.id);
+      if (result.success) {
+        setPatientFiliacion(result.filiacion);
+        setFiliacionForm(result.filiacion);
+      } else {
+        console.error('Error al cargar filiación:', result.error);
+        setPatientFiliacion(null);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar filiación:', e);
+      setPatientFiliacion(null);
+    } finally {
+      setLoadingFiliacion(false);
+    }
+
+    // Cargar tareas del paciente
+    setLoadingTareas(true);
+    try {
+      const result = await patientsService.getTareas(paciente.id);
+      if (result.success) {
+        setTareasManuales(result.tareas_manuales || []);
+        setTareasAutomaticas(result.tareas_automaticas || []);
+      } else {
+        console.error('Error al cargar tareas:', result.error);
+        setTareasManuales([]);
+        setTareasAutomaticas([]);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar tareas:', e);
+      setTareasManuales([]);
+      setTareasAutomaticas([]);
+    } finally {
+      setLoadingTareas(false);
+    }
   };
 
   const handleOpenHistoriaClinica = () => {
     setIsHistoriaClinicaOpen(true);
     setIsPatientProfileOpen(false);
+  };
+
+  const handleEditFiliacion = () => {
+    setEditingFiliacion(true);
+  };
+
+  const handleCancelEditFiliacion = () => {
+    setEditingFiliacion(false);
+    setFiliacionForm(patientFiliacion || {});
+  };
+
+  const handleFiliacionFormChange = (field, value) => {
+    setFiliacionForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveFiliacion = async () => {
+    try {
+      setLoadingFiliacion(true);
+      const result = await patientsService.updateFiliacion(filiacionForm);
+      if (result.success) {
+        setPatientFiliacion(filiacionForm);
+        setEditingFiliacion(false);
+        // Recargar la lista de pacientes para reflejar cambios
+        setPagination(p => ({ ...p }));
+      } else {
+        alert(result.error || 'Error al actualizar filiación');
+      }
+    } catch (e) {
+      alert('Error de conexión con el servidor');
+    } finally {
+      setLoadingFiliacion(false);
+    }
   };
 
   const handleCloseHistoriaClinica = () => {
@@ -785,22 +867,254 @@ const Pacientes = () => {
               )}
 
               {activeProfileTab === 'filiacion' && (
-                <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex flex-col items-center justify-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-full flex items-center justify-center mb-6 shadow-lg">
-                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-[#4A3C7B] mb-2">Información de Filiación</h3>
-                  <p className="text-gray-500 text-center mb-6 max-w-md">
-                    Aquí se mostrará la información personal y de contacto del paciente.
-                  </p>
-                  <button className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Agregar Información</span>
-                  </button>
+                <div>
+                  {loadingFiliacion ? (
+                    <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex items-center justify-center py-16">
+                      <div className="flex items-center space-x-3">
+                        <svg className="animate-spin h-6 w-6 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-gray-600">Cargando información...</span>
+                      </div>
+                    </div>
+                  ) : patientFiliacion ? (
+                    <div className="bg-white rounded-xl border border-gray-200">
+                      {/* Header con botones de acción */}
+                      <div className="p-6 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-[#4A3C7B]">Información de Filiación</h3>
+                          <div className="flex space-x-3">
+                            {!editingFiliacion ? (
+                              <button
+                                onClick={handleEditFiliacion}
+                                className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span>Editar</span>
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={handleCancelEditFiliacion}
+                                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  onClick={handleSaveFiliacion}
+                                  disabled={loadingFiliacion}
+                                  className="bg-[#4A3C7B] hover:bg-[#3A2C6B] text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50"
+                                >
+                                  {loadingFiliacion ? (
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                  <span>Guardar</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Formulario de filiación */}
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Columna izquierda */}
+                          <div className="space-y-6">
+                            {/* Teléfono */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Teléfono
+                              </label>
+                              {editingFiliacion ? (
+                                <input
+                                  type="tel"
+                                  value={filiacionForm.telefono || ''}
+                                  onChange={(e) => handleFiliacionFormChange('telefono', e.target.value)}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300"
+                                  placeholder="Ingrese el teléfono"
+                                />
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                  {patientFiliacion.telefono || '--'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* E-mail */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                E-mail
+                              </label>
+                              {editingFiliacion ? (
+                                <input
+                                  type="email"
+                                  value={filiacionForm.email || ''}
+                                  onChange={(e) => handleFiliacionFormChange('email', e.target.value)}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300"
+                                  placeholder="Ingrese el email"
+                                />
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                  {patientFiliacion.email || '--'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Fuente de captación */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Fuente de captación
+                              </label>
+                              {editingFiliacion ? (
+                                <select
+                                  value={filiacionForm.fuente_captacion || ''}
+                                  onChange={(e) => handleFiliacionFormChange('fuente_captacion', e.target.value)}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300"
+                                >
+                                  <option value="">Seleccionar fuente</option>
+                                  <option value="Facebook">Facebook</option>
+                                  <option value="Instagram">Instagram</option>
+                                  <option value="Recomendación">Recomendación</option>
+                                  <option value="Google">Google</option>
+                                  <option value="Otros">Otros</option>
+                                </select>
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                  {patientFiliacion.fuente_captacion || '--'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Adicional */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Adicional
+                              </label>
+                              {editingFiliacion ? (
+                                <input
+                                  type="text"
+                                  value={filiacionForm.direccion || ''}
+                                  onChange={(e) => handleFiliacionFormChange('direccion', e.target.value)}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300"
+                                  placeholder="Ingrese información adicional"
+                                />
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                  {patientFiliacion.direccion || '--'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Columna derecha */}
+                          <div className="space-y-6">
+                            {/* N° HC */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                N° HC
+                              </label>
+                              <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                {patientFiliacion.id || '--'}
+                              </div>
+                            </div>
+
+                            {/* Grupo */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Grupo
+                              </label>
+                              {editingFiliacion ? (
+                                <select
+                                  value={filiacionForm.aseguradora || ''}
+                                  onChange={(e) => handleFiliacionFormChange('aseguradora', e.target.value)}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300"
+                                >
+                                  <option value="">Seleccionar aseguradora</option>
+                                  <option value="Rimac">Rimac</option>
+                                  <option value="Pacífico">Pacífico</option>
+                                  <option value="La Positiva">La Positiva</option>
+                                  <option value="Mapfre">Mapfre</option>
+                                  <option value="Otros">Otros</option>
+                                </select>
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                  {patientFiliacion.aseguradora || '--'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Línea de negocio */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Línea de negocio
+                              </label>
+                              {editingFiliacion ? (
+                                <select
+                                  value={filiacionForm.linea_negocio || ''}
+                                  onChange={(e) => handleFiliacionFormChange('linea_negocio', e.target.value)}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300"
+                                >
+                                  <option value="">Seleccionar línea</option>
+                                  <option value="Ortodoncia">Ortodoncia</option>
+                                  <option value="Estética">Estética</option>
+                                  <option value="General">General</option>
+                                  <option value="Endodoncia">Endodoncia</option>
+                                  <option value="Cirugía">Cirugía</option>
+                                </select>
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                  {patientFiliacion.linea_negocio || '--'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Comentario */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Comentario
+                              </label>
+                              {editingFiliacion ? (
+                                <textarea
+                                  value={filiacionForm.comentario || ''}
+                                  onChange={(e) => handleFiliacionFormChange('comentario', e.target.value)}
+                                  rows={3}
+                                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] transition-all duration-300 resize-none"
+                                  placeholder="Ingrese comentarios adicionales"
+                                />
+                              ) : (
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-900 min-h-[80px]">
+                                  {patientFiliacion.comentario || '--'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex flex-col items-center justify-center py-16">
+                      <div className="w-24 h-24 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-full flex items-center justify-center mb-6 shadow-lg">
+                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#4A3C7B] mb-2">No se pudo cargar la información</h3>
+                      <p className="text-gray-500 text-center mb-6 max-w-md">
+                        Hubo un error al cargar la información de filiación del paciente.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -825,22 +1139,160 @@ const Pacientes = () => {
               )}
 
               {activeProfileTab === 'tareas' && (
-                <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex flex-col items-center justify-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-[#30B0B0] to-[#4A3C7B] rounded-full flex items-center justify-center mb-6 shadow-lg">
-                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-[#4A3C7B] mb-2">Tareas Pendientes</h3>
-                  <p className="text-gray-500 text-center mb-6 max-w-md">
-                    Organiza y gestiona las tareas relacionadas con este paciente.
-                  </p>
-                  <button className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Agregar Tarea</span>
-                  </button>
+                <div className="space-y-6">
+                  {loadingTareas ? (
+                    <div className="bg-white rounded-xl border border-gray-200 min-h-96 flex items-center justify-center py-16">
+                      <div className="flex items-center space-x-3">
+                        <svg className="animate-spin h-6 w-6 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-gray-600">Cargando tareas...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Tareas Manuales */}
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white px-6 py-4 cursor-pointer flex items-center justify-between"
+                          onClick={() => setExpandedManuales(!expandedManuales)}
+                        >
+                          <h3 className="text-lg font-semibold">Manuales</h3>
+                          <svg 
+                            className={`w-5 h-5 transition-transform duration-200 ${expandedManuales ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                        
+                        {expandedManuales && (
+                          <div>
+                            {/* Header de la tabla */}
+                            <div className="bg-gray-50 border-b">
+                              <div className="grid grid-cols-5 gap-4 px-6 py-3 text-sm font-semibold text-gray-700">
+                                <div>Nombre de la tarea</div>
+                                <div>F. creación</div>
+                                <div>Estado</div>
+                                <div>Responsable</div>
+                                <div>Descripción</div>
+                              </div>
+                            </div>
+                            
+                            {/* Contenido de la tabla */}
+                            {tareasManuales.length > 0 ? (
+                              <div className="divide-y divide-gray-200">
+                                {tareasManuales.map((tarea) => (
+                                  <div key={tarea.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                                    <div className="grid grid-cols-5 gap-4 items-center">
+                                      <div className="font-medium text-[#4A3C7B]">{tarea.nombre}</div>
+                                      <div className="text-gray-700">{tarea.fecha_creacion}</div>
+                                      <div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                          tarea.estado === 'Completada' 
+                                            ? 'bg-green-100 text-green-800'
+                                            : tarea.estado === 'Pendiente'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                          {tarea.estado}
+                                        </span>
+                                      </div>
+                                      <div className="text-gray-700">{tarea.responsable}</div>
+                                      <div className="text-gray-700 text-sm">{tarea.descripcion}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-12 flex flex-col items-center justify-center">
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                  <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
+                                </div>
+                                <p className="text-gray-500 text-center">No se encontró ninguna información</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tareas Automáticas */}
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white px-6 py-4 cursor-pointer flex items-center justify-between"
+                          onClick={() => setExpandedAutomaticas(!expandedAutomaticas)}
+                        >
+                          <h3 className="text-lg font-semibold">Automáticas</h3>
+                          <svg 
+                            className={`w-5 h-5 transition-transform duration-200 ${expandedAutomaticas ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                        
+                        {expandedAutomaticas && (
+                          <div>
+                            {/* Header de la tabla */}
+                            <div className="bg-gray-50 border-b">
+                              <div className="grid grid-cols-6 gap-4 px-6 py-3 text-sm font-semibold text-gray-700">
+                                <div>Tipo de mensaje</div>
+                                <div>Plantilla enviada</div>
+                                <div>Enviado por</div>
+                                <div>F. envío</div>
+                                <div>Hora envío</div>
+                                <div>Estado</div>
+                              </div>
+                            </div>
+                            
+                            {/* Contenido de la tabla */}
+                            {tareasAutomaticas.length > 0 ? (
+                              <div className="divide-y divide-gray-200">
+                                {tareasAutomaticas.map((tarea) => (
+                                  <div key={tarea.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                                    <div className="grid grid-cols-6 gap-4 items-center">
+                                      <div className="font-medium text-[#4A3C7B]">{tarea.tipo_mensaje}</div>
+                                      <div className="text-gray-700">{tarea.plantilla}</div>
+                                      <div className="text-gray-700">{tarea.enviado_por}</div>
+                                      <div className="text-gray-700">{tarea.fecha_envio}</div>
+                                      <div className="text-gray-700">{tarea.hora_envio}</div>
+                                      <div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                          tarea.estado === 'Enviado' 
+                                            ? 'bg-green-100 text-green-800'
+                                            : tarea.estado === 'Pendiente'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                          {tarea.estado}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-12 flex flex-col items-center justify-center">
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                  <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
+                                </div>
+                                <p className="text-gray-500 text-center">No se encontró ninguna información</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
