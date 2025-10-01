@@ -33,6 +33,12 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   });
   const [loadingDatos, setLoadingDatos] = useState(false);
   const [savingDatos, setSavingDatos] = useState(false);
+  const [lookupOptions, setLookupOptions] = useState({
+    fuentes_captacion: [],
+    aseguradoras: [],
+    lineas_negocio: []
+  });
+  const [loadingOptions, setLoadingOptions] = useState(false);
   const [isNuevoArchivoOpen, setIsNuevoArchivoOpen] = useState(false);
   const [archivos, setArchivos] = useState([]);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
@@ -71,6 +77,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   useEffect(() => {
     if (paciente?.id) {
       loadDatosPersonales();
+      loadLookupOptions();
     }
   }, [paciente?.id]);
 
@@ -106,6 +113,27 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       console.error('Error de conexión al cargar datos personales:', e);
     } finally {
       setLoadingDatos(false);
+    }
+  };
+
+  const loadLookupOptions = async () => {
+    try {
+      setLoadingOptions(true);
+      patientsService.setAuthService(authService);
+      const result = await patientsService.getLookupOptions();
+      if (result.success) {
+        setLookupOptions({
+          fuentes_captacion: result.fuentes_captacion || [],
+          aseguradoras: result.aseguradoras || [],
+          lineas_negocio: result.lineas_negocio || []
+        });
+      } else {
+        console.error('Error al cargar opciones de combos:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar opciones:', e);
+    } finally {
+      setLoadingOptions(false);
     }
   };
 
@@ -524,16 +552,20 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Grupo</label>
                     <select 
                       value={datosPersonales.grupo}
-                      disabled={!isEditing}
+                      disabled={!isEditing || loadingOptions}
                       onChange={(e) => handleDatosPersonalesChange('grupo', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     >
                       <option value="">Seleccionar</option>
-                      <option value="Rimac">Rimac</option>
-                      <option value="Pacífico">Pacífico</option>
-                      <option value="La Positiva">La Positiva</option>
-                      <option value="Mapfre">Mapfre</option>
-                      <option value="Otros">Otros</option>
+                      {loadingOptions ? (
+                        <option value="" disabled>Cargando...</option>
+                      ) : (
+                        lookupOptions.aseguradoras.map((aseguradora) => (
+                          <option key={aseguradora.id} value={aseguradora.nombre}>
+                            {aseguradora.nombre}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                   <div>
@@ -620,49 +652,60 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Fuente captación</label>
                     <select 
                       value={datosPersonales.fuente_captacion}
-                      disabled={!isEditing}
+                      disabled={!isEditing || loadingOptions}
                       onChange={(e) => handleDatosPersonalesChange('fuente_captacion', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     >
                       <option value="">Seleccionar</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="Recomendación">Recomendación</option>
-                      <option value="Google">Google</option>
-                      <option value="Referido por paciente">Referido por paciente</option>
-                      <option value="Otros">Otros</option>
+                      {loadingOptions ? (
+                        <option value="" disabled>Cargando...</option>
+                      ) : (
+                        lookupOptions.fuentes_captacion.map((fuente) => (
+                          <option key={fuente.id} value={fuente.nombre}>
+                            {fuente.nombre}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Aseguradora</label>
                     <select 
                       value={datosPersonales.aseguradora}
-                      disabled={!isEditing}
+                      disabled={!isEditing || loadingOptions}
                       onChange={(e) => handleDatosPersonalesChange('aseguradora', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     >
                       <option value="">Seleccionar</option>
-                      <option value="Rimac">Rimac</option>
-                      <option value="Pacífico">Pacífico</option>
-                      <option value="La Positiva">La Positiva</option>
-                      <option value="Mapfre">Mapfre</option>
-                      <option value="Otros">Otros</option>
+                      {loadingOptions ? (
+                        <option value="" disabled>Cargando...</option>
+                      ) : (
+                        lookupOptions.aseguradoras.map((aseguradora) => (
+                          <option key={aseguradora.id} value={aseguradora.nombre}>
+                            {aseguradora.nombre}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Línea de negocio</label>
                     <select 
                       value={datosPersonales.linea_negocio || ''}
-                      disabled={!isEditing}
+                      disabled={!isEditing || loadingOptions}
                       onChange={(e) => handleDatosPersonalesChange('linea_negocio', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     >
                       <option value="">Seleccionar</option>
-                      <option value="Ortodoncia">Ortodoncia</option>
-                      <option value="Estética">Estética</option>
-                      <option value="General">General</option>
-                      <option value="Endodoncia">Endodoncia</option>
-                      <option value="Cirugía">Cirugía</option>
+                      {loadingOptions ? (
+                        <option value="" disabled>Cargando...</option>
+                      ) : (
+                        lookupOptions.lineas_negocio.map((linea) => (
+                          <option key={linea.id} value={linea.nombre}>
+                            {linea.nombre}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                   <div>
