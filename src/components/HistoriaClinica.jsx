@@ -39,6 +39,12 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     lineas_negocio: []
   });
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [notasAlergias, setNotasAlergias] = useState(null);
+  const [loadingNotasAlergias, setLoadingNotasAlergias] = useState(false);
+  const [editingNotas, setEditingNotas] = useState(false);
+  const [editingAlergias, setEditingAlergias] = useState(false);
+  const [tempNotas, setTempNotas] = useState('');
+  const [tempAlergias, setTempAlergias] = useState('');
   const [isNuevoArchivoOpen, setIsNuevoArchivoOpen] = useState(false);
   const [archivos, setArchivos] = useState([]);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
@@ -78,6 +84,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     if (paciente?.id) {
       loadDatosPersonales();
       loadLookupOptions();
+      loadNotasAlergias();
     }
   }, [paciente?.id]);
 
@@ -137,6 +144,25 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     }
   };
 
+  const loadNotasAlergias = async () => {
+    try {
+      setLoadingNotasAlergias(true);
+      patientsService.setAuthService(authService);
+      const result = await patientsService.getNotasAlergias(paciente.id);
+      if (result.success) {
+        setNotasAlergias(result.notas_alergias);
+        setTempNotas(result.notas_alergias.notas || '');
+        setTempAlergias(result.notas_alergias.alergias || '');
+      } else {
+        console.error('Error al cargar notas y alergias:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar notas y alergias:', e);
+    } finally {
+      setLoadingNotasAlergias(false);
+    }
+  };
+
   const handleDatosPersonalesChange = (field, value) => {
     setDatosPersonales(prev => ({
       ...prev,
@@ -168,6 +194,60 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       alert('Error de conexión con el servidor');
     } finally {
       setSavingDatos(false);
+    }
+  };
+
+  const handleEditNotas = () => {
+    setEditingNotas(true);
+    setTempNotas(notasAlergias?.notas || '');
+  };
+
+  const handleCancelEditNotas = () => {
+    setEditingNotas(false);
+    setTempNotas(notasAlergias?.notas || '');
+  };
+
+  const handleSaveNotas = async () => {
+    try {
+      setLoadingNotasAlergias(true);
+      const result = await patientsService.updateNotasAlergias(paciente.id, 'notas', tempNotas);
+      if (result.success) {
+        setNotasAlergias(prev => ({ ...prev, notas: tempNotas }));
+        setEditingNotas(false);
+      } else {
+        alert(result.error || 'Error al actualizar notas');
+      }
+    } catch (e) {
+      alert('Error de conexión con el servidor');
+    } finally {
+      setLoadingNotasAlergias(false);
+    }
+  };
+
+  const handleEditAlergias = () => {
+    setEditingAlergias(true);
+    setTempAlergias(notasAlergias?.alergias || '');
+  };
+
+  const handleCancelEditAlergias = () => {
+    setEditingAlergias(false);
+    setTempAlergias(notasAlergias?.alergias || '');
+  };
+
+  const handleSaveAlergias = async () => {
+    try {
+      setLoadingNotasAlergias(true);
+      const result = await patientsService.updateNotasAlergias(paciente.id, 'alergias', tempAlergias);
+      if (result.success) {
+        setNotasAlergias(prev => ({ ...prev, alergias: tempAlergias }));
+        setEditingAlergias(false);
+      } else {
+        alert(result.error || 'Error al actualizar alergias');
+      }
+    } catch (e) {
+      alert('Error de conexión con el servidor');
+    } finally {
+      setLoadingNotasAlergias(false);
     }
   };
 
@@ -370,35 +450,140 @@ const HistoriaClinica = ({ paciente, onClose }) => {
 
               {/* Tarjeta de Notas */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-center space-x-2 mb-3">
-                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                  <span className="text-sm font-semibold text-yellow-800">Notas</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span className="text-sm font-semibold text-yellow-800">Notas</span>
+                  </div>
+                  {!editingNotas && (
+                    <button 
+                      onClick={handleEditNotas}
+                      className="text-yellow-600 text-sm flex items-center space-x-1 hover:text-yellow-800"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                      </svg>
+                      <span>Agregar</span>
+                    </button>
+                  )}
                 </div>
-                <div className="bg-yellow-100 border border-yellow-300 rounded-md p-3">
-                  <p className="text-sm text-yellow-800">bla bla bla</p>
-                </div>
+                
+                {editingNotas ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={tempNotas}
+                      onChange={(e) => setTempNotas(e.target.value)}
+                      className="w-full p-3 border border-yellow-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 resize-none"
+                      rows={4}
+                      placeholder="Escribe aquí las notas del paciente..."
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveNotas}
+                        disabled={loadingNotasAlergias}
+                        className="px-3 py-1 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700 disabled:opacity-50 flex items-center space-x-1"
+                      >
+                        {loadingNotasAlergias ? (
+                          <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        <span>Guardar</span>
+                      </button>
+                      <button
+                        onClick={handleCancelEditNotas}
+                        className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-yellow-100 border border-yellow-300 rounded-md p-3 min-h-[80px]">
+                    {notasAlergias?.notas ? (
+                      <p className="text-sm text-yellow-800 whitespace-pre-wrap">{notasAlergias.notas}</p>
+                    ) : (
+                      <p className="text-sm text-yellow-600 italic">No hay notas registradas</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Tarjeta de Alergias */}
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm relative">
-                <div className="flex items-center space-x-2 mb-3">
-                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                    </svg>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-semibold text-red-800">Alergias</span>
                   </div>
-                  <span className="text-sm font-semibold text-red-800">Alergias</span>
+                  {!editingAlergias && (
+                    <button 
+                      onClick={handleEditAlergias}
+                      className="text-red-600 text-sm flex items-center space-x-1 hover:text-red-800"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                      </svg>
+                      <span>Agregar</span>
+                    </button>
+                  )}
                 </div>
-                <div className="bg-red-100 border border-red-300 rounded-md p-3">
-                  <p className="text-sm text-red-800">polvo</p>
-                </div>
-                <button className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center shadow-lg hover:bg-teal-600 transition-colors">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
-                  </svg>
-                </button>
+                
+                {editingAlergias ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={tempAlergias}
+                      onChange={(e) => setTempAlergias(e.target.value)}
+                      className="w-full p-3 border border-red-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                      rows={4}
+                      placeholder="Escribe aquí las alergias del paciente..."
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveAlergias}
+                        disabled={loadingNotasAlergias}
+                        className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center space-x-1"
+                      >
+                        {loadingNotasAlergias ? (
+                          <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        <span>Guardar</span>
+                      </button>
+                      <button
+                        onClick={handleCancelEditAlergias}
+                        className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-red-100 border border-red-300 rounded-md p-3 min-h-[80px]">
+                    {notasAlergias?.alergias ? (
+                      <p className="text-sm text-red-800 whitespace-pre-wrap">{notasAlergias.alergias}</p>
+                    ) : (
+                      <p className="text-sm text-red-600 italic">No hay alergias registradas</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

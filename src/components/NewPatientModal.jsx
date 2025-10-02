@@ -24,6 +24,7 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
     nacimiento: '',
     fuente: '',
     aseguradora: '',
+    linea_negocio: '',
     etiquetas: [],
   });
 
@@ -43,6 +44,7 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
       nacimiento: '',
       fuente: '',
       aseguradora: '',
+      linea_negocio: '',
       etiquetas: [],
     });
   }, [isOpen]);
@@ -241,6 +243,27 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                     <option value="__add_new__">➕ Agregar nueva…</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Línea de Negocio */}
+              <div className="mt-4">
+                <label className="block text-sm text-gray-700 mb-1">Línea de Negocio</label>
+                <div className="relative">
+                  <select
+                    value={form.linea_negocio}
+                    onChange={(e) => setForm((f) => ({ ...f, linea_negocio: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Ortodoncia">Ortodoncia</option>
+                    <option value="Estética">Estética</option>
+                    <option value="General">General</option>
+                    <option value="Endodoncia">Endodoncia</option>
+                    <option value="Cirugía">Cirugía</option>
+                    <option value="Periodoncia">Periodoncia</option>
+                    <option value="Prostodoncia">Prostodoncia</option>
                   </select>
                 </div>
               </div>
