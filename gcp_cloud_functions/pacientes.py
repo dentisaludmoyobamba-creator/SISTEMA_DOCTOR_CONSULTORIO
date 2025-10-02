@@ -163,6 +163,7 @@ def handle_create_paciente(request):
         nacimiento = (data.get('nacimiento') or '').strip() or None
         fuente = (data.get('fuente') or '').strip() or None
         aseguradora = (data.get('aseguradora') or '').strip() or None
+        linea_negocio = (data.get('linea_negocio') or '').strip() or None
         genero_txt = (data.get('genero') or '').strip()  # 'Hombre' | 'Mujer' | 'Otro'
 
         if not nombres or not apellidos:
@@ -177,11 +178,12 @@ def handle_create_paciente(request):
 
         id_fuente = resolve_lookup_id(cur, 'fuente_captacion', fuente) if fuente else None
         id_aseguradora = resolve_lookup_id(cur, 'aseguradora', aseguradora) if aseguradora else None
+        id_linea_negocio = resolve_lookup_id(cur, 'linea_negocio', linea_negocio) if linea_negocio else None
 
         insert_sql = (
             "INSERT INTO pacientes (nombres, apellidos, fecha_nacimiento, genero, dni, telefono, email, "
-            "id_fuente_captacion, id_aseguradora) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id_paciente"
+            "id_fuente_captacion, id_aseguradora, id_linea_negocio) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id_paciente"
         )
 
         fecha_nac = None
@@ -200,7 +202,8 @@ def handle_create_paciente(request):
             telefono,
             email,
             id_fuente,
-            id_aseguradora
+            id_aseguradora,
+            id_linea_negocio
         ))
 
         new_id = cur.fetchone()['id_paciente']
@@ -576,6 +579,109 @@ def handle_get_lookup_options(request):
             pass
         return json_response({"error": f"Error al obtener opciones: {str(e)}"}, 500)
 
+def handle_get_patient_notas_alergias(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener notas y alergias del paciente
+        notas_alergias_query = """
+            SELECT p.id_paciente, p.notas, p.alergias
+            FROM pacientes p
+            WHERE p.id_paciente = %s
+        """
+        
+        cur.execute(notas_alergias_query, (patient_id,))
+        paciente_row = cur.fetchone()
+
+        if not paciente_row:
+            return json_response({"error": "Paciente no encontrado"}, 404)
+
+        notas_alergias = {
+            "id": paciente_row['id_paciente'],
+            "notas": paciente_row['notas'] or '',
+            "alergias": paciente_row['alergias'] or ''
+        }
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "notas_alergias": notas_alergias
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener notas y alergias: {str(e)}"}, 500)
+
+def handle_update_patient_notas_alergias(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id')
+        campo = data.get('campo')  # 'notas' o 'alergias'
+        valor = data.get('valor', '')
+        
+        if not patient_id or not campo:
+            return json_response({"error": "ID de paciente y campo requeridos"}, 400)
+
+        if campo not in ['notas', 'alergias']:
+            return json_response({"error": "Campo debe ser 'notas' o 'alergias'"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        update_query = f"""
+            UPDATE pacientes 
+            SET {campo} = %s
+            WHERE id_paciente = %s
+        """
+
+        cur.execute(update_query, (valor, patient_id))
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Paciente no encontrado"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": f"{campo.capitalize()} actualizada exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al actualizar {campo}: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -601,8 +707,10 @@ def hello_http(request):
                 return handle_get_patient_tareas(request)
             elif action in ('lookup_options', 'opciones'):
                 return handle_get_lookup_options(request)
+            elif action in ('notas_alergias', 'notas-y-alergias'):
+                return handle_get_patient_notas_alergias(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas o lookup_options"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options o notas_alergias"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):
@@ -613,8 +721,10 @@ def hello_http(request):
         if request.method == 'PUT':
             if action in ('update_filiacion', 'actualizar_filiacion'):
                 return handle_update_patient_filiacion(request)
+            elif action in ('update_notas_alergias', 'actualizar_notas_alergias'):
+                return handle_update_patient_notas_alergias(request)
             else:
-                return json_response({"error": "Acción PUT no válida. Use action=update_filiacion"}, 400)
+                return json_response({"error": "Acción PUT no válida. Use action=update_filiacion o update_notas_alergias"}, 400)
 
         return json_response({"error": "Método no soportado"}, 405)
     except Exception as e:
