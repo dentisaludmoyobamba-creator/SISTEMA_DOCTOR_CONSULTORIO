@@ -142,6 +142,44 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getNotasAlergias(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'notas_alergias', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, notas_alergias: data.notas_alergias };
+      }
+      return { success: false, error: data.error || 'Error al obtener notas y alergias' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async updateNotasAlergias(patientId, campo, valor) {
+    try {
+      const res = await fetch(`${API_URL}?action=update_notas_alergias`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          id: patientId,
+          campo: campo,
+          valor: valor
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al actualizar notas y alergias' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
