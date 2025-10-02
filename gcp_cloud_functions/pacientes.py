@@ -450,15 +450,28 @@ def handle_update_patient_filiacion(request):
 def resolve_lookup_id(cursor, tabla, nombre):
     """Resuelve el ID de una tabla de lookup por nombre"""
     try:
+        # Buscar por nombre
         if tabla == 'fuente_captacion':
             cursor.execute("SELECT id FROM fuente_captacion WHERE nombre = %s", (nombre,))
         elif tabla == 'aseguradora':
             cursor.execute("SELECT id FROM aseguradora WHERE nombre = %s", (nombre,))
         elif tabla == 'linea_negocio':
             cursor.execute("SELECT id FROM linea_negocio WHERE nombre = %s", (nombre,))
-        
+
         result = cursor.fetchone()
-        return result['id'] if result else None
+        if result and 'id' in result:
+            return result['id']
+
+        # Si no existe, crear y devolver el ID
+        if tabla == 'fuente_captacion':
+            cursor.execute("INSERT INTO fuente_captacion (nombre) VALUES (%s) RETURNING id", (nombre,))
+        elif tabla == 'aseguradora':
+            cursor.execute("INSERT INTO aseguradora (nombre) VALUES (%s) RETURNING id", (nombre,))
+        elif tabla == 'linea_negocio':
+            cursor.execute("INSERT INTO linea_negocio (nombre) VALUES (%s) RETURNING id", (nombre,))
+
+        nuevo = cursor.fetchone()
+        return nuevo['id'] if nuevo else None
     except Exception:
         return None
 

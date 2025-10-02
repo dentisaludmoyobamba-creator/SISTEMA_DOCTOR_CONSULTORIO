@@ -179,7 +179,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
         email: datosPersonales.email,
         direccion: datosPersonales.direccion,
         fuente_captacion: datosPersonales.fuente_captacion,
-        aseguradora: datosPersonales.aseguradora
+        aseguradora: datosPersonales.aseguradora,
+        linea_negocio: datosPersonales.linea_negocio
       };
       
       const result = await patientsService.updateFiliacion(updateData);
