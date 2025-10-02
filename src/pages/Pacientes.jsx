@@ -27,6 +27,9 @@ const Pacientes = () => {
   const [loadingTareas, setLoadingTareas] = useState(false);
   const [expandedManuales, setExpandedManuales] = useState(true);
   const [expandedAutomaticas, setExpandedAutomaticas] = useState(true);
+  const [editingNota, setEditingNota] = useState(false);
+  const [tempNota, setTempNota] = useState('');
+  const [savingNota, setSavingNota] = useState(false);
   // Asistencias - filtros y popovers
   const [lineaNegocio, setLineaNegocio] = useState('Todos los pacientes');
   const [estadoFiltro, setEstadoFiltro] = useState('Selecciona una opción');
@@ -707,18 +710,79 @@ const Pacientes = () => {
 
             {/* Nota general */}
             <div className="p-8 border-b bg-white">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-[#30B0B0] rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-[#30B0B0] rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-[#4A3C7B]">Nota general</h4>
                 </div>
-                <h4 className="text-lg font-semibold text-[#4A3C7B]">Nota general</h4>
+                {!editingNota && (
+                  <button
+                    onClick={() => { setEditingNota(true); setTempNota(patientFiliacion?.comentario || ''); }}
+                    className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-3 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-all duration-300"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Editar</span>
+                  </button>
+                )}
               </div>
-              <textarea 
-                className="w-full h-24 border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] resize-none transition-all duration-300 bg-gray-50 focus:bg-white" 
-                placeholder="Escribe aquí observaciones importantes sobre el paciente..."
-              />
+
+              {editingNota ? (
+                <div>
+                  <textarea
+                    value={tempNota}
+                    onChange={(e) => setTempNota(e.target.value)}
+                    className="w-full h-28 border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0] resize-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                    placeholder="Escribe aquí observaciones importantes sobre el paciente..."
+                  />
+                  <div className="mt-3 flex items-center space-x-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          setSavingNota(true);
+                          patientsService.setAuthService(authService);
+                          const res = await patientsService.updateFiliacion({ id: selectedPatient.id, comentario: tempNota });
+                          if (res.success) {
+                            setPatientFiliacion((prev) => prev ? { ...prev, comentario: tempNota } : prev);
+                            setEditingNota(false);
+                            // refrescar lista
+                            setPagination(p => ({ ...p }));
+                          } else {
+                            alert(res.error || 'Error al guardar nota');
+                          }
+                        } catch (e) {
+                          alert('Error de conexión con el servidor');
+                        } finally {
+                          setSavingNota(false);
+                        }
+                      }}
+                      disabled={savingNota}
+                      className="bg-[#4A3C7B] hover:bg-[#3A2C6B] text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+                    >
+                      {savingNota ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button
+                      onClick={() => { setEditingNota(false); setTempNota(patientFiliacion?.comentario || ''); }}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-xl text-gray-900 min-h-[80px]">
+                  {patientFiliacion?.comentario ? (
+                    <p className="whitespace-pre-wrap text-sm">{patientFiliacion.comentario}</p>
+                  ) : (
+                    <span className="text-sm text-gray-500">Sin notas registradas</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Tabs */}
