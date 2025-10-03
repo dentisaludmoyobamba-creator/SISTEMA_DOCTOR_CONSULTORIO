@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import AddUserModal from './AddUserModal';
+import React from 'react';
 
 const Sidebar = ({ 
   doctores = [],
@@ -9,17 +8,8 @@ const Sidebar = ({
   setFiltroEstado,
   onAddDoctor 
 }) => {
-  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
-
   const handleAddUser = () => {
-    setIsAddUserModalOpen(true);
-  };
-
-  const handleSaveUser = async (userData) => {
-    // Aquí iría la lógica para guardar el usuario
-    console.log('Guardando usuario:', userData);
-    // Simular guardado
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (onAddDoctor) onAddDoctor();
   };
 
   const estadosCita = [
@@ -174,12 +164,7 @@ const Sidebar = ({
         </div>
       </div>
 
-      {/* Modal para agregar usuario */}
-      <AddUserModal
-        isOpen={isAddUserModalOpen}
-        onClose={() => setIsAddUserModalOpen(false)}
-        onSave={handleSaveUser}
-      />
+      {/* El modal de usuario se gestiona desde el contenedor (Agenda) */}
     </div>
   );
 };
