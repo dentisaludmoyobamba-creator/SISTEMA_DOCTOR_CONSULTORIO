@@ -49,6 +49,9 @@ def login_usuario(request, headers):
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
         
+        # Log temporal para debug
+        print(f"DEBUG login: Username: '{username}', Password: '{password}'")
+        
         if not username or not password:
             return (json.dumps({"error": "Username y password son requeridos"}), 400, headers)
         
@@ -71,6 +74,9 @@ def login_usuario(request, headers):
         
         cursor.execute(query, (username, username, password))
         user = cursor.fetchone()
+        
+        # Log temporal para debug
+        print(f"DEBUG login: Usuario encontrado: {user is not None}")
         
         if not user:
             return (json.dumps({"error": "Credenciales inválidas"}), 401, headers)
@@ -222,6 +228,8 @@ def actualizar_perfil(request, headers):
             params.append(data['email'].strip())
         
         if 'password' in data and data['password'].strip():
+            # Log temporal para debug
+            print(f"DEBUG: Contraseña recibida: '{data['password'].strip()}'")
             updates.append("contrasena_hash = %s")
             params.append(data['password'].strip())
         
@@ -531,6 +539,8 @@ def actualizar_usuario(request, headers):
             params.append(data['email'].strip())
         
         if 'password' in data and data['password'].strip():
+            # Log temporal para debug
+            print(f"DEBUG actualizar_usuario: Contraseña recibida: '{data['password'].strip()}'")
             updates.append("contrasena_hash = %s")
             params.append(data['password'].strip())
         
