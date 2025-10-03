@@ -1,7 +1,6 @@
 import functions_framework
 import psycopg2
 import json
-import hashlib
 import jwt
 import datetime
 from psycopg2.extras import RealDictCursor
@@ -28,9 +27,6 @@ def get_connection():
     )
     return conn
 
-def hash_password(password):
-    """Hash de la contraseña usando SHA-256"""
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_token(token):
     """Verificar y decodificar el token JWT"""
