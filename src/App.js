@@ -19,6 +19,10 @@ import Automatizaciones from './pages/Automatizaciones';
 import Campanas from './pages/Campanas';
 import SoylaIA from './pages/SoylaIA';
 import Configuracion from './pages/Configuracion';
+import AppointmentModal from './components/AppointmentModal';
+import NewPatientModal from './components/NewPatientModal';
+import citasService from './services/citasService';
+import patientsService from './services/patientsService';
 
 // Componente placeholder para páginas no implementadas (comentado temporalmente)
 // const PlaceholderPage = ({ title, icon }) => {
@@ -56,6 +60,39 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
+
+  // Estados para modales globales
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [doctores, setDoctores] = useState([]);
+
+  // Cargar doctores para el modal de citas
+  useEffect(() => {
+    const loadDoctores = async () => {
+      if (isAuthenticated) {
+        try {
+          citasService.setAuthService(authService);
+          const result = await citasService.getDoctores();
+          if (result.success) {
+            const doctoresMapped = result.doctores.map((doctor, index) => ({
+              id: doctor.id,
+              nombre: doctor.nombre,
+              nombres: doctor.nombres,
+              apellidos: doctor.apellidos,
+              color: `bg-${['blue', 'red', 'green', 'purple', 'yellow', 'pink'][index % 6]}-500`,
+              colorLight: `bg-${['blue', 'red', 'green', 'purple', 'yellow', 'pink'][index % 6]}-100`,
+              textColor: `text-${['blue', 'red', 'green', 'purple', 'yellow', 'pink'][index % 6]}-700`
+            }));
+            setDoctores(doctoresMapped);
+          }
+        } catch (e) {
+          console.error('Error al cargar doctores:', e);
+        }
+      }
+    };
+
+    loadDoctores();
+  }, [isAuthenticated]);
 
   // Verificar si hay una sesión guardada al cargar la app
   useEffect(() => {
@@ -116,6 +153,82 @@ function AppContent() {
     setUser(updatedUser);
   };
 
+  // Handlers para modales globales
+  const handleOpenAppointmentModal = () => {
+    setShowAppointmentModal(true);
+  };
+
+  const handleOpenNewPatientModal = () => {
+    setShowNewPatientModal(true);
+  };
+
+  const handleCloseAppointmentModal = () => {
+    setShowAppointmentModal(false);
+  };
+
+  const handleCloseNewPatientModal = () => {
+    setShowNewPatientModal(false);
+  };
+
+  // Handler para guardar cita desde modal global
+  const handleSaveAppointment = async (citaData) => {
+    try {
+      const dataToCreate = {
+        id_paciente: citaData.paciente_id,
+        id_doctor: citaData.doctorId,
+        fecha_hora: `${citaData.fecha}T${citaData.hora}:00`,
+        motivo: citaData.motivo,
+        estado: 'Programada', // Estado por defecto
+        duracion: citaData.duracion,
+        notas: citaData.notas || ''
+      };
+      
+      const result = await citasService.createCita(dataToCreate);
+      if (result.success) {
+        setShowAppointmentModal(false);
+        // Recargar la página actual si está en agenda
+        if (activeTab === 'agenda') {
+          window.location.reload(); // Recarga simple para refrescar la agenda
+        }
+      } else {
+        alert(`Error al crear cita: ${result.error}`);
+      }
+    } catch (e) {
+      alert('Error de conexión al crear cita');
+    }
+  };
+
+  // Handler para crear paciente desde modal global
+  const handleCreatePatient = async (form) => {
+    try {
+      patientsService.setAuthService(authService);
+      const payload = {
+        documento: form.documento,
+        nombres: form.nombres,
+        apellidos: form.apellidos,
+        telefono: form.telefono,
+        email: form.email,
+        nacimiento: form.nacimiento,
+        fuente: form.fuente,
+        aseguradora: form.aseguradora,
+        linea_negocio: form.linea_negocio,
+        genero: form.genero || 'Hombre'
+      };
+      const res = await patientsService.create(payload);
+      if (res.success) {
+        setShowNewPatientModal(false);
+        // Recargar la página actual si está en pacientes
+        if (activeTab === 'pacientes') {
+          window.location.reload(); // Recarga simple para refrescar la lista
+        }
+      } else {
+        alert(res.error || 'Error al crear paciente');
+      }
+    } catch (e) {
+      alert('Error de conexión con el servidor');
+    }
+  };
+
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
     return (
@@ -140,6 +253,8 @@ function AppContent() {
           user={user}
           onLogout={handleLogout}
           onUserUpdate={handleUserUpdate}
+          onOpenAppointmentModal={handleOpenAppointmentModal}
+          onOpenNewPatientModal={handleOpenNewPatientModal}
         />
       )}
       
@@ -303,6 +418,25 @@ function AppContent() {
           />
 
       </Routes>
+
+      {/* Modales globales */}
+      {isAuthenticated && (
+        <>
+          <AppointmentModal
+            isOpen={showAppointmentModal}
+            onClose={handleCloseAppointmentModal}
+            onSave={handleSaveAppointment}
+            doctores={doctores}
+            citasService={citasService}
+          />
+
+          <NewPatientModal
+            isOpen={showNewPatientModal}
+            onClose={handleCloseNewPatientModal}
+            onCreate={handleCreatePatient}
+          />
+        </>
+      )}
     </div>
   );
 }

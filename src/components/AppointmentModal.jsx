@@ -178,7 +178,7 @@ const AppointmentModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-screen overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -196,7 +196,7 @@ const AppointmentModal = ({
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Nombre del paciente */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -357,7 +357,7 @@ const AppointmentModal = ({
             </div>
 
             {/* Motivo */}
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Motivo de la consulta
               </label>
@@ -372,7 +372,7 @@ const AppointmentModal = ({
             </div>
 
             {/* Notas adicionales */}
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Notas adicionales
               </label>
