@@ -1,7 +1,6 @@
 import functions_framework
 import psycopg2
 import json
-import hashlib
 import jwt
 import datetime
 from psycopg2.extras import RealDictCursor
@@ -28,9 +27,6 @@ def get_connection():
     )
     return conn
 
-def hash_password(password):
-    """Hash de la contraseña usando SHA-256"""
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_token(token):
     """Verificar y decodificar el token JWT"""
@@ -52,6 +48,9 @@ def login_usuario(request, headers):
         
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
+        
+        # Log temporal para debug
+        print(f"DEBUG login: Username: '{username}', Password: '{password}'")
         
         if not username or not password:
             return (json.dumps({"error": "Username y password son requeridos"}), 400, headers)
@@ -75,6 +74,9 @@ def login_usuario(request, headers):
         
         cursor.execute(query, (username, username, password))
         user = cursor.fetchone()
+        
+        # Log temporal para debug
+        print(f"DEBUG login: Usuario encontrado: {user is not None}")
         
         if not user:
             return (json.dumps({"error": "Credenciales inválidas"}), 401, headers)
@@ -226,8 +228,10 @@ def actualizar_perfil(request, headers):
             params.append(data['email'].strip())
         
         if 'password' in data and data['password'].strip():
+            # Log temporal para debug
+            print(f"DEBUG: Contraseña recibida: '{data['password'].strip()}'")
             updates.append("contrasena_hash = %s")
-            params.append(hash_password(data['password'].strip()))
+            params.append(data['password'].strip())
         
         if not updates:
             return (json.dumps({"error": "No hay campos para actualizar"}), 400, headers)
@@ -338,8 +342,8 @@ def crear_usuario(request, headers):
         if not role_result:
             return (json.dumps({"error": "Rol no válido"}), 400, headers)
         
-        # Hash de la contraseña
-        password_hash = hash_password(password)
+        # Guardar contraseña sin hash
+        password_plain = password
         
         # Insertar usuario
         user_query = """
@@ -347,7 +351,7 @@ def crear_usuario(request, headers):
             VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
             RETURNING id_usuario
         """
-        cursor.execute(user_query, (username, password_hash, email, role_id, True))
+        cursor.execute(user_query, (username, password_plain, email, role_id, True))
         user_id = cursor.fetchone()['id_usuario']
         
         # Si es doctor, insertar datos del doctor
@@ -535,8 +539,10 @@ def actualizar_usuario(request, headers):
             params.append(data['email'].strip())
         
         if 'password' in data and data['password'].strip():
+            # Log temporal para debug
+            print(f"DEBUG actualizar_usuario: Contraseña recibida: '{data['password'].strip()}'")
             updates.append("contrasena_hash = %s")
-            params.append(hash_password(data['password'].strip()))
+            params.append(data['password'].strip())
         
         if 'role_id' in data:
             # Verificar que el rol existe

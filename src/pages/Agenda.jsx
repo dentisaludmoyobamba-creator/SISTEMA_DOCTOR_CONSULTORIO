@@ -6,8 +6,10 @@ import Sidebar from '../components/Sidebar';
 import AppointmentModal from '../components/AppointmentModal';
 import DetailsModal from '../components/DetailsModal';
 import CalendarModal from '../components/CalendarModal';
+import UserModal from '../components/UserModal';
 import citasService from '../services/citasService';
 import authService from '../services/authService';
+import usersService from '../services/usersService';
 
 const Agenda = () => {
   const [citas, setCitas] = useState([]);
@@ -28,10 +30,12 @@ const Agenda = () => {
   const [selectedCita, setSelectedCita] = useState(null);
   const [editingCita, setEditingCita] = useState(null);
   const [newAppointmentSlot, setNewAppointmentSlot] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(false);
 
-  // Configurar servicio de citas
+  // Configurar servicios
   useEffect(() => {
     citasService.setAuthService(authService);
+    usersService.setAuthService(authService);
   }, []);
 
   // Cargar doctores
@@ -271,9 +275,16 @@ const Agenda = () => {
     }
   };
 
-  // Función placeholder para agregar doctor
+  // Función para agregar doctor usando UserModal
   const handleAddDoctor = () => {
-    alert('Funcionalidad de agregar doctor próximamente');
+    setShowUserModal(true);
+  };
+
+  // Handler para cuando se guarda un usuario
+  const handleUserSaved = async () => {
+    setShowUserModal(false);
+    // Recargar la lista de doctores
+    await loadDoctores();
   };
 
   // Manejar cambio de vista
@@ -657,6 +668,13 @@ const Agenda = () => {
         onClose={() => setShowCalendarModal(false)}
         onDateSelect={handleDateSelect}
         currentDate={fechaActual}
+      />
+
+      <UserModal
+        isOpen={showUserModal}
+        onClose={() => setShowUserModal(false)}
+        onUserSaved={handleUserSaved}
+        editingUser={null}
       />
     </div>
   );
