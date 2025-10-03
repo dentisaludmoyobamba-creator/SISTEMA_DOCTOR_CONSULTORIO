@@ -227,7 +227,7 @@ def actualizar_perfil(request, headers):
         
         if 'password' in data and data['password'].strip():
             updates.append("contrasena_hash = %s")
-            params.append(hash_password(data['password'].strip()))
+            params.append(data['password'].strip())
         
         if not updates:
             return (json.dumps({"error": "No hay campos para actualizar"}), 400, headers)
@@ -338,8 +338,8 @@ def crear_usuario(request, headers):
         if not role_result:
             return (json.dumps({"error": "Rol no válido"}), 400, headers)
         
-        # Hash de la contraseña
-        password_hash = hash_password(password)
+        # Guardar contraseña sin hash
+        password_plain = password
         
         # Insertar usuario
         user_query = """
@@ -347,7 +347,7 @@ def crear_usuario(request, headers):
             VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
             RETURNING id_usuario
         """
-        cursor.execute(user_query, (username, password_hash, email, role_id, True))
+        cursor.execute(user_query, (username, password_plain, email, role_id, True))
         user_id = cursor.fetchone()['id_usuario']
         
         # Si es doctor, insertar datos del doctor
@@ -536,7 +536,7 @@ def actualizar_usuario(request, headers):
         
         if 'password' in data and data['password'].strip():
             updates.append("contrasena_hash = %s")
-            params.append(hash_password(data['password'].strip()))
+            params.append(data['password'].strip())
         
         if 'role_id' in data:
             # Verificar que el rol existe
