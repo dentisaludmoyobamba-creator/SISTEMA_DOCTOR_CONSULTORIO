@@ -168,6 +168,29 @@ INSERT INTO dias_no_laborables (fecha, motivo, aplica_todos_doctores) VALUES
 ('2024-12-25', 'Navidad', TRUE)
 ON CONFLICT DO NOTHING;
 
+-- Etiquetas de pacientes
+INSERT INTO etiquetas_paciente (nombre, color, descripcion, activa) VALUES
+('Nuevo', 'bg-blue-100 text-blue-800', 'Paciente nuevo en el sistema', true),
+('VIP', 'bg-purple-100 text-purple-800', 'Paciente VIP con atención preferencial', true),
+('Impuntual', 'bg-orange-100 text-orange-800', 'Paciente con historial de retrasos', true),
+('Fidelizado', 'bg-green-100 text-green-800', 'Paciente con alta fidelidad al consultorio', true),
+('Deudor', 'bg-red-100 text-red-800', 'Paciente con pagos pendientes', true),
+('Referido', 'bg-teal-100 text-teal-800', 'Paciente que llegó por referencia', true),
+('Prioritario', 'bg-yellow-100 text-yellow-800', 'Requiere atención prioritaria', true)
+ON CONFLICT DO NOTHING;
+
+-- Asignar etiquetas a pacientes de prueba
+INSERT INTO paciente_etiquetas (id_paciente, id_etiqueta) VALUES
+-- Juan Pérez: Nuevo, VIP
+(1, 1), (1, 2),
+-- María García: Fidelizado
+(2, 4),
+-- Carlos López: Impuntual
+(3, 3),
+-- Ana Martínez: VIP, Fidelizado
+(4, 2), (4, 4)
+ON CONFLICT DO NOTHING;
+
 -- Productos de inventario
 INSERT INTO productos (nombre_producto, descripcion, stock, proveedor, costo_unitario, stock_minimo) VALUES
 ('Guantes de Nitrilo (Caja 100u)', 'Guantes desechables talla M', 50, 'DentalPro', 10.00, 10),

@@ -93,6 +93,16 @@ def handle_list_pacientes(request):
 
         pacientes = []
         for r in rows:
+            # Obtener etiquetas del paciente
+            cur.execute("""
+                SELECT e.id_etiqueta, e.nombre, e.color
+                FROM paciente_etiquetas pe
+                JOIN etiquetas_paciente e ON pe.id_etiqueta = e.id_etiqueta
+                WHERE pe.id_paciente = %s AND e.activa = true
+                ORDER BY e.nombre
+            """, (r['id_paciente'],))
+            etiquetas = [{"id": row['id_etiqueta'], "nombre": row['nombre'], "color": row['color']} for row in cur.fetchall()]
+            
             pacientes.append({
                 "id": r['id_paciente'],
                 "nombres": r['nombres'],
@@ -108,7 +118,8 @@ def handle_list_pacientes(request):
                 "ultima_cita": r['ultima_cita'].isoformat() if r['ultima_cita'] else None,
                 "proxima_cita": r['proxima_cita'].isoformat() if r['proxima_cita'] else None,
                 "tarea": r['tarea'],
-                "comentario": r['comentario']
+                "comentario": r['comentario'],
+                "etiquetas": etiquetas
             })
 
         cur.close()
@@ -643,6 +654,142 @@ def handle_get_patient_notas_alergias(request):
             pass
         return json_response({"error": f"Error al obtener notas y alergias: {str(e)}"}, 500)
 
+def handle_get_etiquetas(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener todas las etiquetas activas
+        cur.execute("""
+            SELECT id_etiqueta, nombre, color, descripcion
+            FROM etiquetas_paciente
+            WHERE activa = true
+            ORDER BY nombre
+        """)
+        
+        etiquetas = []
+        for row in cur.fetchall():
+            etiquetas.append({
+                "id": row['id_etiqueta'],
+                "nombre": row['nombre'],
+                "color": row['color'],
+                "descripcion": row['descripcion']
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "etiquetas": etiquetas
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener etiquetas: {str(e)}"}, 500)
+
+def handle_add_etiqueta_to_patient(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        etiqueta_id = data.get('id_etiqueta')
+        
+        if not patient_id or not etiqueta_id:
+            return json_response({"error": "ID de paciente y etiqueta requeridos"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Insertar relación (ignora si ya existe por UNIQUE constraint)
+        try:
+            cur.execute("""
+                INSERT INTO paciente_etiquetas (id_paciente, id_etiqueta)
+                VALUES (%s, %s)
+                ON CONFLICT (id_paciente, id_etiqueta) DO NOTHING
+            """, (patient_id, etiqueta_id))
+            
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            return json_response({"error": f"Error al asignar etiqueta: {str(e)}"}, 400)
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Etiqueta agregada exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al agregar etiqueta: {str(e)}"}, 500)
+
+def handle_remove_etiqueta_from_patient(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('id_paciente')
+        etiqueta_id = request.args.get('id_etiqueta')
+        
+        if not patient_id or not etiqueta_id:
+            return json_response({"error": "ID de paciente y etiqueta requeridos"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Eliminar relación
+        cur.execute("""
+            DELETE FROM paciente_etiquetas
+            WHERE id_paciente = %s AND id_etiqueta = %s
+        """, (patient_id, etiqueta_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Etiqueta removida exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al remover etiqueta: {str(e)}"}, 500)
+
 def handle_update_patient_notas_alergias(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
@@ -699,7 +846,7 @@ def handle_update_patient_notas_alergias(request):
 def hello_http(request):
     headers = {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type,Authorization"
     }
 
@@ -722,14 +869,18 @@ def hello_http(request):
                 return handle_get_lookup_options(request)
             elif action in ('notas_alergias', 'notas-y-alergias'):
                 return handle_get_patient_notas_alergias(request)
+            elif action in ('etiquetas', 'tags'):
+                return handle_get_etiquetas(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options o notas_alergias"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias o etiquetas"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):
                 return handle_create_paciente(request)
+            elif action in ('add_etiqueta', 'agregar_etiqueta'):
+                return handle_add_etiqueta_to_patient(request)
             else:
-                return json_response({"error": "Acción POST no válida. Use action=create"}, 400)
+                return json_response({"error": "Acción POST no válida. Use action=create o add_etiqueta"}, 400)
 
         if request.method == 'PUT':
             if action in ('update_filiacion', 'actualizar_filiacion'):
@@ -738,6 +889,12 @@ def hello_http(request):
                 return handle_update_patient_notas_alergias(request)
             else:
                 return json_response({"error": "Acción PUT no válida. Use action=update_filiacion o update_notas_alergias"}, 400)
+
+        if request.method == 'DELETE':
+            if action in ('remove_etiqueta', 'remover_etiqueta'):
+                return handle_remove_etiqueta_from_patient(request)
+            else:
+                return json_response({"error": "Acción DELETE no válida. Use action=remove_etiqueta"}, 400)
 
         return json_response({"error": "Método no soportado"}, 405)
     except Exception as e:

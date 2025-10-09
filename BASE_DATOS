@@ -247,6 +247,27 @@ ADD CONSTRAINT fk_cita_usuario_cancelo FOREIGN KEY (id_usuario_cancelo) REFERENC
 -- 3. CREACIÓN DE NUEVAS TABLAS
 -- =====================================================
 
+-- Tabla de etiquetas para pacientes (catálogo)
+CREATE TABLE etiquetas_paciente (
+    id_etiqueta SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE NOT NULL,
+    color VARCHAR(50) NOT NULL,
+    descripcion TEXT,
+    activa BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de relación muchos-a-muchos entre pacientes y etiquetas
+CREATE TABLE paciente_etiquetas (
+    id_paciente_etiqueta SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_etiqueta INTEGER NOT NULL,
+    fecha_asignacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (id_paciente, id_etiqueta),
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+    FOREIGN KEY (id_etiqueta) REFERENCES etiquetas_paciente(id_etiqueta) ON DELETE CASCADE
+);
+
 [cite_start]-- Tabla para horarios de los doctores [cite: 45]
 CREATE TABLE horarios_doctor (
     id_horario SERIAL PRIMARY KEY,
@@ -460,6 +481,11 @@ CREATE INDEX IF NOT EXISTS idx_ordenes_estado ON ordenes_compra(estado);
 CREATE INDEX IF NOT EXISTS idx_consumos_fecha ON consumos(fecha_consumo);
 CREATE INDEX IF NOT EXISTS idx_consumos_producto ON consumos(id_producto);
 CREATE INDEX IF NOT EXISTS idx_consumos_estado ON consumos(estado);
+
+-- Índices para etiquetas de pacientes
+CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_paciente ON paciente_etiquetas(id_paciente);
+CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_etiqueta ON paciente_etiquetas(id_etiqueta);
+CREATE INDEX IF NOT EXISTS idx_etiquetas_activa ON etiquetas_paciente(activa);
 
 
 -- =====================================================

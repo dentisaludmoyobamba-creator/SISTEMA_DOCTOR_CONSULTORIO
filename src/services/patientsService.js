@@ -180,6 +180,64 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  async getEtiquetas() {
+    try {
+      const params = new URLSearchParams({ action: 'etiquetas' });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, etiquetas: data.etiquetas };
+      }
+      return { success: false, error: data.error || 'Error al obtener etiquetas' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async addEtiqueta(patientId, etiquetaId) {
+    try {
+      const res = await fetch(`${API_URL}?action=add_etiqueta`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          id_paciente: patientId,
+          id_etiqueta: etiquetaId
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al agregar etiqueta' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async removeEtiqueta(patientId, etiquetaId) {
+    try {
+      const params = new URLSearchParams({ 
+        action: 'remove_etiqueta',
+        id_paciente: String(patientId),
+        id_etiqueta: String(etiquetaId)
+      });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al remover etiqueta' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
