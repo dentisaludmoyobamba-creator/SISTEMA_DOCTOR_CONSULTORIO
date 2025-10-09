@@ -351,7 +351,7 @@ def obtener_consumos(request):
             base_query += " AND (p.nombre_producto ILIKE %s OR c.paciente ILIKE %s)"
             params.extend([f'%{search}%', f'%{search}%'])
 
-        if almacen and almacen != 'Todos':
+        if almacen and almacen not in ('Todos', 'Ver todos'):
             base_query += " AND c.almacen = %s"
             params.append(almacen)
 
@@ -421,6 +421,8 @@ def crear_consumo(request):
         if cantidad <= 0:
             return json_response({"error": "La cantidad debe ser mayor a 0"}, 400)
 
+        fuente = data.get('fuente', '').strip()
+        tipo = data.get('tipo', '').strip()
         lote = data.get('lote', '').strip()
         almacen = data.get('almacen', 'Principal')
         paciente = data.get('paciente', '').strip()
@@ -433,10 +435,10 @@ def crear_consumo(request):
 
         # Crear el consumo
         cur.execute("""
-            INSERT INTO consumos (id_producto, lote, cantidad, almacen, paciente, servicio, comentario, estado, fecha_consumo)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO consumos (id_producto, fuente, tipo, lote, cantidad, almacen, paciente, servicio, comentario, estado, fecha_consumo)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id_consumo
-        """, (id_producto, lote, cantidad, almacen, paciente, servicio, comentario, estado, datetime.datetime.now()))
+        """, (id_producto, fuente, tipo, lote, cantidad, almacen, paciente, servicio, comentario, estado, datetime.datetime.now()))
 
         result = cur.fetchone()
 
