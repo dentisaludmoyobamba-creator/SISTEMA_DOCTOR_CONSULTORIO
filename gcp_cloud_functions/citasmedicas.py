@@ -77,7 +77,7 @@ def obtener_citas(request):
             FROM citas_medicas c
             LEFT JOIN pacientes p ON c.id_paciente = p.id_paciente
             LEFT JOIN doctores d ON c.id_doctor = d.id_doctor
-            WHERE 1=1
+            WHERE c.estado != 'Eliminada'
         """
         params = []
 
@@ -300,7 +300,7 @@ def actualizar_cita(request):
             pass
         return json_response({"error": f"Error al actualizar cita: {str(e)}"}, 500)
 
-# ===== ELIMINAR CITA =====
+# ===== ELIMINAR CITA (Soft Delete) =====
 def eliminar_cita(request):
     payload = require_auth(request)
     if not payload:
@@ -314,8 +314,14 @@ def eliminar_cita(request):
         conn = get_connection()
         cur = conn.cursor()
 
-        # Eliminar la cita
-        cur.execute("DELETE FROM citas_medicas WHERE id_cita = %s", (cita_id,))
+        # Soft delete: marcar como eliminada en lugar de eliminar
+        cur.execute("""
+            UPDATE citas_medicas 
+            SET estado = 'Eliminada', 
+                id_usuario_cancelo = %s, 
+                fecha_cancelacion = CURRENT_TIMESTAMP 
+            WHERE id_cita = %s
+        """, (payload.get('user_id'), cita_id))
         
         if cur.rowcount == 0:
             return json_response({"error": "Cita no encontrada"}, 404)
@@ -336,6 +342,112 @@ def eliminar_cita(request):
         except Exception:
             pass
         return json_response({"error": f"Error al eliminar cita: {str(e)}"}, 500)
+
+# ===== OBTENER CITAS ELIMINADAS =====
+def obtener_citas_eliminadas(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        query = """
+            SELECT c.id_cita, c.fecha_hora, c.motivo_consulta, c.estado, c.notas_recepcion,
+                   c.duracion_minutos, c.fecha_cancelacion,
+                   p.id_paciente, p.nombres as paciente_nombres, p.apellidos as paciente_apellidos, 
+                   p.telefono as paciente_telefono,
+                   d.id_doctor, d.nombres as doctor_nombres, d.apellidos as doctor_apellidos,
+                   u.nombre_usuario as eliminado_por
+            FROM citas_medicas c
+            LEFT JOIN pacientes p ON c.id_paciente = p.id_paciente
+            LEFT JOIN doctores d ON c.id_doctor = d.id_doctor
+            LEFT JOIN usuarios u ON c.id_usuario_cancelo = u.id_usuario
+            WHERE c.estado = 'Eliminada'
+            ORDER BY c.fecha_cancelacion DESC
+        """
+
+        cur.execute(query)
+        rows = cur.fetchall()
+
+        citas = []
+        for row in rows:
+            citas.append({
+                "id": row['id_cita'],
+                "paciente": f"{row['paciente_nombres']} {row['paciente_apellidos']}" if row['paciente_nombres'] else None,
+                "paciente_id": row['id_paciente'],
+                "doctor": f"{row['doctor_nombres']} {row['doctor_apellidos']}" if row['doctor_nombres'] else None,
+                "doctor_id": row['id_doctor'],
+                "fecha_hora": row['fecha_hora'].isoformat() if row['fecha_hora'] else None,
+                "fecha": row['fecha_hora'].date().isoformat() if row['fecha_hora'] else None,
+                "hora": row['fecha_hora'].time().strftime('%H:%M') if row['fecha_hora'] else None,
+                "duracion": row['duracion_minutos'] or 60,
+                "motivo": row['motivo_consulta'],
+                "estado": row['estado'],
+                "telefono": row['paciente_telefono'],
+                "notas": row['notas_recepcion'],
+                "eliminado_por": row['eliminado_por'],
+                "fecha_eliminacion": row['fecha_cancelacion'].isoformat() if row['fecha_cancelacion'] else None
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "citas": citas
+        })
+
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener citas eliminadas: {str(e)}"}, 500)
+
+# ===== RESTAURAR CITA =====
+def restaurar_cita(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        cita_id = request.args.get('id')
+        if not cita_id:
+            return json_response({"error": "ID de cita es requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Restaurar cita: cambiar estado a Programada
+        cur.execute("""
+            UPDATE citas_medicas 
+            SET estado = 'Programada', 
+                id_usuario_cancelo = NULL, 
+                fecha_cancelacion = NULL 
+            WHERE id_cita = %s AND estado = 'Eliminada'
+        """, (cita_id,))
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Cita no encontrada o no está eliminada"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Cita restaurada exitosamente"
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al restaurar cita: {str(e)}"}, 500)
 
 # ===== OBTENER DOCTORES =====
 def obtener_doctores(request):
@@ -455,8 +567,10 @@ def hello_http(request):
                 return obtener_doctores(request)
             elif action in ('pacientes', 'patients', 'search_patients'):
                 return buscar_pacientes(request)
+            elif action in ('deleted', 'eliminadas'):
+                return obtener_citas_eliminadas(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, doctores o pacientes"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, doctores, pacientes o deleted"}, 400)
 
         elif request.method == 'POST':
             if action in ('create', 'crear'):
@@ -467,8 +581,10 @@ def hello_http(request):
         elif request.method == 'PUT':
             if action in ('update', 'actualizar'):
                 return actualizar_cita(request)
+            elif action in ('restore', 'restaurar'):
+                return restaurar_cita(request)
             else:
-                return json_response({"error": "Acción PUT no válida. Use action=update"}, 400)
+                return json_response({"error": "Acción PUT no válida. Use action=update o restore"}, 400)
 
         elif request.method == 'DELETE':
             if action in ('delete', 'eliminar'):

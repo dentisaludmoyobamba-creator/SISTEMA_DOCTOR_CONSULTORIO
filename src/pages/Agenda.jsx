@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import CalendarGrid from '../components/CalendarGrid';
 import MonthlyView from '../components/MonthlyView';
 import DailyDetailView from '../components/DailyDetailView';
@@ -7,6 +7,8 @@ import AppointmentModal from '../components/AppointmentModal';
 import DetailsModal from '../components/DetailsModal';
 import CalendarModal from '../components/CalendarModal';
 import UserModal from '../components/UserModal';
+import DownloadCitasModal from '../components/DownloadCitasModal';
+import DeletedCitasModal from '../components/DeletedCitasModal';
 import citasService from '../services/citasService';
 import authService from '../services/authService';
 import usersService from '../services/usersService';
@@ -31,11 +33,30 @@ const Agenda = () => {
   const [editingCita, setEditingCita] = useState(null);
   const [newAppointmentSlot, setNewAppointmentSlot] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showDeletedCitasModal, setShowDeletedCitasModal] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  
+  const optionsMenuRef = useRef(null);
+  
   // Configurar servicios
   useEffect(() => {
     citasService.setAuthService(authService);
     usersService.setAuthService(authService);
+  }, []);
+
+  // Cerrar menú de opciones al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target)) {
+        setShowOptionsMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // Cargar doctores
@@ -529,11 +550,47 @@ const Agenda = () => {
                 </svg>
               </button>
               
-              <button className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200" title="Más opciones">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
-              </button>
+              <div className="relative" ref={optionsMenuRef}>
+                <button 
+                  onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                  className="p-2 text-gray-400 hover:text-[#30B0B0] hover:bg-[#30B0B0]/10 rounded-lg transition-all duration-200" 
+                  title="Más opciones"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+                
+                {showOptionsMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-2 z-50 border border-gray-200">
+                    <button
+                      onClick={() => {
+                        setShowOptionsMenu(false);
+                        setShowDownloadModal(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                    >
+                      <svg className="w-4 h-4 text-[#30B0B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Descargar historial</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowOptionsMenu(false);
+                        setShowDeletedCitasModal(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3"
+                    >
+                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Citas eliminadas</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               <button 
                 onClick={handleToggleSidebar}
@@ -675,6 +732,18 @@ const Agenda = () => {
         onClose={() => setShowUserModal(false)}
         onUserSaved={handleUserSaved}
         editingUser={null}
+      />
+
+      <DownloadCitasModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        citasService={citasService}
+      />
+
+      <DeletedCitasModal
+        isOpen={showDeletedCitasModal}
+        onClose={() => setShowDeletedCitasModal(false)}
+        citasService={citasService}
       />
     </div>
   );
