@@ -335,6 +335,8 @@ CREATE TABLE ordenes_compra (
 CREATE TABLE consumos (
     id_consumo SERIAL PRIMARY KEY,
     id_producto INTEGER NOT NULL,
+    fuente VARCHAR(50),
+    tipo VARCHAR(50),
     lote VARCHAR(50),
     cantidad NUMERIC(10,2) NOT NULL,
     almacen VARCHAR(50) NOT NULL DEFAULT 'Principal',
