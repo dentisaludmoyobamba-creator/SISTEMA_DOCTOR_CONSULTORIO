@@ -77,6 +77,8 @@ const Inventario = () => {
   // Estado para formulario de nuevo consumo
   const [nuevoConsumo, setNuevoConsumo] = useState({
     id_producto: '',
+    fuente: '',
+    tipo: '',
     lote: '',
     cantidad: 0,
     almacen: 'Principal',
@@ -299,6 +301,8 @@ const Inventario = () => {
         setIsNuevoConsumoOpen(false);
         setNuevoConsumo({
           id_producto: '',
+          fuente: '',
+          tipo: '',
           lote: '',
           cantidad: 0,
           almacen: 'Principal',
@@ -1103,8 +1107,12 @@ const Inventario = () => {
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="flex flex-col">
           <label className="text-sm text-gray-600 mb-1">Almacén</label>
-          <select className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-            <option>Todos</option>
+          <select 
+            value={filters.almacen}
+            onChange={(e) => handleFilterChange('almacen', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+          >
+            <option>Ver todos</option>
             <option>Principal</option>
             <option>Secundario</option>
             <option>Emergencia</option>
@@ -1114,10 +1122,19 @@ const Inventario = () => {
         <div className="flex flex-col">
           <label className="text-sm text-gray-600 mb-1">Mes</label>
           <select className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-            <option>septiembre</option>
-            <option>octubre</option>
-            <option>noviembre</option>
-            <option>diciembre</option>
+            <option>Todos</option>
+            <option>Enero</option>
+            <option>Febrero</option>
+            <option>Marzo</option>
+            <option>Abril</option>
+            <option>Mayo</option>
+            <option>Junio</option>
+            <option>Julio</option>
+            <option>Agosto</option>
+            <option>Septiembre</option>
+            <option>Octubre</option>
+            <option>Noviembre</option>
+            <option>Diciembre</option>
           </select>
         </div>
 
@@ -1126,6 +1143,8 @@ const Inventario = () => {
             <input
               type="text"
               placeholder="Buscar producto"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             />
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1263,12 +1282,6 @@ const Inventario = () => {
                   {tab.label}
                 </button>
               ))}
-              <div className="ml-auto flex items-center">
-                <button className="flex items-center space-x-2 text-gray-500 hover:text-gray-700 text-sm">
-                  <span>▶️</span>
-                  <span>Ver tutorial</span>
-                </button>
-              </div>
             </nav>
           </div>
 
@@ -1311,22 +1324,39 @@ const Inventario = () => {
                         </div>
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Fuente:</label>
+                        <select 
+                          value={nuevoConsumo.fuente}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, fuente: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                          <option value="">Seleccionar fuente</option>
+                          <option value="Compra directa">Compra directa</option>
+                          <option value="Orden de compra">Orden de compra</option>
+                          <option value="Inventario existente">Inventario existente</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo:</label>
+                        <select 
+                          value={nuevoConsumo.tipo}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, tipo: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                          <option value="">Seleccionar tipo</option>
+                          <option value="Medicamento">Medicamento</option>
+                          <option value="Material">Material</option>
+                          <option value="Instrumental">Instrumental</option>
+                          <option value="Insumo">Insumo</option>
+                        </select>
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Lote:</label>
                         <input 
                           type="text" 
                           value={nuevoConsumo.lote}
                           onChange={(e) => setNuevoConsumo(prev => ({ ...prev, lote: e.target.value }))}
                           placeholder="Número de lote" 
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Servicio:</label>
-                        <input 
-                          type="text" 
-                          value={nuevoConsumo.servicio}
-                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, servicio: e.target.value }))}
-                          placeholder="Nombre del servicio" 
                           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                         />
                       </div>
@@ -1358,7 +1388,17 @@ const Inventario = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Servicio:</label>
+                        <input 
+                          type="text" 
+                          value={nuevoConsumo.servicio}
+                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, servicio: e.target.value }))}
+                          placeholder="Nombre del servicio" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Paciente:</label>
                         <input 
                           type="text" 
                           value={nuevoConsumo.paciente}

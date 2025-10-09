@@ -214,6 +214,58 @@ class CitasService {
       fecha_fin: fecha
     });
   }
+
+  // Obtener citas eliminadas
+  async getDeletedCitas() {
+    try {
+      const params = new URLSearchParams({ action: 'deleted' });
+      
+      console.log('CitasService.getDeletedCitas - URL:', `${API_URL}?${params.toString()}`);
+
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      console.log('CitasService.getDeletedCitas - Response status:', res.status);
+      const data = await res.json();
+      console.log('CitasService.getDeletedCitas - Response data:', data);
+
+      if (res.ok && data.success) {
+        return { success: true, citas: data.citas };
+      }
+      return { success: false, error: data.error || 'Error al obtener citas eliminadas' };
+    } catch (e) {
+      console.error('CitasService.getDeletedCitas - Error:', e);
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  // Restaurar cita eliminada
+  async restoreCita(citaId) {
+    try {
+      const params = new URLSearchParams({ action: 'restore', id: citaId });
+      
+      console.log('CitasService.restoreCita - ID:', citaId);
+
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'PUT',
+        headers: this.getHeaders()
+      });
+
+      console.log('CitasService.restoreCita - Response status:', res.status);
+      const data = await res.json();
+      console.log('CitasService.restoreCita - Response data:', data);
+
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al restaurar cita' };
+    } catch (e) {
+      console.error('CitasService.restoreCita - Error:', e);
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const citasService = new CitasService();
