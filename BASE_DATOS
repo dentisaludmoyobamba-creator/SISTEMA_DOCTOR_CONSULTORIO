@@ -454,6 +454,69 @@ CREATE TABLE logs_auditoria (
 );
 
 -- =====================================================
+-- TABLAS PARA GESTIÓN DE ARCHIVOS
+-- =====================================================
+
+-- Tabla de archivos del paciente
+CREATE TABLE archivos_paciente (
+    id_archivo SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER,
+    id_usuario_subida INTEGER NOT NULL,
+    
+    -- Información del archivo
+    nombre_archivo VARCHAR(255) NOT NULL,
+    nombre_original VARCHAR(255) NOT NULL,
+    ruta_storage VARCHAR(500) NOT NULL, -- Ruta en Cloud Storage
+    url_publica VARCHAR(500),
+    
+    -- Metadata
+    tipo_archivo VARCHAR(10), -- pdf, jpg, png, doc, etc.
+    tamano_bytes BIGINT,
+    mime_type VARCHAR(100),
+    
+    -- Categorización
+    categoria VARCHAR(50), -- 'radiografia', 'laboratorio', 'receta', 'consentimiento', 'informe', 'imagen', 'otro'
+    descripcion TEXT,
+    notas TEXT,
+    
+    -- Compartir
+    compartir_con_paciente BOOLEAN DEFAULT FALSE,
+    fecha_compartido TIMESTAMP WITH TIME ZONE,
+    
+    -- Control
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_subida TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor),
+    FOREIGN KEY (id_usuario_subida) REFERENCES usuarios(id_usuario)
+);
+
+-- Tabla de categorías de archivos (catálogo)
+CREATE TABLE categorias_archivo (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE NOT NULL,
+    descripcion TEXT,
+    icono VARCHAR(50), -- Nombre del icono o emoji
+    color VARCHAR(7), -- Color hex
+    activa BOOLEAN DEFAULT TRUE
+);
+
+-- Insertar categorías predefinidas
+INSERT INTO categorias_archivo (nombre, descripcion, icono, color) VALUES
+('Radiografía', 'Radiografías dentales y panorámicas', '📷', '#3b82f6'),
+('Laboratorio', 'Resultados de laboratorio y análisis', '🔬', '#10b981'),
+('Receta', 'Recetas médicas y prescripciones', '💊', '#f59e0b'),
+('Consentimiento', 'Consentimientos informados', '📝', '#8b5cf6'),
+('Informe', 'Informes médicos y evaluaciones', '📋', '#06b6d4'),
+('Imagen', 'Fotografías clínicas', '📸', '#ec4899'),
+('Documento', 'Documentos generales', '📄', '#6b7280'),
+('Otro', 'Otros archivos', '📎', '#9ca3af')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- =====================================================
 -- TABLAS PARA ODONTOGRAMA
 -- =====================================================
 
@@ -604,6 +667,14 @@ CREATE INDEX IF NOT EXISTS idx_consumos_estado ON consumos(estado);
 CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_paciente ON paciente_etiquetas(id_paciente);
 CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_etiqueta ON paciente_etiquetas(id_etiqueta);
 CREATE INDEX IF NOT EXISTS idx_etiquetas_activa ON etiquetas_paciente(activa);
+
+-- Índices para archivos
+CREATE INDEX IF NOT EXISTS idx_archivos_paciente ON archivos_paciente(id_paciente);
+CREATE INDEX IF NOT EXISTS idx_archivos_doctor ON archivos_paciente(id_doctor);
+CREATE INDEX IF NOT EXISTS idx_archivos_usuario ON archivos_paciente(id_usuario_subida);
+CREATE INDEX IF NOT EXISTS idx_archivos_categoria ON archivos_paciente(categoria);
+CREATE INDEX IF NOT EXISTS idx_archivos_fecha ON archivos_paciente(fecha_subida);
+CREATE INDEX IF NOT EXISTS idx_archivos_activo ON archivos_paciente(activo);
 
 -- Índices para odontogramas
 CREATE INDEX IF NOT EXISTS idx_odontogramas_paciente ON odontogramas(id_paciente);
