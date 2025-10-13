@@ -269,4 +269,78 @@ Si sigue sin funcionar después de estos cambios, revisar en **orden**:
 ✅ Metadata se guarda en PostgreSQL  
 ✅ Archivos aparecen en la lista inmediatamente  
 ✅ Se puede descargar/ver archivos subidos  
+✅ Botones de "Descargar" y "Eliminar" visibles en cada archivo  
+✅ Descarga funciona mediante URL pública o firmada  
+
+---
+
+## 🆕 Actualización: Funcionalidad de Descarga
+
+### **Nuevas Funciones Agregadas:**
+
+#### 1. **`handleDescargarArchivo(archivo)`**
+```javascript
+const handleDescargarArchivo = async (archivo) => {
+  try {
+    await archivosService.descargarArchivo(archivo.id, archivo.nombre);
+  } catch (error) {
+    alert(`Error al descargar archivo: ${error.message}`);
+  }
+};
+```
+
+#### 2. **`handleEliminarArchivo(archivoId)`**
+```javascript
+const handleEliminarArchivo = async (archivoId) => {
+  if (!window.confirm('¿Estás seguro de eliminar este archivo?')) {
+    return;
+  }
+  
+  const result = await archivosService.eliminarArchivo(archivoId);
+  if (result.success) {
+    setArchivos(prev => prev.filter(a => a.id !== archivoId));
+    alert('Archivo eliminado exitosamente');
+  }
+};
+```
+
+### **Mejoras en la UI:**
+
+✅ **Tarjetas de archivo mejoradas** con:
+- Badge de categoría (color púrpura)
+- Tamaño del archivo formateado
+- Nombre del usuario que subió
+- Fecha formatteda
+- Indicador de "Compartido con paciente"
+
+✅ **Botones de acción** en cada tarjeta:
+- 🔵 **Descargar** - Descarga el archivo
+- 🔴 **Eliminar** - Elimina el archivo (con confirmación)
+
+### **Backend: Manejo Robusto de Descargas**
+
+El backend ahora maneja dos métodos de descarga:
+
+1. **URL Firmada (Preferido)**: 
+   - Segura, expira en 1 hora
+   - Requiere credenciales de Service Account
+
+2. **URL Pública (Fallback)**:
+   - Si las URL firmadas fallan
+   - Los archivos se hacen públicos automáticamente
+   - Acceso permanente
+
+```python
+try:
+    # Intentar generar URL firmada
+    url_descarga = blob.generate_signed_url(
+        version="v4",
+        expiration=datetime.timedelta(hours=1),
+        method="GET"
+    )
+except Exception:
+    # Fallback: usar URL pública
+    blob.make_public()
+    url_descarga = blob.public_url
+```  
 

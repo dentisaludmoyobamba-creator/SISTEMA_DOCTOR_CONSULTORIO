@@ -353,6 +353,35 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     }
   };
 
+  const handleDescargarArchivo = async (archivo) => {
+    try {
+      await archivosService.descargarArchivo(archivo.id, archivo.nombre);
+    } catch (error) {
+      console.error('Error al descargar archivo:', error);
+      alert(`Error al descargar archivo: ${error.message}`);
+    }
+  };
+
+  const handleEliminarArchivo = async (archivoId) => {
+    if (!window.confirm('¿Estás seguro de eliminar este archivo? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const result = await archivosService.eliminarArchivo(archivoId);
+      if (result.success) {
+        // Remover de la lista
+        setArchivos(prev => prev.filter(a => a.id !== archivoId));
+        alert('Archivo eliminado exitosamente');
+      } else {
+        throw new Error(result.error || 'Error al eliminar archivo');
+      }
+    } catch (error) {
+      console.error('Error al eliminar archivo:', error);
+      alert(`Error al eliminar archivo: ${error.message}`);
+    }
+  };
+
   const handleSaveNotaEvolucion = (notaData) => {
     const nuevaNota = {
       id: Date.now(),
@@ -1341,28 +1370,72 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {archivos.map((archivo) => (
-                      <div key={archivo.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={archivo.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-200 bg-white">
                         <div className="flex items-start space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-gray-900 truncate">{archivo.nombre}</h4>
-                            <p className="text-xs text-gray-500 mt-1">{archivo.doctor}</p>
+                            <h4 className="text-sm font-medium text-gray-900 truncate" title={archivo.nombre}>
+                              {archivo.nombre}
+                            </h4>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="inline-block px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">
+                                {archivo.categoria}
+                              </span>
+                              {archivo.tamano_formateado && (
+                                <span className="text-xs text-gray-500">
+                                  {archivo.tamano_formateado}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {archivo.subido_por || archivo.doctor || 'Sin información'}
+                            </p>
                             <p className="text-xs text-gray-400 mt-1">
-                              {new Date(archivo.fecha).toLocaleDateString('es-ES')}
+                              {new Date(archivo.fecha).toLocaleDateString('es-ES', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
                             </p>
                             {archivo.descripcion && (
-                              <p className="text-xs text-gray-600 mt-2 line-clamp-2">{archivo.descripcion}</p>
+                              <p className="text-xs text-gray-600 mt-2 line-clamp-2" title={archivo.descripcion}>
+                                {archivo.descripcion}
+                              </p>
                             )}
-                            {archivo.compartirConPaciente && (
+                            {archivo.compartido && (
                               <span className="inline-block mt-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                                Compartido con paciente
+                                ✓ Compartido con paciente
                               </span>
                             )}
                           </div>
+                        </div>
+                        
+                        {/* Botones de acción */}
+                        <div className="mt-4 flex items-center justify-end space-x-2 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => handleDescargarArchivo(archivo)}
+                            className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                            title="Descargar archivo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span>Descargar</span>
+                          </button>
+                          <button
+                            onClick={() => handleEliminarArchivo(archivo.id)}
+                            className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                            title="Eliminar archivo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Eliminar</span>
+                          </button>
                         </div>
                       </div>
                     ))}

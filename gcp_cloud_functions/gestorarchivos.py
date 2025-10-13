@@ -139,9 +139,14 @@ def subir_archivo(request):
         
         blob.upload_from_file(archivo, content_type=get_mime_type(extension))
         
-        # Hacer el archivo público (opcional)
-        # blob.make_public()
-        url_publica = blob.public_url
+        # Hacer el archivo público para facilitar descargas
+        try:
+            blob.make_public()
+            url_publica = blob.public_url
+            print(f"DEBUG - Archivo público: {url_publica}")
+        except Exception as public_error:
+            print(f"ADVERTENCIA - No se pudo hacer público: {public_error}")
+            url_publica = blob.public_url
 
         # Registrar en base de datos
         conn = get_connection()
@@ -468,24 +473,36 @@ def obtener_url_descarga(request):
         if not archivo:
             return json_response({"error": "Archivo no encontrado"}, 404)
 
-        # Generar URL firmada (válida por 1 hora)
+        # Intentar generar URL firmada, si falla usar URL pública
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(archivo['ruta_storage'])
         
-        url_firmada = blob.generate_signed_url(
-            version="v4",
-            expiration=datetime.timedelta(hours=1),
-            method="GET"
-        )
+        url_descarga = None
+        metodo_descarga = "firmada"
+        
+        try:
+            # Intentar generar URL firmada (válida por 1 hora)
+            url_descarga = blob.generate_signed_url(
+                version="v4",
+                expiration=datetime.timedelta(hours=1),
+                method="GET"
+            )
+        except Exception as sign_error:
+            print(f"ADVERTENCIA - No se pudo generar URL firmada: {sign_error}")
+            # Fallback: usar URL pública
+            blob.make_public()
+            url_descarga = blob.public_url
+            metodo_descarga = "publica"
 
         cur.close()
         conn.close()
 
         return json_response({
             "success": True,
-            "url_descarga": url_firmada,
+            "url_descarga": url_descarga,
             "nombre_archivo": archivo['nombre_original'],
-            "expira_en": "1 hora"
+            "expira_en": "1 hora" if metodo_descarga == "firmada" else "permanente",
+            "metodo": metodo_descarga
         })
 
     except Exception as e:
