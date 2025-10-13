@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import patientsService from '../services/patientsService';
 import authService from '../services/authService';
+import odontogramaService from '../services/odontogramaService';
+import archivosService from '../services/archivosService';
 import NuevoArchivoModal from './NuevoArchivoModal';
 import NotaEvolucionModal from './NotaEvolucionModal';
 import AgregarEvolucionModal from './AgregarEvolucionModal';
@@ -47,6 +49,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [tempAlergias, setTempAlergias] = useState('');
   const [isNuevoArchivoOpen, setIsNuevoArchivoOpen] = useState(false);
   const [archivos, setArchivos] = useState([]);
+  const [loadingArchivos, setLoadingArchivos] = useState(false);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
   const [notasEvolucion, setNotasEvolucion] = useState([]);
   const [activeOdontogramaTab, setActiveOdontogramaTab] = useState('inicial');
@@ -68,6 +71,20 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     profundidadSondaje: {}
   });
 
+  // Estados para el odontograma
+  const [odontogramaData, setOdontogramaData] = useState({
+    id_odontograma: null,
+    dientes: {},
+    plan_tratamiento: [],
+    observaciones: '',
+    especificaciones: '',
+    diagnostico: '',
+    plan_trabajo: ''
+  });
+  const [loadingOdontograma, setLoadingOdontograma] = useState(false);
+  const [savingOdontograma, setSavingOdontograma] = useState(false);
+  const [codigosOdontologicos, setCodigosOdontologicos] = useState([]);
+
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
     { id: 'historia-clinica', label: 'Historia clínica', icon: '📄' },
@@ -85,8 +102,17 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadDatosPersonales();
       loadLookupOptions();
       loadNotasAlergias();
+      loadArchivos();
     }
   }, [paciente?.id]);
+
+  // Cargar odontograma cuando se cambia el tab activo
+  useEffect(() => {
+    if (activeSection === 'odontograma' && paciente?.id) {
+      loadOdontograma();
+      loadCodigosOdontologicos();
+    }
+  }, [activeSection, activeOdontogramaTab, paciente?.id]);
 
   const loadDatosPersonales = async () => {
     try {
@@ -160,6 +186,38 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       console.error('Error de conexión al cargar notas y alergias:', e);
     } finally {
       setLoadingNotasAlergias(false);
+    }
+  };
+
+  const loadArchivos = async () => {
+    try {
+      setLoadingArchivos(true);
+      archivosService.setAuthService?.(authService);
+      const result = await archivosService.listarArchivos(paciente.id);
+      if (result.success) {
+        const archivosFormateados = result.archivos.map(archivo => ({
+          id: archivo.id,
+          nombre: archivo.nombre,
+          categoria: archivo.categoria,
+          descripcion: archivo.descripcion,
+          notas: archivo.notas,
+          tipo: archivo.tipo,
+          tamano: archivo.tamano,
+          tamano_formateado: archivo.tamano_formateado,
+          url: archivo.url,
+          fecha: archivo.fecha,
+          compartido: archivo.compartido,
+          doctor: archivo.doctor,
+          subido_por: archivo.subido_por
+        }));
+        setArchivos(archivosFormateados);
+      } else {
+        console.error('Error al cargar archivos:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar archivos:', e);
+    } finally {
+      setLoadingArchivos(false);
     }
   };
 
@@ -256,14 +314,72 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     setActiveSection('historia-clinica');
   };
 
-  const handleSaveArchivo = (archivoData) => {
-    const nuevoArchivo = {
-      id: Date.now(),
-      ...archivoData,
-      fecha: new Date().toISOString(),
-      paciente: paciente?.nombre + ' ' + paciente?.apellido
-    };
-    setArchivos(prev => [...prev, nuevoArchivo]);
+  const handleSaveArchivo = async (archivoData) => {
+    try {
+      // Subir archivo al servidor
+      const result = await archivosService.subirArchivo(archivoData.archivo, {
+        id_paciente: paciente.id,
+        id_doctor: archivoData.doctor || null,
+        categoria: archivoData.categoria,
+        descripcion: archivoData.descripcion,
+        notas: archivoData.notas,
+        compartir_con_paciente: archivoData.compartirConPaciente
+      });
+
+      if (result.success) {
+        // Actualizar lista de archivos
+        const nuevoArchivo = {
+          id: result.id_archivo,
+          nombre: archivoData.archivo.name,
+          categoria: archivoData.categoria,
+          descripcion: archivoData.descripcion,
+          notas: archivoData.notas,
+          tipo: archivoData.archivo.name.split('.').pop(),
+          tamano: result.tamano_bytes,
+          url: result.url_publica,
+          fecha: new Date().toISOString(),
+          compartido: archivoData.compartirConPaciente
+        };
+        setArchivos(prev => [...prev, nuevoArchivo]);
+        
+        alert(`Archivo "${archivoData.archivo.name}" subido exitosamente`);
+      } else {
+        throw new Error(result.error || 'Error al subir archivo');
+      }
+    } catch (error) {
+      console.error('Error al guardar archivo:', error);
+      alert(`Error al subir archivo: ${error.message}`);
+      throw error; // Re-lanzar para que el modal maneje el error
+    }
+  };
+
+  const handleDescargarArchivo = async (archivo) => {
+    try {
+      await archivosService.descargarArchivo(archivo.id, archivo.nombre);
+    } catch (error) {
+      console.error('Error al descargar archivo:', error);
+      alert(`Error al descargar archivo: ${error.message}`);
+    }
+  };
+
+  const handleEliminarArchivo = async (archivoId) => {
+    if (!window.confirm('¿Estás seguro de eliminar este archivo? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const result = await archivosService.eliminarArchivo(archivoId);
+      if (result.success) {
+        // Remover de la lista
+        setArchivos(prev => prev.filter(a => a.id !== archivoId));
+        alert('Archivo eliminado exitosamente');
+      } else {
+        throw new Error(result.error || 'Error al eliminar archivo');
+      }
+    } catch (error) {
+      console.error('Error al eliminar archivo:', error);
+      alert(`Error al eliminar archivo: ${error.message}`);
+    }
   };
 
   const handleSaveNotaEvolucion = (notaData) => {
@@ -300,6 +416,169 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     };
     setFamiliares(prev => [nuevoFamiliar, ...prev]);
   };
+
+  // ===== FUNCIONES DE ODONTOGRAMA =====
+  
+  const loadOdontograma = async () => {
+    try {
+      setLoadingOdontograma(true);
+      const result = await odontogramaService.obtenerOdontograma(
+        paciente.id,
+        activeOdontogramaTab
+      );
+
+      if (result.success && result.existe) {
+        // Convertir array de dientes a objeto con número como clave
+        const dientesMap = {};
+        result.dientes.forEach(diente => {
+          dientesMap[diente.numero] = diente;
+        });
+
+        setOdontogramaData({
+          id_odontograma: result.odontograma.id,
+          dientes: dientesMap,
+          plan_tratamiento: result.plan_tratamiento || [],
+          observaciones: result.odontograma.observaciones || '',
+          especificaciones: '',
+          diagnostico: '',
+          plan_trabajo: ''
+        });
+      } else {
+        // Inicializar odontograma vacío
+        setOdontogramaData({
+          id_odontograma: null,
+          dientes: {},
+          plan_tratamiento: [],
+          observaciones: '',
+          especificaciones: '',
+          diagnostico: '',
+          plan_trabajo: ''
+        });
+      }
+    } catch (error) {
+      console.error('Error al cargar odontograma:', error);
+      alert('Error al cargar el odontograma');
+    } finally {
+      setLoadingOdontograma(false);
+    }
+  };
+
+  const loadCodigosOdontologicos = async () => {
+    try {
+      const result = await odontogramaService.obtenerCodigos();
+      if (result.success) {
+        setCodigosOdontologicos(result.codigos || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar códigos odontológicos:', error);
+    }
+  };
+
+  const handleDienteUpdate = async (dienteInfo) => {
+    try {
+      // Actualizar localmente
+      setOdontogramaData(prev => ({
+        ...prev,
+        dientes: {
+          ...prev.dientes,
+          [dienteInfo.numero]: dienteInfo
+        }
+      }));
+
+      // Guardar en la API (actualización individual del diente)
+      await odontogramaService.actualizarDiente({
+        id_paciente: paciente.id,
+        tipo: activeOdontogramaTab,
+        numero_diente: dienteInfo.numero,
+        estado_general: dienteInfo.estado_general || 'sano',
+        superficies: dienteInfo.superficies,
+        tiene_caries: dienteInfo.tiene_caries,
+        tiene_obturacion: dienteInfo.tiene_obturacion,
+        tiene_corona: dienteInfo.tiene_corona,
+        necesita_extraccion: dienteInfo.necesita_extraccion,
+        notas: dienteInfo.notas
+      });
+    } catch (error) {
+      console.error('Error al actualizar diente:', error);
+      // Recargar odontograma en caso de error
+      loadOdontograma();
+    }
+  };
+
+  const handleGuardarOdontograma = async () => {
+    try {
+      setSavingOdontograma(true);
+
+      // Convertir objeto de dientes a array
+      const dientesArray = Object.keys(odontogramaData.dientes).map(numero => ({
+        numero: parseInt(numero),
+        ...odontogramaData.dientes[numero]
+      }));
+
+      await odontogramaService.guardarOdontograma({
+        id_paciente: paciente.id,
+        tipo: activeOdontogramaTab,
+        observaciones: odontogramaData.observaciones,
+        dientes: dientesArray
+      });
+
+      alert('Odontograma guardado exitosamente');
+      loadOdontograma(); // Recargar para obtener el ID actualizado
+    } catch (error) {
+      console.error('Error al guardar odontograma:', error);
+      alert('Error al guardar el odontograma');
+    } finally {
+      setSavingOdontograma(false);
+    }
+  };
+
+  const handleAgregarTratamiento = async (tratamiento) => {
+    try {
+      if (!odontogramaData.id_odontograma) {
+        alert('Primero debe guardar el odontograma');
+        return;
+      }
+
+      await odontogramaService.agregarTratamientoPlan({
+        id_odontograma: odontogramaData.id_odontograma,
+        ...tratamiento
+      });
+
+      loadOdontograma(); // Recargar para mostrar el nuevo tratamiento
+      alert('Tratamiento agregado al plan exitosamente');
+    } catch (error) {
+      console.error('Error al agregar tratamiento:', error);
+      alert('Error al agregar tratamiento al plan');
+    }
+  };
+
+  const handleEliminarTratamiento = async (idPlan) => {
+    try {
+      if (window.confirm('¿Está seguro de eliminar este tratamiento?')) {
+        await odontogramaService.eliminarTratamientoPlan(idPlan);
+        loadOdontograma();
+        alert('Tratamiento eliminado exitosamente');
+      }
+    } catch (error) {
+      console.error('Error al eliminar tratamiento:', error);
+      alert('Error al eliminar tratamiento');
+    }
+  };
+
+  const handleActualizarEstadoTratamiento = async (idPlan, nuevoEstado) => {
+    try {
+      await odontogramaService.actualizarTratamientoPlan({
+        id_plan: idPlan,
+        estado: nuevoEstado
+      });
+      loadOdontograma();
+    } catch (error) {
+      console.error('Error al actualizar estado del tratamiento:', error);
+      alert('Error al actualizar estado del tratamiento');
+    }
+  };
+
+  // ===== FIN FUNCIONES DE ODONTOGRAMA =====
 
   const getTipoDiente = (numero) => {
     const ultimoDigito = numero % 10;
@@ -1091,28 +1370,72 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {archivos.map((archivo) => (
-                      <div key={archivo.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={archivo.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-200 bg-white">
                         <div className="flex items-start space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-gray-900 truncate">{archivo.nombre}</h4>
-                            <p className="text-xs text-gray-500 mt-1">{archivo.doctor}</p>
+                            <h4 className="text-sm font-medium text-gray-900 truncate" title={archivo.nombre}>
+                              {archivo.nombre}
+                            </h4>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="inline-block px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">
+                                {archivo.categoria}
+                              </span>
+                              {archivo.tamano_formateado && (
+                                <span className="text-xs text-gray-500">
+                                  {archivo.tamano_formateado}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {archivo.subido_por || archivo.doctor || 'Sin información'}
+                            </p>
                             <p className="text-xs text-gray-400 mt-1">
-                              {new Date(archivo.fecha).toLocaleDateString('es-ES')}
+                              {new Date(archivo.fecha).toLocaleDateString('es-ES', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
                             </p>
                             {archivo.descripcion && (
-                              <p className="text-xs text-gray-600 mt-2 line-clamp-2">{archivo.descripcion}</p>
+                              <p className="text-xs text-gray-600 mt-2 line-clamp-2" title={archivo.descripcion}>
+                                {archivo.descripcion}
+                              </p>
                             )}
-                            {archivo.compartirConPaciente && (
+                            {archivo.compartido && (
                               <span className="inline-block mt-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                                Compartido con paciente
+                                ✓ Compartido con paciente
                               </span>
                             )}
                           </div>
+                        </div>
+                        
+                        {/* Botones de acción */}
+                        <div className="mt-4 flex items-center justify-end space-x-2 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => handleDescargarArchivo(archivo)}
+                            className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                            title="Descargar archivo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span>Descargar</span>
+                          </button>
+                          <button
+                            onClick={() => handleEliminarArchivo(archivo.id)}
+                            className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                            title="Eliminar archivo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Eliminar</span>
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -2569,90 +2892,180 @@ const HistoriaClinica = ({ paciente, onClose }) => {
 
               {/* Odontograma */}
               <div className="bg-white border border-gray-200 rounded-lg p-12">
-                {/* Arcada Superior */}
-                <div className="flex justify-center mb-8">
-                  <div className="flex items-center space-x-2">
-                    {/* Cuadrante Superior Derecho (18-11) */}
-                    <div className="flex space-x-2">
-                      {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
-                        <DienteSVG 
-                          key={numero} 
-                          numero={numero} 
-                          tipo={getTipoDiente(numero)} 
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* Separador */}
-                    <div className="w-8"></div>
-                    
-                    {/* Cuadrante Superior Izquierdo (21-28) */}
-                    <div className="flex space-x-2">
-                      {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
-                        <DienteSVG 
-                          key={numero} 
-                          numero={numero} 
-                          tipo={getTipoDiente(numero)} 
-                        />
-                      ))}
-                    </div>
+                {loadingOdontograma ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    <span className="ml-3 text-gray-600">Cargando odontograma...</span>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    {/* Arcada Superior */}
+                    <div className="flex justify-center mb-8">
+                      <div className="flex items-center space-x-2">
+                        {/* Cuadrante Superior Derecho (18-11) */}
+                        <div className="flex space-x-2">
+                          {[18, 17, 16, 15, 14, 13, 12, 11].map(numero => (
+                            <DienteSVG 
+                              key={numero} 
+                              numero={numero} 
+                              tipo={getTipoDiente(numero)}
+                              estadoInicial={odontogramaData.dientes[numero]}
+                              onUpdate={handleDienteUpdate}
+                              readonly={false}
+                              showTooltip={true}
+                            />
+                          ))}
+                        </div>
+                        
+                        {/* Separador */}
+                        <div className="w-8"></div>
+                        
+                        {/* Cuadrante Superior Izquierdo (21-28) */}
+                        <div className="flex space-x-2">
+                          {[21, 22, 23, 24, 25, 26, 27, 28].map(numero => (
+                            <DienteSVG 
+                              key={numero} 
+                              numero={numero} 
+                              tipo={getTipoDiente(numero)}
+                              estadoInicial={odontogramaData.dientes[numero]}
+                              onUpdate={handleDienteUpdate}
+                              readonly={false}
+                              showTooltip={true}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Arcada Inferior */}
-                <div className="flex justify-center">
-                  <div className="flex items-center space-x-2">
-                    {/* Cuadrante Inferior Izquierdo (38-31) */}
-                    <div className="flex space-x-2">
-                      {[38, 37, 36, 35, 34, 33, 32, 31].map(numero => (
-                        <DienteSVG 
-                          key={numero} 
-                          numero={numero} 
-                          tipo={getTipoDiente(numero)} 
-                        />
-                      ))}
+                    {/* Arcada Inferior */}
+                    <div className="flex justify-center">
+                      <div className="flex items-center space-x-2">
+                        {/* Cuadrante Inferior Izquierdo (38-31) */}
+                        <div className="flex space-x-2">
+                          {[38, 37, 36, 35, 34, 33, 32, 31].map(numero => (
+                            <DienteSVG 
+                              key={numero} 
+                              numero={numero} 
+                              tipo={getTipoDiente(numero)}
+                              estadoInicial={odontogramaData.dientes[numero]}
+                              onUpdate={handleDienteUpdate}
+                              readonly={false}
+                              showTooltip={true}
+                            />
+                          ))}
+                        </div>
+                        
+                        {/* Separador */}
+                        <div className="w-8"></div>
+                        
+                        {/* Cuadrante Inferior Derecho (41-48) */}
+                        <div className="flex space-x-2">
+                          {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
+                            <DienteSVG 
+                              key={numero} 
+                              numero={numero} 
+                              tipo={getTipoDiente(numero)}
+                              estadoInicial={odontogramaData.dientes[numero]}
+                              onUpdate={handleDienteUpdate}
+                              readonly={false}
+                              showTooltip={true}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Separador */}
-                    <div className="w-8"></div>
-                    
-                    {/* Cuadrante Inferior Derecho (41-48) */}
-                    <div className="flex space-x-2">
-                      {[48, 47, 46, 45, 44, 43, 42, 41].map(numero => (
-                        <DienteSVG 
-                          key={numero} 
-                          numero={numero} 
-                          tipo={getTipoDiente(numero)} 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
 
                 {/* Plan de tratamiento */}
                 <div className="mt-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan de tratamiento</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Plan de tratamiento</h3>
+                    <button 
+                      onClick={handleGuardarOdontograma}
+                      disabled={savingOdontograma}
+                      className="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700 disabled:bg-gray-400 flex items-center space-x-2"
+                    >
+                      {savingOdontograma ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                          </svg>
+                          <span>Guardar Odontograma</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   
                   {/* Tabla de plan de tratamiento */}
                   <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                     {/* Header de la tabla */}
                     <div className="bg-slate-700 text-white">
-                      <div className="grid grid-cols-4 gap-4 px-6 py-3 text-sm font-medium">
+                      <div className="grid grid-cols-6 gap-4 px-6 py-3 text-sm font-medium">
                         <div>N° diente</div>
-                        <div>Hallazgo</div>
-                        <div>Servicios</div>
-                        <div>Nota</div>
+                        <div>Tratamiento</div>
+                        <div>Descripción</div>
+                        <div>Prioridad</div>
+                        <div>Estado</div>
+                        <div>Acciones</div>
                       </div>
                     </div>
                     
                     {/* Contenido de la tabla */}
-                    <div className="p-6">
-                      <div className="min-h-32 flex flex-col items-center justify-center text-gray-500">
-                        <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <p className="text-sm">No se encontró ninguna información</p>
-                      </div>
+                    <div className="divide-y divide-gray-200">
+                      {odontogramaData.plan_tratamiento && odontogramaData.plan_tratamiento.length > 0 ? (
+                        odontogramaData.plan_tratamiento.map((tratamiento) => (
+                          <div key={tratamiento.id} className="grid grid-cols-6 gap-4 px-6 py-3 text-sm hover:bg-gray-50">
+                            <div className="font-medium text-gray-900">{tratamiento.numero_diente}</div>
+                            <div className="text-gray-700">{tratamiento.tratamiento}</div>
+                            <div className="text-gray-600 text-xs">{tratamiento.descripcion || '-'}</div>
+                            <div>
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                tratamiento.prioridad === 'urgente' ? 'bg-red-100 text-red-800' :
+                                tratamiento.prioridad === 'alta' ? 'bg-orange-100 text-orange-800' :
+                                tratamiento.prioridad === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {tratamiento.prioridad}
+                              </span>
+                            </div>
+                            <div>
+                              <select
+                                value={tratamiento.estado}
+                                onChange={(e) => handleActualizarEstadoTratamiento(tratamiento.id, e.target.value)}
+                                className="text-xs border border-gray-300 rounded px-2 py-1"
+                              >
+                                <option value="pendiente">Pendiente</option>
+                                <option value="en_proceso">En proceso</option>
+                                <option value="completado">Completado</option>
+                                <option value="cancelado">Cancelado</option>
+                              </select>
+                            </div>
+                            <div>
+                              <button
+                                onClick={() => handleEliminarTratamiento(tratamiento.id)}
+                                className="text-red-600 hover:text-red-800 text-xs"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-6">
+                          <div className="min-h-32 flex flex-col items-center justify-center text-gray-500">
+                            <svg className="w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <p className="text-sm">No hay tratamientos planificados</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2665,6 +3078,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <textarea 
                       className="w-full h-32 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
                       placeholder="Escribir especificaciones..."
+                      value={odontogramaData.especificaciones}
+                      onChange={(e) => setOdontogramaData(prev => ({ ...prev, especificaciones: e.target.value }))}
                     />
                   </div>
 
@@ -2679,6 +3094,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <textarea 
                       className="w-full h-32 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
                       placeholder="Escribir diagnóstico..."
+                      value={odontogramaData.diagnostico}
+                      onChange={(e) => setOdontogramaData(prev => ({ ...prev, diagnostico: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -2691,7 +3108,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <div className="relative">
                       <textarea 
                         className="w-full h-40 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
-                        placeholder=""
+                        placeholder="Escribir observaciones generales..."
+                        value={odontogramaData.observaciones}
+                        onChange={(e) => setOdontogramaData(prev => ({ ...prev, observaciones: e.target.value }))}
                       />
                       <div className="absolute bottom-2 right-2">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2739,7 +3158,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <div className="relative">
                       <textarea 
                         className="w-full h-40 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
-                        placeholder=""
+                        placeholder="Escribir plan de trabajo..."
+                        value={odontogramaData.plan_trabajo}
+                        onChange={(e) => setOdontogramaData(prev => ({ ...prev, plan_trabajo: e.target.value }))}
                       />
                       <div className="absolute bottom-2 right-2">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
