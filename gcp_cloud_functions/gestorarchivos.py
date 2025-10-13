@@ -11,8 +11,13 @@ from werkzeug.utils import secure_filename
 JWT_SECRET = 'dental_clinic_secret_key_2024'
 
 # Configuración Cloud Storage
-storage_client = storage.Client()
-BUCKET_NAME = "archivos_sistema_consultorio_moyobamba"
+# El cliente se inicializa automáticamente con las credenciales de GCP
+try:
+    storage_client = storage.Client()
+    BUCKET_NAME = "archivos_sistema_consultorio_moyobamba"
+except Exception as e:
+    print(f"Error al inicializar Cloud Storage: {e}")
+    storage_client = None
 
 def get_connection():
     # Configuración PostgreSQL
@@ -84,6 +89,10 @@ def subir_archivo(request):
     if not payload:
         return json_response({"error": "Token inválido o faltante"}, 401)
 
+    # Verificar que Cloud Storage esté disponible
+    if not storage_client:
+        return json_response({"error": "Servicio de almacenamiento no disponible"}, 500)
+
     try:
         # Validar que se envió un archivo
         if not request.files or 'archivo' not in request.files:
@@ -97,6 +106,8 @@ def subir_archivo(request):
         descripcion = request.form.get('descripcion', '')
         notas = request.form.get('notas', '')
         compartir_con_paciente = request.form.get('compartir_con_paciente', 'false').lower() == 'true'
+
+        print(f"DEBUG - Subiendo archivo: {archivo.filename}, paciente: {id_paciente}, categoria: {categoria}")
 
         if not id_paciente:
             return json_response({"error": "id_paciente es requerido"}, 400)
@@ -165,6 +176,9 @@ def subir_archivo(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"ERROR al subir archivo: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         try:
             conn.rollback()
             conn.close()

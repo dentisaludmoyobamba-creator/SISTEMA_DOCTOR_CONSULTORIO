@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import patientsService from '../services/patientsService';
 import authService from '../services/authService';
 import odontogramaService from '../services/odontogramaService';
+import archivosService from '../services/archivosService';
 import NuevoArchivoModal from './NuevoArchivoModal';
 import NotaEvolucionModal from './NotaEvolucionModal';
 import AgregarEvolucionModal from './AgregarEvolucionModal';
@@ -48,6 +49,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [tempAlergias, setTempAlergias] = useState('');
   const [isNuevoArchivoOpen, setIsNuevoArchivoOpen] = useState(false);
   const [archivos, setArchivos] = useState([]);
+  const [loadingArchivos, setLoadingArchivos] = useState(false);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
   const [notasEvolucion, setNotasEvolucion] = useState([]);
   const [activeOdontogramaTab, setActiveOdontogramaTab] = useState('inicial');
@@ -100,6 +102,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadDatosPersonales();
       loadLookupOptions();
       loadNotasAlergias();
+      loadArchivos();
     }
   }, [paciente?.id]);
 
@@ -183,6 +186,38 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       console.error('Error de conexión al cargar notas y alergias:', e);
     } finally {
       setLoadingNotasAlergias(false);
+    }
+  };
+
+  const loadArchivos = async () => {
+    try {
+      setLoadingArchivos(true);
+      archivosService.setAuthService?.(authService);
+      const result = await archivosService.listarArchivos(paciente.id);
+      if (result.success) {
+        const archivosFormateados = result.archivos.map(archivo => ({
+          id: archivo.id,
+          nombre: archivo.nombre,
+          categoria: archivo.categoria,
+          descripcion: archivo.descripcion,
+          notas: archivo.notas,
+          tipo: archivo.tipo,
+          tamano: archivo.tamano,
+          tamano_formateado: archivo.tamano_formateado,
+          url: archivo.url,
+          fecha: archivo.fecha,
+          compartido: archivo.compartido,
+          doctor: archivo.doctor,
+          subido_por: archivo.subido_por
+        }));
+        setArchivos(archivosFormateados);
+      } else {
+        console.error('Error al cargar archivos:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar archivos:', e);
+    } finally {
+      setLoadingArchivos(false);
     }
   };
 
@@ -279,14 +314,43 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     setActiveSection('historia-clinica');
   };
 
-  const handleSaveArchivo = (archivoData) => {
-    const nuevoArchivo = {
-      id: Date.now(),
-      ...archivoData,
-      fecha: new Date().toISOString(),
-      paciente: paciente?.nombre + ' ' + paciente?.apellido
-    };
-    setArchivos(prev => [...prev, nuevoArchivo]);
+  const handleSaveArchivo = async (archivoData) => {
+    try {
+      // Subir archivo al servidor
+      const result = await archivosService.subirArchivo(archivoData.archivo, {
+        id_paciente: paciente.id,
+        id_doctor: archivoData.doctor || null,
+        categoria: archivoData.categoria,
+        descripcion: archivoData.descripcion,
+        notas: archivoData.notas,
+        compartir_con_paciente: archivoData.compartirConPaciente
+      });
+
+      if (result.success) {
+        // Actualizar lista de archivos
+        const nuevoArchivo = {
+          id: result.id_archivo,
+          nombre: archivoData.archivo.name,
+          categoria: archivoData.categoria,
+          descripcion: archivoData.descripcion,
+          notas: archivoData.notas,
+          tipo: archivoData.archivo.name.split('.').pop(),
+          tamano: result.tamano_bytes,
+          url: result.url_publica,
+          fecha: new Date().toISOString(),
+          compartido: archivoData.compartirConPaciente
+        };
+        setArchivos(prev => [...prev, nuevoArchivo]);
+        
+        alert(`Archivo "${archivoData.archivo.name}" subido exitosamente`);
+      } else {
+        throw new Error(result.error || 'Error al subir archivo');
+      }
+    } catch (error) {
+      console.error('Error al guardar archivo:', error);
+      alert(`Error al subir archivo: ${error.message}`);
+      throw error; // Re-lanzar para que el modal maneje el error
+    }
   };
 
   const handleSaveNotaEvolucion = (notaData) => {
