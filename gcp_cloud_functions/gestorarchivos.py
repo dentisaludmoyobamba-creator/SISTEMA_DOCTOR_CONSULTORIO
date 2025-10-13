@@ -139,14 +139,9 @@ def subir_archivo(request):
         
         blob.upload_from_file(archivo, content_type=get_mime_type(extension))
         
-        # Hacer el archivo público para facilitar descargas
-        try:
-            blob.make_public()
-            url_publica = blob.public_url
-            print(f"DEBUG - Archivo público: {url_publica}")
-        except Exception as public_error:
-            print(f"ADVERTENCIA - No se pudo hacer público: {public_error}")
-            url_publica = blob.public_url
+        # Construir URL pública directa (no requiere make_public si el bucket ya es público)
+        url_publica = f"https://storage.googleapis.com/{BUCKET_NAME}/{nombre_storage}"
+        print(f"DEBUG - Archivo subido: {url_publica}")
 
         # Registrar en base de datos
         conn = get_connection()
@@ -448,7 +443,7 @@ def actualizar_archivo(request):
 
 # ===== DESCARGAR ARCHIVO =====
 def obtener_url_descarga(request):
-    """Obtener URL firmada para descarga"""
+    """Obtener URL pública para descarga"""
     payload = require_auth(request)
     if not payload:
         return json_response({"error": "Token inválido o faltante"}, 401)
@@ -463,7 +458,7 @@ def obtener_url_descarga(request):
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT ruta_storage, nombre_original
+            SELECT ruta_storage, nombre_original, url_publica
             FROM archivos_paciente
             WHERE id_archivo = %s AND activo = TRUE
         """, (id_archivo,))
@@ -471,27 +466,18 @@ def obtener_url_descarga(request):
         archivo = cur.fetchone()
         
         if not archivo:
-            return json_response({"error": "Archivo no encontrado"}, 404)
-
-        # Obtener blob y hacer público para generar URL de descarga
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(archivo['ruta_storage'])
-        
-        # Verificar si el archivo existe
-        if not blob.exists():
             cur.close()
             conn.close()
-            return json_response({"error": "Archivo no encontrado en Cloud Storage"}, 404)
-        
-        # Hacer el blob público para obtener URL directa
-        try:
-            blob.make_public()
-            url_descarga = blob.public_url
-            print(f"DEBUG - URL de descarga generada: {url_descarga}")
-        except Exception as public_error:
-            # Si ya es público, solo obtener la URL
-            print(f"INFO - Obteniendo URL pública existente: {public_error}")
+            return json_response({"error": "Archivo no encontrado"}, 404)
+
+        # Usar la URL pública almacenada o construirla
+        if archivo['url_publica']:
+            url_descarga = archivo['url_publica']
+        else:
+            # Construir URL pública directa
             url_descarga = f"https://storage.googleapis.com/{BUCKET_NAME}/{archivo['ruta_storage']}"
+        
+        print(f"DEBUG - URL de descarga: {url_descarga}")
 
         cur.close()
         conn.close()
@@ -507,7 +493,7 @@ def obtener_url_descarga(request):
             conn.close()
         except Exception:
             pass
-        return json_response({"error": f"Error al generar URL de descarga: {str(e)}"}, 500)
+        return json_response({"error": f"Error al obtener URL de descarga: {str(e)}"}, 500)
 
 def format_file_size(bytes):
     """Formatear tamaño de archivo"""
