@@ -15,8 +15,6 @@ node_modules/.cache/
 
 # Misc
 .DS_Store
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -27,8 +25,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Editor
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
+config.bat
