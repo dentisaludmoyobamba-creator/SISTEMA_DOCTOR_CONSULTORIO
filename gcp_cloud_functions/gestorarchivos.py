@@ -473,26 +473,25 @@ def obtener_url_descarga(request):
         if not archivo:
             return json_response({"error": "Archivo no encontrado"}, 404)
 
-        # Intentar generar URL firmada, si falla usar URL pública
+        # Obtener blob y hacer público para generar URL de descarga
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob(archivo['ruta_storage'])
         
-        url_descarga = None
-        metodo_descarga = "firmada"
+        # Verificar si el archivo existe
+        if not blob.exists():
+            cur.close()
+            conn.close()
+            return json_response({"error": "Archivo no encontrado en Cloud Storage"}, 404)
         
+        # Hacer el blob público para obtener URL directa
         try:
-            # Intentar generar URL firmada (válida por 1 hora)
-            url_descarga = blob.generate_signed_url(
-                version="v4",
-                expiration=datetime.timedelta(hours=1),
-                method="GET"
-            )
-        except Exception as sign_error:
-            print(f"ADVERTENCIA - No se pudo generar URL firmada: {sign_error}")
-            # Fallback: usar URL pública
             blob.make_public()
             url_descarga = blob.public_url
-            metodo_descarga = "publica"
+            print(f"DEBUG - URL de descarga generada: {url_descarga}")
+        except Exception as public_error:
+            # Si ya es público, solo obtener la URL
+            print(f"INFO - Obteniendo URL pública existente: {public_error}")
+            url_descarga = f"https://storage.googleapis.com/{BUCKET_NAME}/{archivo['ruta_storage']}"
 
         cur.close()
         conn.close()
@@ -500,9 +499,7 @@ def obtener_url_descarga(request):
         return json_response({
             "success": True,
             "url_descarga": url_descarga,
-            "nombre_archivo": archivo['nombre_original'],
-            "expira_en": "1 hora" if metodo_descarga == "firmada" else "permanente",
-            "metodo": metodo_descarga
+            "nombre_archivo": archivo['nombre_original']
         })
 
     except Exception as e:
