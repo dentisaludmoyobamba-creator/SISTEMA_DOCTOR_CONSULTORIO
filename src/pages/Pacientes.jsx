@@ -154,15 +154,10 @@ const Pacientes = () => {
     }
   };
 
-  const handlePatientClick = async (paciente) => {
-    setSelectedPatient(paciente);
-    setIsPatientProfileOpen(true);
-    setActiveProfileTab('citas');
-    
-    // Cargar citas del paciente
+  const loadPatientCitas = async (patientId) => {
     setLoadingCitas(true);
     try {
-      const result = await patientsService.getCitas(paciente.id);
+      const result = await patientsService.getCitas(patientId);
       if (result.success) {
         setPatientCitas(result.citas);
       } else {
@@ -175,6 +170,15 @@ const Pacientes = () => {
     } finally {
       setLoadingCitas(false);
     }
+  };
+
+  const handlePatientClick = async (paciente) => {
+    setSelectedPatient(paciente);
+    setIsPatientProfileOpen(true);
+    setActiveProfileTab('citas');
+    
+    // Cargar citas del paciente
+    await loadPatientCitas(paciente.id);
 
     // Cargar filiación del paciente
     setLoadingFiliacion(true);
