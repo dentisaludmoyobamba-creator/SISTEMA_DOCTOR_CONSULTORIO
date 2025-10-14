@@ -1343,6 +1343,164 @@ def handle_delete_familiar(request):
             pass
         return json_response({"error": f"Error al eliminar familiar: {str(e)}"}, 500)
 
+# ===== NOTAS DE EVOLUCIÓN =====
+def handle_get_notas_evolucion(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT n.id_nota_evolucion, n.evolucion, n.observacion, n.fecha_creacion,
+                   d.nombres as doctor_nombres, d.apellidos as doctor_apellidos
+            FROM notas_evolucion_paciente n
+            LEFT JOIN doctores d ON n.id_doctor = d.id_doctor
+            WHERE n.id_paciente = %s AND n.activo = true
+            ORDER BY n.fecha_creacion DESC
+        """, (patient_id,))
+        
+        notas = []
+        for row in cur.fetchall():
+            notas.append({
+                "id": row['id_nota_evolucion'],
+                "evolucion": row['evolucion'],
+                "observacion": row['observacion'],
+                "doctor": f"{row['doctor_nombres']} {row['doctor_apellidos']}" if row['doctor_nombres'] else 'Doctor no asignado',
+                "fecha": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "notas_evolucion": notas
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener notas de evolución: {str(e)}"}, 500)
+
+def handle_create_nota_evolucion(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        doctor_nombre = data.get('doctor', '')
+        evolucion = data.get('evolucion', '').strip()
+        observacion = data.get('observacion', '').strip()
+        
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+        
+        if not evolucion and not observacion:
+            return json_response({"error": "Debe ingresar evolución u observación"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Buscar el ID del doctor por nombre (simplificado)
+        id_doctor = None
+        if doctor_nombre:
+            cur.execute("""
+                SELECT id_doctor FROM doctores 
+                WHERE CONCAT(nombres, ' ', apellidos) ILIKE %s
+                LIMIT 1
+            """, (f"%{doctor_nombre}%",))
+            doctor_row = cur.fetchone()
+            if doctor_row:
+                id_doctor = doctor_row['id_doctor']
+
+        cur.execute("""
+            INSERT INTO notas_evolucion_paciente 
+            (id_paciente, id_doctor, evolucion, observacion)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id_nota_evolucion
+        """, (patient_id, id_doctor, evolucion, observacion))
+        
+        new_id = cur.fetchone()['id_nota_evolucion']
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Nota de evolución creada exitosamente",
+            "id": new_id
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al crear nota de evolución: {str(e)}"}, 500)
+
+def handle_delete_nota_evolucion(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        nota_id = request.args.get('id')
+        if not nota_id:
+            return json_response({"error": "ID de nota requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            UPDATE notas_evolucion_paciente 
+            SET activo = false
+            WHERE id_nota_evolucion = %s
+        """, (nota_id,))
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Nota no encontrada"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Nota eliminada exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al eliminar nota: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -1376,8 +1534,10 @@ def hello_http(request):
                 return handle_get_datos_fiscales(request)
             elif action in ('familiares', 'relatives'):
                 return handle_get_familiares(request)
+            elif action in ('notas_evolucion', 'evolution_notes'):
+                return handle_get_notas_evolucion(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales o familiares"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales, familiares o notas_evolucion"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):
@@ -1388,8 +1548,10 @@ def hello_http(request):
                 return handle_create_dato_fiscal(request)
             elif action in ('create_familiar', 'crear_familiar'):
                 return handle_create_familiar(request)
+            elif action in ('create_nota_evolucion', 'crear_nota_evolucion'):
+                return handle_create_nota_evolucion(request)
             else:
-                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal o create_familiar"}, 400)
+                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal, create_familiar o create_nota_evolucion"}, 400)
 
         if request.method == 'PUT':
             if action in ('update_filiacion', 'actualizar_filiacion'):
@@ -1412,8 +1574,10 @@ def hello_http(request):
                 return handle_delete_dato_fiscal(request)
             elif action in ('delete_familiar', 'eliminar_familiar'):
                 return handle_delete_familiar(request)
+            elif action in ('delete_nota_evolucion', 'eliminar_nota_evolucion'):
+                return handle_delete_nota_evolucion(request)
             else:
-                return json_response({"error": "Acción DELETE no válida. Use action=remove_etiqueta, delete_dato_fiscal o delete_familiar"}, 400)
+                return json_response({"error": "Acción DELETE no válida. Use action=remove_etiqueta, delete_dato_fiscal, delete_familiar o delete_nota_evolucion"}, 400)
 
         return json_response({"error": "Método no soportado"}, 405)
     except Exception as e:

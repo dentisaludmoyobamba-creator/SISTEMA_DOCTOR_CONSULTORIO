@@ -396,6 +396,58 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  // ===== NOTAS DE EVOLUCIÓN =====
+  async getNotasEvolucion(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'notas_evolucion', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, notas_evolucion: data.notas_evolucion };
+      }
+      return { success: false, error: data.error || 'Error al obtener notas de evolución' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async createNotaEvolucion(notaData) {
+    try {
+      const res = await fetch(`${API_URL}?action=create_nota_evolucion`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(notaData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, id: data.id };
+      }
+      return { success: false, error: data.error || 'Error al crear nota de evolución' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async deleteNotaEvolucion(notaId) {
+    try {
+      const params = new URLSearchParams({ action: 'delete_nota_evolucion', id: String(notaId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al eliminar nota de evolución' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();

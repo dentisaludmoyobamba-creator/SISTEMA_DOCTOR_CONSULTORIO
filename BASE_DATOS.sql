@@ -952,6 +952,22 @@ CREATE TABLE IF NOT EXISTS familiares_paciente (
 
 CREATE INDEX IF NOT EXISTS idx_familiares_paciente ON familiares_paciente(id_paciente);
 
+-- Tabla de Notas de Evolución del Paciente
+CREATE TABLE IF NOT EXISTS notas_evolucion_paciente (
+    id_nota_evolucion SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER,
+    evolucion TEXT,
+    observacion TEXT,
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notas_evolucion_paciente ON notas_evolucion_paciente(id_paciente);
+CREATE INDEX IF NOT EXISTS idx_notas_evolucion_fecha ON notas_evolucion_paciente(fecha_creacion);
+
 -- =====================================================
 -- 10. COMENTARIOS Y DOCUMENTACIÓN
 -- =====================================================

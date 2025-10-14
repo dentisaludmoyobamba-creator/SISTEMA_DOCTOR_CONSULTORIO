@@ -110,6 +110,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadDatosFiscales();
       loadFamiliares();
       loadCitas();
+      loadNotasEvolucion();
       setFotoPerfil(paciente.foto_perfil_url);
     }
   }, [paciente?.id]);
@@ -612,23 +613,62 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     }
   };
 
-  const handleSaveNotaEvolucion = (notaData) => {
-    const nuevaNota = {
-      id: Date.now(),
-      ...notaData,
-      fecha: new Date().toISOString(),
-      paciente: paciente?.nombre + ' ' + paciente?.apellido
-    };
-    setNotasEvolucion(prev => [...prev, nuevaNota]);
+  // ===== FUNCIONES PARA NOTAS DE EVOLUCIÓN =====
+  const loadNotasEvolucion = async () => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.getNotasEvolucion(paciente.id);
+      if (result.success) {
+        setNotasEvolucion(result.notas_evolucion);
+        setNotasEvolucionBreve(result.notas_evolucion);
+      } else {
+        console.error('Error al cargar notas de evolución:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar notas de evolución:', e);
+    }
   };
 
-  const handleSaveEvolucionBreve = (evolucionData) => {
-    const nuevaEvolucion = {
-      id: Date.now(),
-      ...evolucionData,
-      fecha: new Date().toISOString()
-    };
-    setNotasEvolucionBreve(prev => [nuevaEvolucion, ...prev]);
+  const handleSaveNotaEvolucion = async (notaData) => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.createNotaEvolucion({
+        id_paciente: paciente.id,
+        doctor: notaData.doctor,
+        evolucion: notaData.evolucion || '',
+        observacion: notaData.observacion || ''
+      });
+      if (result.success) {
+        await loadNotasEvolucion();
+        setIsNotaEvolucionOpen(false);
+      } else {
+        alert(result.error || 'Error al crear nota de evolución');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    }
+  };
+
+  const handleSaveEvolucionBreve = async (evolucionData) => {
+    // Reutilizar la misma función para ambos tipos de notas
+    await handleSaveNotaEvolucion(evolucionData);
+    setIsAgregarEvolucionOpen(false);
+  };
+
+  const handleDeleteNotaEvolucion = async (notaId) => {
+    if (window.confirm('¿Está seguro de eliminar esta nota de evolución?')) {
+      try {
+        patientsService.setAuthService?.(authService);
+        const result = await patientsService.deleteNotaEvolucion(notaId);
+        if (result.success) {
+          await loadNotasEvolucion();
+        } else {
+          alert(result.error || 'Error al eliminar nota de evolución');
+        }
+      } catch (e) {
+        alert('Error de conexión: ' + e.message);
+      }
+    }
   };
 
   // ===== FUNCIONES DE ODONTOGRAMA =====
@@ -3969,8 +4009,17 @@ const HistoriaClinica = ({ paciente, onClose }) => {
             ) : (
               <div className="space-y-4 max-h-64 overflow-y-auto">
                 {notasEvolucion.map((nota) => (
-                  <div key={nota.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={nota.id} className="border border-gray-200 rounded-lg p-4 relative group">
+                    <button
+                      onClick={() => handleDeleteNotaEvolucion(nota.id)}
+                      className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Eliminar nota"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                    <div className="flex items-center justify-between mb-2 pr-6">
                       <span className="text-sm font-medium text-gray-900">{nota.doctor}</span>
                       <span className="text-xs text-gray-500">
                         {new Date(nota.fecha).toLocaleDateString('es-ES')}

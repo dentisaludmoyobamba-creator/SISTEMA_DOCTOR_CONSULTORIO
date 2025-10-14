@@ -3,6 +3,7 @@ import patientsService from '../services/patientsService';
 import authService from '../services/authService';
 import NewPatientModal from '../components/NewPatientModal';
 import HistoriaClinica from '../components/HistoriaClinica';
+import AppointmentModal from '../components/AppointmentModal';
 
 const Pacientes = () => {
   const [activeTab, setActiveTab] = useState('mis-pacientes');
@@ -18,6 +19,7 @@ const Pacientes = () => {
   const [isHistoriaClinicaOpen, setIsHistoriaClinicaOpen] = useState(false);
   const [patientCitas, setPatientCitas] = useState([]);
   const [loadingCitas, setLoadingCitas] = useState(false);
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [patientFiliacion, setPatientFiliacion] = useState(null);
   const [loadingFiliacion, setLoadingFiliacion] = useState(false);
   const [editingFiliacion, setEditingFiliacion] = useState(false);
@@ -1080,7 +1082,10 @@ const Pacientes = () => {
                       <p className="text-gray-500 text-center mb-6 max-w-md">
                         Este paciente aún no tiene citas programadas. Puedes agregar una nueva cita desde la agenda.
                       </p>
-                      <button className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                      <button 
+                        onClick={() => setIsAppointmentModalOpen(true)}
+                        className="bg-[#30B0B0] hover:bg-[#2A9A9A] text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
@@ -1462,6 +1467,21 @@ const Pacientes = () => {
         <HistoriaClinica
           paciente={selectedPatient}
           onClose={handleCloseHistoriaClinica}
+        />
+      )}
+
+      {/* Modal: Agregar Cita */}
+      {isAppointmentModalOpen && selectedPatient && (
+        <AppointmentModal
+          isOpen={isAppointmentModalOpen}
+          onClose={() => {
+            setIsAppointmentModalOpen(false);
+            // Recargar citas después de cerrar el modal
+            if (selectedPatient?.id) {
+              loadPatientCitas(selectedPatient.id);
+            }
+          }}
+          selectedPatient={selectedPatient}
         />
       )}
     </div>
