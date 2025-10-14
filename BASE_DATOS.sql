@@ -217,7 +217,8 @@ ADD COLUMN comentario TEXT,
 ADD COLUMN estado_paciente VARCHAR(20) DEFAULT 'activo',
 ADD COLUMN avatar VARCHAR(10),
 ADD COLUMN etiqueta VARCHAR(20),
-ADD COLUMN etiqueta_color VARCHAR(50);
+ADD COLUMN etiqueta_color VARCHAR(50),
+ADD COLUMN foto_perfil_url VARCHAR(500);
 
 -- Agregar las foreign keys correspondientes a la tabla pacientes
 ALTER TABLE pacientes

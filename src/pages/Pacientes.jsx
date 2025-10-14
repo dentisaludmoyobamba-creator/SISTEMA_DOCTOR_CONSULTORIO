@@ -74,7 +74,8 @@ const Pacientes = () => {
             fuenteCaptacion: p.fuente_captacion || '',
             comentario: p.comentario || '',
             avatar: (p.nombres && p.nombres[0]) ? p.nombres[0].toUpperCase() : 'P',
-            etiquetas: p.etiquetas || []
+            etiquetas: p.etiquetas || [],
+            foto_perfil_url: p.foto_perfil_url
           }));
           setPacientes(mapped);
           setPagination(result.pagination);
@@ -516,7 +517,19 @@ const Pacientes = () => {
                   <tr key={paciente.id} onClick={() => handlePatientClick(paciente)} className={`border-b hover:bg-[#30B0B0]/5 cursor-pointer transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
                     <td className="p-3 sm:p-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#4A3C7B] to-[#2D1B69] rounded-full flex items-center justify-center text-sm sm:text-lg text-white font-medium shadow-sm">{paciente.avatar}</div>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-lg text-white font-medium shadow-sm overflow-hidden border-2 border-[#30B0B0]">
+                          {paciente.foto_perfil_url ? (
+                            <img 
+                              src={paciente.foto_perfil_url} 
+                              alt={`${paciente.nombre} ${paciente.apellido}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#4A3C7B] to-[#2D1B69] flex items-center justify-center">
+                              {paciente.avatar}
+                            </div>
+                          )}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                             <span className="font-semibold text-[#4A3C7B] truncate">{paciente.nombre} {paciente.apellido}</span>
@@ -566,7 +579,19 @@ const Pacientes = () => {
                   <tr key={p.id} onClick={() => handlePatientClick(p)} className="border-b hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                     <td className="p-3 sm:p-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#4A3C7B] to-[#2D1B69] rounded-full flex items-center justify-center text-white font-medium">{p.avatar}</div>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium overflow-hidden border-2 border-[#30B0B0]">
+                          {p.foto_perfil_url ? (
+                            <img 
+                              src={p.foto_perfil_url} 
+                              alt={`${p.nombre} ${p.apellido}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#4A3C7B] to-[#2D1B69] flex items-center justify-center">
+                              {p.avatar}
+                            </div>
+                          )}
+                        </div>
                         <div className="text-slate-700 font-medium">{p.nombre} {p.apellido}</div>
                       </div>
                     </td>
@@ -683,10 +708,18 @@ const Pacientes = () => {
               <div className="px-8 py-6 flex items-center justify-between">
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                      </svg>
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white/30 shadow-lg">
+                      {selectedPatient.foto_perfil_url ? (
+                        <img 
+                          src={selectedPatient.foto_perfil_url} 
+                          alt={`${selectedPatient.nombre} ${selectedPatient.apellido}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-white/20 flex items-center justify-center text-2xl text-white font-bold">
+                          {selectedPatient.avatar}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-white">{selectedPatient.nombre} {selectedPatient.apellido}</h3>

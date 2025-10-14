@@ -69,7 +69,7 @@ def handle_list_pacientes(request):
             "SELECT p.id_paciente, p.nombres, p.apellidos, p.dni, p.telefono, p.email, "
             "p.fecha_registro, p.estado_paciente, p.presupuesto, p.comentario, p.tarea, "
             "fc.nombre as fuente_captacion, a.nombre as aseguradora, "
-            "p.ultima_cita, p.proxima_cita "
+            "p.ultima_cita, p.proxima_cita, p.foto_perfil_url "
             "FROM pacientes p "
             "LEFT JOIN fuente_captacion fc ON p.id_fuente_captacion = fc.id "
             "LEFT JOIN aseguradora a ON p.id_aseguradora = a.id "
@@ -119,7 +119,8 @@ def handle_list_pacientes(request):
                 "proxima_cita": r['proxima_cita'].isoformat() if r['proxima_cita'] else None,
                 "tarea": r['tarea'],
                 "comentario": r['comentario'],
-                "etiquetas": etiquetas
+                "etiquetas": etiquetas,
+                "foto_perfil_url": r['foto_perfil_url']
             })
 
         cur.close()
@@ -790,6 +791,54 @@ def handle_remove_etiqueta_from_patient(request):
             pass
         return json_response({"error": f"Error al remover etiqueta: {str(e)}"}, 500)
 
+def handle_update_patient_foto(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id')
+        foto_url = data.get('foto_perfil_url', '')
+        
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        update_query = """
+            UPDATE pacientes 
+            SET foto_perfil_url = %s
+            WHERE id_paciente = %s
+        """
+
+        cur.execute(update_query, (foto_url, patient_id))
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Paciente no encontrado"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Foto de perfil actualizada exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al actualizar foto: {str(e)}"}, 500)
+
 def handle_update_patient_notas_alergias(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
@@ -887,8 +936,10 @@ def hello_http(request):
                 return handle_update_patient_filiacion(request)
             elif action in ('update_notas_alergias', 'actualizar_notas_alergias'):
                 return handle_update_patient_notas_alergias(request)
+            elif action in ('update_foto', 'actualizar_foto'):
+                return handle_update_patient_foto(request)
             else:
-                return json_response({"error": "Acción PUT no válida. Use action=update_filiacion o update_notas_alergias"}, 400)
+                return json_response({"error": "Acción PUT no válida. Use action=update_filiacion, update_notas_alergias o update_foto"}, 400)
 
         if request.method == 'DELETE':
             if action in ('remove_etiqueta', 'remover_etiqueta'):

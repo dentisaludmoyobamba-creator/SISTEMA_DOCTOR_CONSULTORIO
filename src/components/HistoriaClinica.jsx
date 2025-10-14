@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import patientsService from '../services/patientsService';
 import authService from '../services/authService';
 import odontogramaService from '../services/odontogramaService';
@@ -50,6 +50,10 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [isNuevoArchivoOpen, setIsNuevoArchivoOpen] = useState(false);
   const [archivos, setArchivos] = useState([]);
   const [loadingArchivos, setLoadingArchivos] = useState(false);
+  const [showFotoMenu, setShowFotoMenu] = useState(false);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fotoInputRef = useRef(null);
+  const [fotoPerfil, setFotoPerfil] = useState(null);
   const [isNotaEvolucionOpen, setIsNotaEvolucionOpen] = useState(false);
   const [notasEvolucion, setNotasEvolucion] = useState([]);
   const [activeOdontogramaTab, setActiveOdontogramaTab] = useState('inicial');
@@ -103,6 +107,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadLookupOptions();
       loadNotasAlergias();
       loadArchivos();
+      setFotoPerfil(paciente.foto_perfil_url);
     }
   }, [paciente?.id]);
 
@@ -382,6 +387,55 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     }
   };
 
+  const handleCambiarFoto = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validar que sea imagen
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen');
+      return;
+    }
+
+    // Validar tamaño (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen no debe superar 5MB');
+      return;
+    }
+
+    setUploadingFoto(true);
+    setShowFotoMenu(false);
+
+    try {
+      // Subir foto a Cloud Storage
+      const uploadResult = await archivosService.subirArchivo(file, {
+        id_paciente: paciente.id,
+        categoria: 'Foto de Perfil',
+        descripcion: `Foto de perfil de ${paciente.nombre} ${paciente.apellido}`,
+        compartir_con_paciente: false
+      });
+
+      if (uploadResult.success) {
+        // Actualizar URL en base de datos
+        const updateResult = await patientsService.updateFotoPerfil(paciente.id, uploadResult.url_publica);
+        
+        if (updateResult.success) {
+          setFotoPerfil(uploadResult.url_publica);
+          alert('Foto de perfil actualizada exitosamente');
+        } else {
+          throw new Error(updateResult.error);
+        }
+      } else {
+        throw new Error(uploadResult.error);
+      }
+    } catch (error) {
+      console.error('Error al cambiar foto:', error);
+      alert(`Error al cambiar foto: ${error.message}`);
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
+
   const handleSaveNotaEvolucion = (notaData) => {
     const nuevaNota = {
       id: Date.now(),
@@ -597,8 +651,56 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           {/* Tarjeta del paciente */}
           <div className="p-6 border-b">
             <div className="flex flex-col items-center space-y-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-3xl text-white">
-                {paciente?.avatar || '👤'}
+              <div className="relative group">
+                <div 
+                  onClick={() => setShowFotoMenu(!showFotoMenu)}
+                  className="w-20 h-20 rounded-full flex items-center justify-center text-3xl overflow-hidden border-4 border-blue-400 cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  {uploadingFoto ? (
+                    <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+                      <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  ) : fotoPerfil ? (
+                    <img 
+                      src={fotoPerfil} 
+                      alt={`${paciente?.nombre} ${paciente?.apellido}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white">
+                      {paciente?.avatar || '👤'}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Menú de opciones */}
+                {showFotoMenu && !uploadingFoto && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                    <button
+                      onClick={() => {
+                        fotoInputRef.current?.click();
+                        setShowFotoMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2 text-sm"
+                    >
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      </svg>
+                      <span>{fotoPerfil ? 'Cambiar foto' : 'Adjuntar foto'}</span>
+                    </button>
+                  </div>
+                )}
+                
+                <input
+                  ref={fotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCambiarFoto}
+                  className="hidden"
+                />
               </div>
               <div className="text-center">
                 <h2 className="text-xl font-bold text-gray-900">{paciente?.nombre} {paciente?.apellido}</h2>
@@ -653,8 +755,21 @@ const HistoriaClinica = ({ paciente, onClose }) => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">{paciente?.nombre} {paciente?.apellido}</h2>
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white">
-                  {paciente?.avatar || '👤'}
+                <div 
+                  onClick={() => setShowFotoMenu(!showFotoMenu)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-blue-400 cursor-pointer hover:opacity-90 transition-opacity relative"
+                >
+                  {fotoPerfil ? (
+                    <img 
+                      src={fotoPerfil} 
+                      alt={`${paciente?.nombre} ${paciente?.apellido}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-lg">
+                      {paciente?.avatar || '👤'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
