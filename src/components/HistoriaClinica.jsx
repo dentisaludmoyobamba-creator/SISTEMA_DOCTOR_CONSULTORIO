@@ -631,22 +631,6 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     setNotasEvolucionBreve(prev => [nuevaEvolucion, ...prev]);
   };
 
-  const handleSaveDatosFiscales = (datosData) => {
-    const nuevosDatos = {
-      id: Date.now(),
-      ...datosData
-    };
-    setDatosFiscales(prev => [nuevosDatos, ...prev]);
-  };
-
-  const handleSaveFamiliar = (familiarData) => {
-    const nuevoFamiliar = {
-      id: Date.now(),
-      ...familiarData
-    };
-    setFamiliares(prev => [nuevoFamiliar, ...prev]);
-  };
-
   // ===== FUNCIONES DE ODONTOGRAMA =====
   
   const loadOdontograma = async () => {
