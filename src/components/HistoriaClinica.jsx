@@ -4041,7 +4041,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       <AgregarDatosFiscalesModal
         isOpen={isAgregarDatosFiscalesOpen}
         onClose={() => setIsAgregarDatosFiscalesOpen(false)}
-        onSave={handleSaveDatosFiscales}
+        onSave={handleSaveDatoFiscal}
       />
       <AgregarFamiliarModal
         isOpen={isAgregarFamiliarOpen}
