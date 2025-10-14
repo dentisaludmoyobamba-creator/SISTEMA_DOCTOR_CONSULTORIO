@@ -107,6 +107,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadLookupOptions();
       loadNotasAlergias();
       loadArchivos();
+      loadDatosFiscales();
+      loadFamiliares();
+      loadCitas();
       setFotoPerfil(paciente.foto_perfil_url);
     }
   }, [paciente?.id]);
@@ -223,6 +226,179 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       console.error('Error de conexión al cargar archivos:', e);
     } finally {
       setLoadingArchivos(false);
+    }
+  };
+
+  // ===== FUNCIONES PARA DATOS FISCALES =====
+  const loadDatosFiscales = async () => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.getDatosFiscales(paciente.id);
+      if (result.success) {
+        setDatosFiscales(result.datos_fiscales);
+      } else {
+        console.error('Error al cargar datos fiscales:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar datos fiscales:', e);
+    }
+  };
+
+  const handleSaveDatoFiscal = async (datoFiscal) => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.createDatoFiscal({
+        id_paciente: paciente.id,
+        razon_social: datoFiscal.razonSocial,
+        numero_fiscal: datoFiscal.numeroFiscal,
+        direccion: datoFiscal.direccion,
+        departamento: datoFiscal.departamento,
+        provincia: datoFiscal.provincia || '',
+        distrito: datoFiscal.distrito || ''
+      });
+      if (result.success) {
+        await loadDatosFiscales();
+        setIsAgregarDatosFiscalesOpen(false);
+      } else {
+        alert(result.error || 'Error al crear dato fiscal');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    }
+  };
+
+  const handleEditDatoFiscal = async (datoFiscal) => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.updateDatoFiscal({
+        id: datoFiscal.id,
+        razon_social: datoFiscal.razonSocial,
+        numero_fiscal: datoFiscal.numeroFiscal,
+        direccion: datoFiscal.direccion,
+        departamento: datoFiscal.departamento,
+        provincia: datoFiscal.provincia || '',
+        distrito: datoFiscal.distrito || ''
+      });
+      if (result.success) {
+        await loadDatosFiscales();
+      } else {
+        alert(result.error || 'Error al actualizar dato fiscal');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    }
+  };
+
+  const handleDeleteDatoFiscal = async (datoFiscalId) => {
+    if (window.confirm('¿Está seguro de eliminar este dato fiscal?')) {
+      try {
+        patientsService.setAuthService?.(authService);
+        const result = await patientsService.deleteDatoFiscal(datoFiscalId);
+        if (result.success) {
+          await loadDatosFiscales();
+        } else {
+          alert(result.error || 'Error al eliminar dato fiscal');
+        }
+      } catch (e) {
+        alert('Error de conexión: ' + e.message);
+      }
+    }
+  };
+
+  // ===== FUNCIONES PARA FAMILIARES =====
+  const loadFamiliares = async () => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.getFamiliares(paciente.id);
+      if (result.success) {
+        setFamiliares(result.familiares);
+      } else {
+        console.error('Error al cargar familiares:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar familiares:', e);
+    }
+  };
+
+  const handleSaveFamiliar = async (familiar) => {
+    try {
+      // Solo procesar si es nuevo familiar
+      if (familiar.opcion !== 'nuevo') {
+        alert('Por ahora solo se puede crear un nuevo familiar');
+        return;
+      }
+      
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.createFamiliar({
+        id_paciente: paciente.id,
+        nombre_completo: familiar.nombre,
+        documento: familiar.documento || '',
+        telefono: familiar.telefono || '',
+        email: familiar.email || '',
+        es_apoderado: familiar.apoderado || false,
+        parentesco: familiar.parentesco || ''
+      });
+      if (result.success) {
+        await loadFamiliares();
+        setIsAgregarFamiliarOpen(false);
+      } else {
+        alert(result.error || 'Error al crear familiar');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    }
+  };
+
+  const handleEditFamiliar = async (familiar) => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.updateFamiliar({
+        id: familiar.id,
+        nombre_completo: familiar.nombreCompleto,
+        documento: familiar.documento,
+        telefono: familiar.telefono,
+        email: familiar.email,
+        es_apoderado: familiar.esApoderado,
+        parentesco: familiar.parentesco || ''
+      });
+      if (result.success) {
+        await loadFamiliares();
+      } else {
+        alert(result.error || 'Error al actualizar familiar');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    }
+  };
+
+  const handleDeleteFamiliar = async (familiarId) => {
+    if (window.confirm('¿Está seguro de eliminar este familiar?')) {
+      try {
+        patientsService.setAuthService?.(authService);
+        const result = await patientsService.deleteFamiliar(familiarId);
+        if (result.success) {
+          await loadFamiliares();
+        } else {
+          alert(result.error || 'Error al eliminar familiar');
+        }
+      } catch (e) {
+        alert('Error de conexión: ' + e.message);
+      }
+    }
+  };
+
+  // ===== FUNCIONES PARA CITAS =====
+  const loadCitas = async () => {
+    try {
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.getCitas(paciente.id);
+      if (result.success) {
+        setCitas(result.citas);
+      } else {
+        console.error('Error al cargar citas:', result.error);
+      }
+    } catch (e) {
+      console.error('Error de conexión al cargar citas:', e);
     }
   };
 
@@ -1320,11 +1496,12 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 
                 {/* Header de la tabla */}
                 <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
-                  <div className="grid grid-cols-4 gap-4 text-sm font-medium">
+                  <div className="grid grid-cols-5 gap-4 text-sm font-medium">
                     <div>Razón Social</div>
                     <div>Número Fiscal</div>
                     <div>Dirección</div>
                     <div>Departamento</div>
+                    <div className="text-center">Acciones</div>
                   </div>
                 </div>
                 
@@ -1346,11 +1523,22 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 ) : (
                   <div className="bg-white border border-gray-200 rounded-b-lg">
                     {datosFiscales.map((dato) => (
-                      <div key={dato.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 text-sm">
+                      <div key={dato.id} className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-gray-100 text-sm items-center">
                         <div>{dato.razonSocial}</div>
-                        <div>{dato.documento}</div>
+                        <div>{dato.numeroFiscal}</div>
                         <div>{dato.direccion}</div>
                         <div>{dato.departamento}</div>
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => handleDeleteDatoFiscal(dato.id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Eliminar"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1363,12 +1551,13 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 
                 {/* Header de la tabla */}
                 <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
-                  <div className="grid grid-cols-5 gap-4 text-sm font-medium">
+                  <div className="grid grid-cols-6 gap-4 text-sm font-medium">
                     <div>Nombre</div>
                     <div>N° doc</div>
                     <div>Teléfono</div>
                     <div>Email</div>
                     <div>Apoderado</div>
+                    <div className="text-center">Acciones</div>
                   </div>
                 </div>
                 
@@ -1390,12 +1579,23 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                 ) : (
                   <div className="bg-white border border-gray-200 rounded-b-lg">
                     {familiares.map((familiar) => (
-                      <div key={familiar.id} className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-gray-100 text-sm">
-                        <div>{familiar.nombre}</div>
+                      <div key={familiar.id} className="grid grid-cols-6 gap-4 px-4 py-3 border-b border-gray-100 text-sm items-center">
+                        <div>{familiar.nombreCompleto}</div>
                         <div>{familiar.documento}</div>
                         <div>{familiar.telefono}</div>
                         <div>{familiar.email}</div>
-                        <div>{familiar.apoderado ? 'Sí' : 'No'}</div>
+                        <div>{familiar.esApoderado ? 'Sí' : 'No'}</div>
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => handleDeleteFamiliar(familiar.id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Eliminar"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1417,15 +1617,44 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                   </div>
                 </div>
                 
-                {/* Contenido vacío */}
-                <div className="bg-white border border-gray-200 rounded-b-lg p-12 text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
+                {/* Contenido */}
+                {citas.length === 0 ? (
+                  <div className="bg-white border border-gray-200 rounded-b-lg p-12 text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">No hay citas registradas</p>
                   </div>
-                  <p className="text-gray-500">No se encontró ninguna información</p>
-                </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-b-lg">
+                    {citas.map((cita) => (
+                      <div key={cita.id} className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-gray-100 text-sm">
+                        <div>{cita.fecha_hora ? new Date(cita.fecha_hora).toLocaleDateString('es-ES', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '--'}</div>
+                        <div>{cita.doctor || '--'}</div>
+                        <div>{cita.motivo || '--'}</div>
+                        <div>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            cita.estado === 'Completada' ? 'bg-green-100 text-green-800' :
+                            cita.estado === 'Programada' ? 'bg-blue-100 text-blue-800' :
+                            cita.estado === 'Cancelada' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {cita.estado}
+                          </span>
+                        </div>
+                        <div className="truncate">{cita.comentario || '--'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Paginación */}

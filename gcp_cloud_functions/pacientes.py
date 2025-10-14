@@ -891,6 +891,458 @@ def handle_update_patient_notas_alergias(request):
             pass
         return json_response({"error": f"Error al actualizar {campo}: {str(e)}"}, 500)
 
+# ===== DATOS FISCALES =====
+def handle_get_datos_fiscales(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id_dato_fiscal, razon_social, numero_fiscal, direccion, 
+                   departamento, provincia, distrito, fecha_creacion
+            FROM datos_fiscales_paciente
+            WHERE id_paciente = %s AND activo = true
+            ORDER BY fecha_creacion DESC
+        """, (patient_id,))
+        
+        datos = []
+        for row in cur.fetchall():
+            datos.append({
+                "id": row['id_dato_fiscal'],
+                "razonSocial": row['razon_social'],
+                "numeroFiscal": row['numero_fiscal'],
+                "direccion": row['direccion'],
+                "departamento": row['departamento'],
+                "provincia": row['provincia'],
+                "distrito": row['distrito'],
+                "fechaCreacion": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "datos_fiscales": datos
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener datos fiscales: {str(e)}"}, 500)
+
+def handle_create_dato_fiscal(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        razon_social = data.get('razon_social', '').strip()
+        numero_fiscal = data.get('numero_fiscal', '').strip()
+        direccion = data.get('direccion', '').strip()
+        departamento = data.get('departamento', '').strip()
+        provincia = data.get('provincia', '').strip()
+        distrito = data.get('distrito', '').strip()
+        
+        if not patient_id or not razon_social or not numero_fiscal:
+            return json_response({"error": "ID de paciente, razón social y número fiscal son requeridos"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO datos_fiscales_paciente 
+            (id_paciente, razon_social, numero_fiscal, direccion, departamento, provincia, distrito)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id_dato_fiscal
+        """, (patient_id, razon_social, numero_fiscal, direccion, departamento, provincia, distrito))
+        
+        new_id = cur.fetchone()['id_dato_fiscal']
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Dato fiscal creado exitosamente",
+            "id": new_id
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al crear dato fiscal: {str(e)}"}, 500)
+
+def handle_update_dato_fiscal(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        dato_fiscal_id = data.get('id')
+        
+        if not dato_fiscal_id:
+            return json_response({"error": "ID de dato fiscal requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        update_fields = []
+        params = []
+
+        if 'razon_social' in data:
+            update_fields.append("razon_social = %s")
+            params.append(data['razon_social'])
+        
+        if 'numero_fiscal' in data:
+            update_fields.append("numero_fiscal = %s")
+            params.append(data['numero_fiscal'])
+        
+        if 'direccion' in data:
+            update_fields.append("direccion = %s")
+            params.append(data['direccion'])
+        
+        if 'departamento' in data:
+            update_fields.append("departamento = %s")
+            params.append(data['departamento'])
+        
+        if 'provincia' in data:
+            update_fields.append("provincia = %s")
+            params.append(data['provincia'])
+        
+        if 'distrito' in data:
+            update_fields.append("distrito = %s")
+            params.append(data['distrito'])
+
+        if not update_fields:
+            return json_response({"error": "No hay campos para actualizar"}, 400)
+
+        params.append(dato_fiscal_id)
+        update_query = f"""
+            UPDATE datos_fiscales_paciente 
+            SET {', '.join(update_fields)}
+            WHERE id_dato_fiscal = %s AND activo = true
+        """
+
+        cur.execute(update_query, params)
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Dato fiscal no encontrado"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Dato fiscal actualizado exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al actualizar dato fiscal: {str(e)}"}, 500)
+
+def handle_delete_dato_fiscal(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        dato_fiscal_id = request.args.get('id')
+        if not dato_fiscal_id:
+            return json_response({"error": "ID de dato fiscal requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            UPDATE datos_fiscales_paciente 
+            SET activo = false
+            WHERE id_dato_fiscal = %s
+        """, (dato_fiscal_id,))
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Dato fiscal no encontrado"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Dato fiscal eliminado exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al eliminar dato fiscal: {str(e)}"}, 500)
+
+# ===== FAMILIARES =====
+def handle_get_familiares(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id_familiar, nombre_completo, documento, telefono, email, 
+                   es_apoderado, parentesco, fecha_creacion
+            FROM familiares_paciente
+            WHERE id_paciente = %s AND activo = true
+            ORDER BY fecha_creacion DESC
+        """, (patient_id,))
+        
+        familiares = []
+        for row in cur.fetchall():
+            familiares.append({
+                "id": row['id_familiar'],
+                "nombreCompleto": row['nombre_completo'],
+                "documento": row['documento'],
+                "telefono": row['telefono'],
+                "email": row['email'],
+                "esApoderado": row['es_apoderado'],
+                "parentesco": row['parentesco'],
+                "fechaCreacion": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "familiares": familiares
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener familiares: {str(e)}"}, 500)
+
+def handle_create_familiar(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        nombre_completo = data.get('nombre_completo', '').strip()
+        documento = data.get('documento', '').strip()
+        telefono = data.get('telefono', '').strip()
+        email = data.get('email', '').strip()
+        es_apoderado = data.get('es_apoderado', False)
+        parentesco = data.get('parentesco', '').strip()
+        
+        if not patient_id or not nombre_completo:
+            return json_response({"error": "ID de paciente y nombre completo son requeridos"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO familiares_paciente 
+            (id_paciente, nombre_completo, documento, telefono, email, es_apoderado, parentesco)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id_familiar
+        """, (patient_id, nombre_completo, documento, telefono, email, es_apoderado, parentesco))
+        
+        new_id = cur.fetchone()['id_familiar']
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Familiar creado exitosamente",
+            "id": new_id
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al crear familiar: {str(e)}"}, 500)
+
+def handle_update_familiar(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        familiar_id = data.get('id')
+        
+        if not familiar_id:
+            return json_response({"error": "ID de familiar requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        update_fields = []
+        params = []
+
+        if 'nombre_completo' in data:
+            update_fields.append("nombre_completo = %s")
+            params.append(data['nombre_completo'])
+        
+        if 'documento' in data:
+            update_fields.append("documento = %s")
+            params.append(data['documento'])
+        
+        if 'telefono' in data:
+            update_fields.append("telefono = %s")
+            params.append(data['telefono'])
+        
+        if 'email' in data:
+            update_fields.append("email = %s")
+            params.append(data['email'])
+        
+        if 'es_apoderado' in data:
+            update_fields.append("es_apoderado = %s")
+            params.append(data['es_apoderado'])
+        
+        if 'parentesco' in data:
+            update_fields.append("parentesco = %s")
+            params.append(data['parentesco'])
+
+        if not update_fields:
+            return json_response({"error": "No hay campos para actualizar"}, 400)
+
+        params.append(familiar_id)
+        update_query = f"""
+            UPDATE familiares_paciente 
+            SET {', '.join(update_fields)}
+            WHERE id_familiar = %s AND activo = true
+        """
+
+        cur.execute(update_query, params)
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Familiar no encontrado"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Familiar actualizado exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al actualizar familiar: {str(e)}"}, 500)
+
+def handle_delete_familiar(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        familiar_id = request.args.get('id')
+        if not familiar_id:
+            return json_response({"error": "ID de familiar requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            UPDATE familiares_paciente 
+            SET activo = false
+            WHERE id_familiar = %s
+        """, (familiar_id,))
+        
+        if cur.rowcount == 0:
+            return json_response({"error": "Familiar no encontrado"}, 404)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Familiar eliminado exitosamente"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al eliminar familiar: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -920,16 +1372,24 @@ def hello_http(request):
                 return handle_get_patient_notas_alergias(request)
             elif action in ('etiquetas', 'tags'):
                 return handle_get_etiquetas(request)
+            elif action in ('datos_fiscales', 'fiscal_data'):
+                return handle_get_datos_fiscales(request)
+            elif action in ('familiares', 'relatives'):
+                return handle_get_familiares(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias o etiquetas"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales o familiares"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):
                 return handle_create_paciente(request)
             elif action in ('add_etiqueta', 'agregar_etiqueta'):
                 return handle_add_etiqueta_to_patient(request)
+            elif action in ('create_dato_fiscal', 'crear_dato_fiscal'):
+                return handle_create_dato_fiscal(request)
+            elif action in ('create_familiar', 'crear_familiar'):
+                return handle_create_familiar(request)
             else:
-                return json_response({"error": "Acción POST no válida. Use action=create o add_etiqueta"}, 400)
+                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal o create_familiar"}, 400)
 
         if request.method == 'PUT':
             if action in ('update_filiacion', 'actualizar_filiacion'):
@@ -938,14 +1398,22 @@ def hello_http(request):
                 return handle_update_patient_notas_alergias(request)
             elif action in ('update_foto', 'actualizar_foto'):
                 return handle_update_patient_foto(request)
+            elif action in ('update_dato_fiscal', 'actualizar_dato_fiscal'):
+                return handle_update_dato_fiscal(request)
+            elif action in ('update_familiar', 'actualizar_familiar'):
+                return handle_update_familiar(request)
             else:
-                return json_response({"error": "Acción PUT no válida. Use action=update_filiacion, update_notas_alergias o update_foto"}, 400)
+                return json_response({"error": "Acción PUT no válida. Use action=update_filiacion, update_notas_alergias, update_foto, update_dato_fiscal o update_familiar"}, 400)
 
         if request.method == 'DELETE':
             if action in ('remove_etiqueta', 'remover_etiqueta'):
                 return handle_remove_etiqueta_from_patient(request)
+            elif action in ('delete_dato_fiscal', 'eliminar_dato_fiscal'):
+                return handle_delete_dato_fiscal(request)
+            elif action in ('delete_familiar', 'eliminar_familiar'):
+                return handle_delete_familiar(request)
             else:
-                return json_response({"error": "Acción DELETE no válida. Use action=remove_etiqueta"}, 400)
+                return json_response({"error": "Acción DELETE no válida. Use action=remove_etiqueta, delete_dato_fiscal o delete_familiar"}, 400)
 
         return json_response({"error": "Método no soportado"}, 405)
     except Exception as e:

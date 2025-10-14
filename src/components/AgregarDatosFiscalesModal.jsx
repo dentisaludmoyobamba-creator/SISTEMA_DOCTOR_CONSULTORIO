@@ -3,25 +3,29 @@ import React, { useState } from 'react';
 const AgregarDatosFiscalesModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     tipoDocumento: 'RUC',
-    documento: '',
-    razonSocial: 'Elias Jesus Leandro',
+    numeroFiscal: '',
+    razonSocial: '',
     direccion: '',
     departamento: 'Lima',
-    ciudad: 'Lima',
-    distrito: 'Ancón'
+    provincia: 'Lima',
+    distrito: ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.razonSocial || !formData.numeroFiscal) {
+      alert('La razón social y el número fiscal son obligatorios');
+      return;
+    }
     onSave(formData);
     setFormData({
       tipoDocumento: 'RUC',
-      documento: '',
-      razonSocial: 'Elias Jesus Leandro',
+      numeroFiscal: '',
+      razonSocial: '',
       direccion: '',
       departamento: 'Lima',
-      ciudad: 'Lima',
-      distrito: 'Ancón'
+      provincia: 'Lima',
+      distrito: ''
     });
     onClose();
   };
@@ -78,25 +82,26 @@ const AgregarDatosFiscalesModal = ({ isOpen, onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Documento */}
+          {/* Número Fiscal */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Documento:
+              Número Fiscal: <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              name="documento"
-              value={formData.documento}
+              name="numeroFiscal"
+              value={formData.numeroFiscal}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder=""
+              required
             />
           </div>
 
           {/* Razón Social */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Razón Social:
+              Razón Social: <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -105,6 +110,7 @@ const AgregarDatosFiscalesModal = ({ isOpen, onClose, onSave }) => {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder=""
+              required
             />
           </div>
 
@@ -149,15 +155,15 @@ const AgregarDatosFiscalesModal = ({ isOpen, onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Ciudad */}
+          {/* Provincia */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ciudad:
+              Provincia:
             </label>
             <div className="relative">
               <select
-                name="ciudad"
-                value={formData.ciudad}
+                name="provincia"
+                value={formData.provincia}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
               >
@@ -180,25 +186,14 @@ const AgregarDatosFiscalesModal = ({ isOpen, onClose, onSave }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Distrito:
             </label>
-            <div className="relative">
-              <select
-                name="distrito"
-                value={formData.distrito}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-              >
-                <option value="Ancón">Ancón</option>
-                <option value="Miraflores">Miraflores</option>
-                <option value="San Isidro">San Isidro</option>
-                <option value="La Molina">La Molina</option>
-                <option value="Surco">Surco</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
-                </svg>
-              </div>
-            </div>
+            <input
+              type="text"
+              name="distrito"
+              value={formData.distrito}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder=""
+            />
           </div>
 
           {/* Botón Guardar */}

@@ -14,6 +14,10 @@ const AgregarFamiliarModal = ({ isOpen, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (formData.opcion === 'nuevo' && !formData.nombre) {
+      alert('El nombre completo es obligatorio');
+      return;
+    }
     onSave(formData);
     setFormData({
       opcion: 'existente',

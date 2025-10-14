@@ -258,6 +258,144 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  // ===== DATOS FISCALES =====
+  async getDatosFiscales(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'datos_fiscales', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, datos_fiscales: data.datos_fiscales };
+      }
+      return { success: false, error: data.error || 'Error al obtener datos fiscales' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async createDatoFiscal(datoFiscalData) {
+    try {
+      const res = await fetch(`${API_URL}?action=create_dato_fiscal`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(datoFiscalData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, id: data.id };
+      }
+      return { success: false, error: data.error || 'Error al crear dato fiscal' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async updateDatoFiscal(datoFiscalData) {
+    try {
+      const res = await fetch(`${API_URL}?action=update_dato_fiscal`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(datoFiscalData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al actualizar dato fiscal' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async deleteDatoFiscal(datoFiscalId) {
+    try {
+      const params = new URLSearchParams({ action: 'delete_dato_fiscal', id: String(datoFiscalId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al eliminar dato fiscal' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  // ===== FAMILIARES =====
+  async getFamiliares(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'familiares', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, familiares: data.familiares };
+      }
+      return { success: false, error: data.error || 'Error al obtener familiares' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async createFamiliar(familiarData) {
+    try {
+      const res = await fetch(`${API_URL}?action=create_familiar`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(familiarData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, id: data.id };
+      }
+      return { success: false, error: data.error || 'Error al crear familiar' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async updateFamiliar(familiarData) {
+    try {
+      const res = await fetch(`${API_URL}?action=update_familiar`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(familiarData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al actualizar familiar' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async deleteFamiliar(familiarId) {
+    try {
+      const params = new URLSearchParams({ action: 'delete_familiar', id: String(familiarId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message };
+      }
+      return { success: false, error: data.error || 'Error al eliminar familiar' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();

@@ -915,7 +915,45 @@ GROUP BY p.id_producto;
 
 
 -- =====================================================
--- 9. COMENTARIOS Y DOCUMENTACIÓN
+-- 9. TABLAS ADICIONALES PARA HISTORIA CLÍNICA
+-- =====================================================
+
+-- Tabla de Datos Fiscales del Paciente
+CREATE TABLE IF NOT EXISTS datos_fiscales_paciente (
+    id_dato_fiscal SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    razon_social VARCHAR(200) NOT NULL,
+    numero_fiscal VARCHAR(50) NOT NULL,
+    direccion VARCHAR(255),
+    departamento VARCHAR(100),
+    provincia VARCHAR(100),
+    distrito VARCHAR(100),
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_datos_fiscales_paciente ON datos_fiscales_paciente(id_paciente);
+
+-- Tabla de Familiares del Paciente
+CREATE TABLE IF NOT EXISTS familiares_paciente (
+    id_familiar SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    documento VARCHAR(50),
+    telefono VARCHAR(20),
+    email VARCHAR(100),
+    es_apoderado BOOLEAN DEFAULT FALSE,
+    parentesco VARCHAR(50),
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_familiares_paciente ON familiares_paciente(id_paciente);
+
+-- =====================================================
+-- 10. COMENTARIOS Y DOCUMENTACIÓN
 -- =====================================================
 
 [cite_start]COMMENT ON TABLE horarios_doctor IS 'Horarios de trabajo de cada doctor por día de la semana'; [cite: 113]
