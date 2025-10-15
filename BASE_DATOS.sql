@@ -217,7 +217,7 @@ ADD COLUMN comentario TEXT,
 ADD COLUMN estado_paciente VARCHAR(20) DEFAULT 'activo',
 ADD COLUMN avatar VARCHAR(10),
 ADD COLUMN etiqueta VARCHAR(20),
-ADD COLUMN etiqueta_color VARCHAR(50),
+ADD COLUMN etiqueta_color VARCHAR(50)
 ADD COLUMN foto_perfil_url VARCHAR(500);
 
 -- Agregar las foreign keys correspondientes a la tabla pacientes
@@ -228,7 +228,6 @@ ALTER TABLE pacientes
 ALTER TABLE pacientes
 [cite_start]ADD CONSTRAINT fk_paciente_linea_negocio FOREIGN KEY (id_linea_negocio) REFERENCES linea_negocio(id); [cite: 42]
 
-[cite_start]-- Mejorar la tabla de citas médicas con campos adicionales [cite: 43]
 ALTER TABLE citas_medicas
 ADD COLUMN IF NOT EXISTS duracion_minutos INTEGER DEFAULT 60,
 ADD COLUMN IF NOT EXISTS telefono_contacto VARCHAR(20),
@@ -239,6 +238,17 @@ ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT,
 ADD COLUMN IF NOT EXISTS fecha_cancelacion TIMESTAMP WITH TIME ZONE,
 ADD COLUMN IF NOT EXISTS id_usuario_cancelo INTEGER;
 
+[cite_start]-- Mejorar la tabla de citas médicas con campos adicionales [cite: 43]
+ALTER TABLE citas_medicas
+ADD COLUMN duracion_minutos INTEGER DEFAULT 60,
+ADD COLUMN telefono_contacto VARCHAR(20),
+ADD COLUMN email_contacto VARCHAR(100),
+ADD COLUMN recordatorio_enviado BOOLEAN DEFAULT FALSE,
+ADD COLUMN fecha_recordatorio TIMESTAMP WITH TIME ZONE,
+ADD COLUMN motivo_cancelacion TEXT,
+ADD COLUMN fecha_cancelacion TIMESTAMP WITH TIME ZONE,
+ADD COLUMN id_usuario_cancelo INTEGER;
+
 [cite_start]-- Agregar la foreign key para el usuario que cancela una cita [cite: 44]
 ALTER TABLE citas_medicas
 ADD CONSTRAINT fk_cita_usuario_cancelo FOREIGN KEY (id_usuario_cancelo) REFERENCES usuarios(id_usuario);
@@ -247,7 +257,6 @@ ADD CONSTRAINT fk_cita_usuario_cancelo FOREIGN KEY (id_usuario_cancelo) REFERENC
 -- =====================================================
 -- 3. CREACIÓN DE NUEVAS TABLAS
 -- =====================================================
-
 -- Tabla de etiquetas para pacientes (catálogo)
 CREATE TABLE etiquetas_paciente (
     id_etiqueta SERIAL PRIMARY KEY,
@@ -357,7 +366,7 @@ CREATE TABLE ordenes_compra (
 CREATE TABLE consumos (
     id_consumo SERIAL PRIMARY KEY,
     id_producto INTEGER NOT NULL,
-    fuente VARCHAR(50),
+	fuente VARCHAR(50),
     tipo VARCHAR(50),
     lote VARCHAR(50),
     cantidad NUMERIC(10,2) NOT NULL,
@@ -455,69 +464,6 @@ CREATE TABLE logs_auditoria (
 );
 
 -- =====================================================
--- TABLAS PARA GESTIÓN DE ARCHIVOS
--- =====================================================
-
--- Tabla de archivos del paciente
-CREATE TABLE archivos_paciente (
-    id_archivo SERIAL PRIMARY KEY,
-    id_paciente INTEGER NOT NULL,
-    id_doctor INTEGER,
-    id_usuario_subida INTEGER NOT NULL,
-    
-    -- Información del archivo
-    nombre_archivo VARCHAR(255) NOT NULL,
-    nombre_original VARCHAR(255) NOT NULL,
-    ruta_storage VARCHAR(500) NOT NULL, -- Ruta en Cloud Storage
-    url_publica VARCHAR(500),
-    
-    -- Metadata
-    tipo_archivo VARCHAR(10), -- pdf, jpg, png, doc, etc.
-    tamano_bytes BIGINT,
-    mime_type VARCHAR(100),
-    
-    -- Categorización
-    categoria VARCHAR(50), -- 'radiografia', 'laboratorio', 'receta', 'consentimiento', 'informe', 'imagen', 'otro'
-    descripcion TEXT,
-    notas TEXT,
-    
-    -- Compartir
-    compartir_con_paciente BOOLEAN DEFAULT FALSE,
-    fecha_compartido TIMESTAMP WITH TIME ZONE,
-    
-    -- Control
-    activo BOOLEAN DEFAULT TRUE,
-    fecha_subida TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
-    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor),
-    FOREIGN KEY (id_usuario_subida) REFERENCES usuarios(id_usuario)
-);
-
--- Tabla de categorías de archivos (catálogo)
-CREATE TABLE categorias_archivo (
-    id_categoria SERIAL PRIMARY KEY,
-    nombre VARCHAR(50) UNIQUE NOT NULL,
-    descripcion TEXT,
-    icono VARCHAR(50), -- Nombre del icono o emoji
-    color VARCHAR(7), -- Color hex
-    activa BOOLEAN DEFAULT TRUE
-);
-
--- Insertar categorías predefinidas
-INSERT INTO categorias_archivo (nombre, descripcion, icono, color) VALUES
-('Radiografía', 'Radiografías dentales y panorámicas', '📷', '#3b82f6'),
-('Laboratorio', 'Resultados de laboratorio y análisis', '🔬', '#10b981'),
-('Receta', 'Recetas médicas y prescripciones', '💊', '#f59e0b'),
-('Consentimiento', 'Consentimientos informados', '📝', '#8b5cf6'),
-('Informe', 'Informes médicos y evaluaciones', '📋', '#06b6d4'),
-('Imagen', 'Fotografías clínicas', '📸', '#ec4899'),
-('Documento', 'Documentos generales', '📄', '#6b7280'),
-('Otro', 'Otros archivos', '📎', '#9ca3af')
-ON CONFLICT (nombre) DO NOTHING;
-
--- =====================================================
 -- TABLAS PARA ODONTOGRAMA
 -- =====================================================
 
@@ -613,33 +559,65 @@ CREATE TABLE codigos_odontologicos (
     activo BOOLEAN DEFAULT TRUE
 );
 
--- Insertar códigos odontológicos estándar
-INSERT INTO codigos_odontologicos (codigo, nombre, descripcion, color_sugerido, categoria) VALUES
-('SANO', 'Sano', 'Diente sano sin patología', '#ffffff', 'diagnostico'),
-('C', 'Caries', 'Caries dental', '#ef4444', 'diagnostico'),
-('O', 'Obturación', 'Obturación/Restauración', '#10b981', 'tratamiento'),
-('E', 'Endodoncia', 'Tratamiento de conducto', '#3b82f6', 'tratamiento'),
-('CO', 'Corona', 'Corona protésica', '#f59e0b', 'tratamiento'),
-('IM', 'Implante', 'Implante dental', '#8b5cf6', 'tratamiento'),
-('X', 'Extracción', 'Diente extraído/ausente', '#6b7280', 'estado'),
-('FR', 'Fractura', 'Fractura dental', '#dc2626', 'diagnostico'),
-('PR', 'Prótesis', 'Prótesis fija o removible', '#ec4899', 'tratamiento'),
-('SE', 'Sellante', 'Sellante de fosetas y fisuras', '#06b6d4', 'tratamiento'),
-('CA', 'Caries Activa', 'Caries activa que requiere tratamiento inmediato', '#dc2626', 'diagnostico'),
-('PI', 'Puente', 'Pilar de puente', '#f97316', 'tratamiento'),
-('PP', 'Pulpitis', 'Inflamación pulpar', '#ef4444', 'diagnostico'),
-('AB', 'Absceso', 'Absceso periapical', '#991b1b', 'diagnostico'),
-('MO', 'Movilidad', 'Movilidad dental', '#fb923c', 'diagnostico'),
-('DT', 'Diente Temporal', 'Diente de leche', '#a3e635', 'estado'),
-('ER', 'Erosión', 'Erosión del esmalte', '#fbbf24', 'diagnostico'),
-('FL', 'Fluorosis', 'Fluorosis dental', '#d1d5db', 'diagnostico'),
-('RE', 'Recesión', 'Recesión gingival', '#fb7185', 'diagnostico'),
-('IN', 'Incluido', 'Diente incluido/impactado', '#94a3b8', 'estado');
 
+-- =====================================================
+-- TABLAS PARA GESTIÓN DE ARCHIVOS
+-- =====================================================
+
+-- Tabla de archivos del paciente
+CREATE TABLE archivos_paciente (
+    id_archivo SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER,
+    id_usuario_subida INTEGER NOT NULL,
+    
+    -- Información del archivo
+    nombre_archivo VARCHAR(255) NOT NULL,
+    nombre_original VARCHAR(255) NOT NULL,
+    ruta_storage VARCHAR(500) NOT NULL, -- Ruta en Cloud Storage
+    url_publica VARCHAR(500),
+    
+    -- Metadata
+    tipo_archivo VARCHAR(10), -- pdf, jpg, png, doc, etc.
+    tamano_bytes BIGINT,
+    mime_type VARCHAR(100),
+    
+    -- Categorización
+    categoria VARCHAR(50), -- 'radiografia', 'laboratorio', 'receta', 'consentimiento', 'informe', 'imagen', 'otro'
+    descripcion TEXT,
+    notas TEXT,
+    
+    -- Compartir
+    compartir_con_paciente BOOLEAN DEFAULT FALSE,
+    fecha_compartido TIMESTAMP WITH TIME ZONE,
+    
+    -- Control
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_subida TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor),
+    FOREIGN KEY (id_usuario_subida) REFERENCES usuarios(id_usuario)
+);
+
+-- Tabla de categorías de archivos (catálogo)
+CREATE TABLE categorias_archivo (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE NOT NULL,
+    descripcion TEXT,
+    icono VARCHAR(50), -- Nombre del icono o emoji
+    color VARCHAR(7), -- Color hex
+    activa BOOLEAN DEFAULT TRUE
+);
 
 -- =====================================================
 -- 5. ÍNDICES PARA MEJORAR EL RENDIMIENTO
 -- =====================================================
+-- Índices para etiquetas de pacientes
+CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_paciente ON paciente_etiquetas(id_paciente);
+CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_etiqueta ON paciente_etiquetas(id_etiqueta);
+CREATE INDEX IF NOT EXISTS idx_etiquetas_activa ON etiquetas_paciente(activa);
 
 [cite_start]CREATE INDEX idx_citas_fecha_hora ON citas_medicas(fecha_hora); [cite: 57]
 [cite_start]CREATE INDEX idx_citas_doctor_fecha ON citas_medicas(id_doctor, fecha_hora); [cite: 57]
@@ -663,30 +641,6 @@ CREATE INDEX IF NOT EXISTS idx_ordenes_estado ON ordenes_compra(estado);
 CREATE INDEX IF NOT EXISTS idx_consumos_fecha ON consumos(fecha_consumo);
 CREATE INDEX IF NOT EXISTS idx_consumos_producto ON consumos(id_producto);
 CREATE INDEX IF NOT EXISTS idx_consumos_estado ON consumos(estado);
-
--- Índices para etiquetas de pacientes
-CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_paciente ON paciente_etiquetas(id_paciente);
-CREATE INDEX IF NOT EXISTS idx_paciente_etiquetas_etiqueta ON paciente_etiquetas(id_etiqueta);
-CREATE INDEX IF NOT EXISTS idx_etiquetas_activa ON etiquetas_paciente(activa);
-
--- Índices para archivos
-CREATE INDEX IF NOT EXISTS idx_archivos_paciente ON archivos_paciente(id_paciente);
-CREATE INDEX IF NOT EXISTS idx_archivos_doctor ON archivos_paciente(id_doctor);
-CREATE INDEX IF NOT EXISTS idx_archivos_usuario ON archivos_paciente(id_usuario_subida);
-CREATE INDEX IF NOT EXISTS idx_archivos_categoria ON archivos_paciente(categoria);
-CREATE INDEX IF NOT EXISTS idx_archivos_fecha ON archivos_paciente(fecha_subida);
-CREATE INDEX IF NOT EXISTS idx_archivos_activo ON archivos_paciente(activo);
-
--- Índices para odontogramas
-CREATE INDEX IF NOT EXISTS idx_odontogramas_paciente ON odontogramas(id_paciente);
-CREATE INDEX IF NOT EXISTS idx_odontogramas_tipo ON odontogramas(tipo_odontograma);
-CREATE INDEX IF NOT EXISTS idx_odontogramas_activo ON odontogramas(activo);
-CREATE INDEX IF NOT EXISTS idx_odontograma_dientes_odontograma ON odontograma_dientes(id_odontograma);
-CREATE INDEX IF NOT EXISTS idx_odontograma_dientes_numero ON odontograma_dientes(numero_diente);
-CREATE INDEX IF NOT EXISTS idx_odontograma_plan_odontograma ON odontograma_plan_tratamiento(id_odontograma);
-CREATE INDEX IF NOT EXISTS idx_odontograma_plan_estado ON odontograma_plan_tratamiento(estado);
-CREATE INDEX IF NOT EXISTS idx_odontograma_historial_odontograma ON odontograma_historial(id_odontograma);
-CREATE INDEX IF NOT EXISTS idx_codigos_odontologicos_categoria ON codigos_odontologicos(categoria);
 
 
 -- =====================================================
@@ -915,8 +869,22 @@ GROUP BY p.id_producto;
 
 
 -- =====================================================
--- 9. TABLAS ADICIONALES PARA HISTORIA CLÍNICA
+-- 9. COMENTARIOS Y DOCUMENTACIÓN
 -- =====================================================
+
+[cite_start]COMMENT ON TABLE horarios_doctor IS 'Horarios de trabajo de cada doctor por día de la semana'; [cite: 113]
+[cite_start]COMMENT ON TABLE dias_no_laborables IS 'Días festivos y vacaciones que afectan la disponibilidad'; [cite: 114]
+[cite_start]COMMENT ON TABLE recordatorios IS 'Sistema de recordatorios automáticos para citas'; [cite: 115]
+[cite_start]COMMENT ON TABLE transacciones_financieras IS 'Registro de todas las transacciones financieras del consultorio'; [cite: 116]
+[cite_start]COMMENT ON TABLE movimientos_inventario IS 'Movimientos de entrada y salida de productos del inventario'; [cite: 117]
+[cite_start]COMMENT ON TABLE campanas_marketing IS 'Campañas de marketing y promociones'; [cite: 118]
+[cite_start]COMMENT ON TABLE segmentaciones IS 'Segmentaciones de pacientes para marketing dirigido'; [cite: 119]
+[cite_start]COMMENT ON TABLE automatizaciones IS 'Reglas de automatización para procesos del consultorio'; [cite: 120]
+[cite_start]COMMENT ON TABLE mensajes_chat IS 'Sistema de chat interno del consultorio'; [cite: 121]
+[cite_start]COMMENT ON TABLE configuracion_sistema IS 'Configuración general del sistema'; [cite: 121]
+[cite_start]COMMENT ON TABLE logs_auditoria IS 'Log de auditoría para todas las operaciones importantes'; [cite: 122]
+
+
 
 -- Tabla de Datos Fiscales del Paciente
 CREATE TABLE IF NOT EXISTS datos_fiscales_paciente (
@@ -968,6 +936,7 @@ CREATE TABLE IF NOT EXISTS notas_evolucion_paciente (
 CREATE INDEX IF NOT EXISTS idx_notas_evolucion_paciente ON notas_evolucion_paciente(id_paciente);
 CREATE INDEX IF NOT EXISTS idx_notas_evolucion_fecha ON notas_evolucion_paciente(fecha_creacion);
 
+
 -- Tabla de Anamnesis Odontológica
 CREATE TABLE IF NOT EXISTS anamnesis_odontologia (
     id_anamnesis SERIAL PRIMARY KEY,
@@ -1018,24 +987,6 @@ CREATE TABLE IF NOT EXISTS anamnesis_odontologia (
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_paciente ON anamnesis_odontologia(id_paciente);
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_doctor ON anamnesis_odontologia(id_doctor);
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontologia(fecha_creacion);
-
--- =====================================================
--- 10. COMENTARIOS Y DOCUMENTACIÓN
--- =====================================================
-
-[cite_start]COMMENT ON TABLE horarios_doctor IS 'Horarios de trabajo de cada doctor por día de la semana'; [cite: 113]
-[cite_start]COMMENT ON TABLE dias_no_laborables IS 'Días festivos y vacaciones que afectan la disponibilidad'; [cite: 114]
-[cite_start]COMMENT ON TABLE recordatorios IS 'Sistema de recordatorios automáticos para citas'; [cite: 115]
-[cite_start]COMMENT ON TABLE transacciones_financieras IS 'Registro de todas las transacciones financieras del consultorio'; [cite: 116]
-[cite_start]COMMENT ON TABLE movimientos_inventario IS 'Movimientos de entrada y salida de productos del inventario'; [cite: 117]
-[cite_start]COMMENT ON TABLE campanas_marketing IS 'Campañas de marketing y promociones'; [cite: 118]
-[cite_start]COMMENT ON TABLE segmentaciones IS 'Segmentaciones de pacientes para marketing dirigido'; [cite: 119]
-[cite_start]COMMENT ON TABLE automatizaciones IS 'Reglas de automatización para procesos del consultorio'; [cite: 120]
-[cite_start]COMMENT ON TABLE mensajes_chat IS 'Sistema de chat interno del consultorio'; [cite: 121]
-[cite_start]COMMENT ON TABLE configuracion_sistema IS 'Configuración general del sistema'; [cite: 121]
-[cite_start]COMMENT ON TABLE logs_auditoria IS 'Log de auditoría para todas las operaciones importantes'; [cite: 122]
-
-
 -- =====================================================
 -- FIN DEL SCRIPT CONSOLIDADO
 -- =====================================================
