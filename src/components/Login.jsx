@@ -34,7 +34,7 @@ const Login = ({ onLogin }) => {
             `${result.user.doctor_info.nombres} ${result.user.doctor_info.apellidos}` : 
             result.user.username,
           usuario: result.user.username,
-          consultorio: 'Denti Salud',
+          consultorio: 'Denti Salud Moyobamba',
           userData: result.user
         });
       } else {
@@ -65,13 +65,11 @@ const Login = ({ onLogin }) => {
             {/* Logo mejorado */}
             <div className="flex items-center space-x-4 mb-6">
               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                <svg className="w-10 h-10 text-[#4A3C7B]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
+                <img src="/dentisalud.jpg" alt="Denti Salud" className="w-12 h-12 rounded-lg" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold tracking-wide">DENTI SALUD</h1>
-                <p className="text-lg text-[#30B0B0] font-medium">ODONTOLOGÍA</p>
+                <p className="text-lg text-[#30B0B0] font-medium">MOYOBAMBA</p>
               </div>
             </div>
             
@@ -124,19 +122,20 @@ const Login = ({ onLogin }) => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-white">Denti Salud</h3>
+                <h3 className="font-semibold text-white">Denti Salud Moyobamba</h3>
                 <p className="text-sm text-gray-300">Consultorio Odontológico</p>
               </div>
             </div>
             <p className="text-sm text-gray-300 mb-3">
-              Jr. Lima 123, Moyobamba<br/>
-              San Martín, Perú
+              Jr. Oscar Benavides C4<br/>
+              (frente al patio de comidas Calandria)<br/>
+              Moyobamba, San Martín
             </p>
             <div className="flex items-center text-sm text-[#30B0B0]">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              <span>+51 942 123 456</span>
+              <span>951 173 659</span>
             </div>
           </div>
         </div>
@@ -148,14 +147,12 @@ const Login = ({ onLogin }) => {
           {/* Logo para móviles */}
           <div className="lg:hidden text-center mb-8">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-[#4A3C7B] rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                <img src="/dentisalud.jpg" alt="Denti Salud" className="w-10 h-10 rounded-lg" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-[#4A3C7B]">DENTI SALUD</h1>
-                <p className="text-sm text-[#30B0B0] font-medium">ODONTOLOGÍA</p>
+                <p className="text-sm text-[#30B0B0] font-medium">MOYOBAMBA</p>
               </div>
             </div>
             <p className="text-gray-600">Sistema de gestión odontológica</p>
@@ -297,7 +294,7 @@ const Login = ({ onLogin }) => {
             {/* Información adicional */}
             <div className="mt-8 text-center">
               <p className="text-xs text-gray-500">
-                © 2024 Denti Salud. Sistema para Consultorio Odontológico
+                © 2024 Denti Salud Moyobamba. Sistema para Consultorio Odontológico
               </p>
             </div>
           </div>
@@ -312,7 +309,7 @@ const Login = ({ onLogin }) => {
                 <span className="font-semibold">¿Necesitas ayuda?</span>
               </div>
               <p className="text-sm opacity-90">Contacta al administrador</p>
-              <p className="font-medium text-sm">soporte@dentisalud.com</p>
+              <p className="font-medium text-sm">951 173 659</p>
             </div>
           </div>
         </div>
