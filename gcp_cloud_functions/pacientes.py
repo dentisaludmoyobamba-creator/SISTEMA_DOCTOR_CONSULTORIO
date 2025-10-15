@@ -1850,6 +1850,178 @@ def handle_save_anamnesis_odontopediatria(request):
         except Exception:
             pass
         return json_response({"error": f"Error al guardar anamnesis odontopediatría: {str(e)}"}, 500)
+
+# ===== ANAMNESIS ENDODONCIA =====
+def handle_get_anamnesis_endodoncia(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT a.id_anamnesis_endo, a.motivo_consulta, a.examen_clinico, a.caracteristicas_dolor,
+                   a.dolor_percusion_palpacion, a.prueba_vitalidad, a.examen_radiografico,
+                   a.ligamento_reabsorcion, a.diagnosticos, a.tratamiento_indicado,
+                   a.datos_clinicos_conductos, a.accidentes_pronostico,
+                   a.fecha_creacion, d.nombres AS doctor_nombres, d.apellidos AS doctor_apellidos
+            FROM anamnesis_endodoncia a
+            LEFT JOIN doctores d ON a.id_doctor = d.id_doctor
+            WHERE a.id_paciente = %s AND a.activo = true
+            ORDER BY a.fecha_creacion DESC
+            LIMIT 1
+            """,
+            (patient_id,)
+        )
+        row = cur.fetchone()
+
+        anamnesis = None
+        if row:
+            anamnesis = {
+                "id": row['id_anamnesis_endo'],
+                "motivo_consulta": row['motivo_consulta'],
+                "examen_clinico": row['examen_clinico'] or {},
+                "caracteristicas_dolor": row['caracteristicas_dolor'] or {},
+                "dolor_percusion_palpacion": row['dolor_percusion_palpacion'] or {},
+                "prueba_vitalidad": row['prueba_vitalidad'] or {},
+                "examen_radiografico": row['examen_radiografico'] or {},
+                "ligamento_reabsorcion": row['ligamento_reabsorcion'] or {},
+                "diagnosticos": row['diagnosticos'] or {},
+                "tratamiento_indicado": row['tratamiento_indicado'] or {},
+                "datos_clinicos_conductos": row['datos_clinicos_conductos'] or {},
+                "accidentes_pronostico": row['accidentes_pronostico'] or {},
+                "doctor": f"{row['doctor_nombres']} {row['doctor_apellidos']}" if row['doctor_nombres'] else None,
+                "fecha": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
+            }
+
+        cur.close()
+        conn.close()
+
+        return json_response({"success": True, "anamnesis_endo": anamnesis})
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener anamnesis endodoncia: {str(e)}"}, 500)
+
+
+def handle_save_anamnesis_endodoncia(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        anamnesis_id = data.get('id_anamnesis_endo')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Buscar ID del doctor por nombre (si viene)
+        id_doctor = None
+        doctor_nombre = data.get('doctor', '')
+        if doctor_nombre:
+            cur.execute(
+                """
+                SELECT id_doctor FROM doctores 
+                WHERE CONCAT(nombres, ' ', apellidos) ILIKE %s
+                LIMIT 1
+                """,
+                (f"%{doctor_nombre}%",)
+            )
+            doctor_row = cur.fetchone()
+            if doctor_row:
+                id_doctor = doctor_row['id_doctor']
+
+        import json as json_lib
+        examen_clinico = json_lib.dumps(data.get('examen_clinico', {}))
+        caracteristicas_dolor = json_lib.dumps(data.get('caracteristicas_dolor', {}))
+        dolor_percusion_palpacion = json_lib.dumps(data.get('dolor_percusion_palpacion', {}))
+        prueba_vitalidad = json_lib.dumps(data.get('prueba_vitalidad', {}))
+        examen_radiografico = json_lib.dumps(data.get('examen_radiografico', {}))
+        ligamento_reabsorcion = json_lib.dumps(data.get('ligamento_reabsorcion', {}))
+        diagnosticos = json_lib.dumps(data.get('diagnosticos', {}))
+        tratamiento_indicado = json_lib.dumps(data.get('tratamiento_indicado', {}))
+        datos_clinicos_conductos = json_lib.dumps(data.get('datos_clinicos_conductos', {}))
+        accidentes_pronostico = json_lib.dumps(data.get('accidentes_pronostico', {}))
+
+        if anamnesis_id:
+            cur.execute(
+                """
+                UPDATE anamnesis_endodoncia
+                SET id_doctor = %s, motivo_consulta = %s,
+                    examen_clinico = %s, caracteristicas_dolor = %s, dolor_percusion_palpacion = %s,
+                    prueba_vitalidad = %s, examen_radiografico = %s, ligamento_reabsorcion = %s,
+                    diagnosticos = %s, tratamiento_indicado = %s, datos_clinicos_conductos = %s,
+                    accidentes_pronostico = %s, fecha_modificacion = CURRENT_TIMESTAMP
+                WHERE id_anamnesis_endo = %s AND id_paciente = %s
+                RETURNING id_anamnesis_endo
+                """,
+                (
+                    id_doctor, data.get('motivo_consulta'),
+                    examen_clinico, caracteristicas_dolor, dolor_percusion_palpacion,
+                    prueba_vitalidad, examen_radiografico, ligamento_reabsorcion,
+                    diagnosticos, tratamiento_indicado, datos_clinicos_conductos,
+                    accidentes_pronostico, anamnesis_id, patient_id
+                )
+            )
+            result = cur.fetchone()
+            if not result:
+                return json_response({"error": "Anamnesis endodoncia no encontrada"}, 404)
+            saved_id = result['id_anamnesis_endo']
+        else:
+            cur.execute(
+                """
+                INSERT INTO anamnesis_endodoncia 
+                (id_paciente, id_doctor, motivo_consulta, examen_clinico, caracteristicas_dolor,
+                 dolor_percusion_palpacion, prueba_vitalidad, examen_radiografico, ligamento_reabsorcion,
+                 diagnosticos, tratamiento_indicado, datos_clinicos_conductos, accidentes_pronostico)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id_anamnesis_endo
+                """,
+                (
+                    patient_id, id_doctor, data.get('motivo_consulta'),
+                    examen_clinico, caracteristicas_dolor, dolor_percusion_palpacion,
+                    prueba_vitalidad, examen_radiografico, ligamento_reabsorcion,
+                    diagnosticos, tratamiento_indicado, datos_clinicos_conductos, accidentes_pronostico
+                )
+            )
+            saved_id = cur.fetchone()['id_anamnesis_endo']
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({"success": True, "message": "Anamnesis endodoncia guardada", "id": saved_id})
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al guardar anamnesis endodoncia: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -1889,8 +2061,10 @@ def hello_http(request):
                 return handle_get_anamnesis_odontologia(request)
             elif action in ('anamnesis_odontopediatria', 'anamnesis_ped'):
                 return handle_get_anamnesis_odontopediatria(request)
+            elif action in ('anamnesis_endodoncia', 'anamnesis_endo'):
+                return handle_get_anamnesis_endodoncia(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales, familiares, notas_evolucion o anamnesis_odontologia"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales, familiares, notas_evolucion, anamnesis_odontologia, anamnesis_odontopediatria o anamnesis_endodoncia"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):
@@ -1907,8 +2081,10 @@ def hello_http(request):
                 return handle_save_anamnesis_odontologia(request)
             elif action in ('save_anamnesis_odontopediatria', 'guardar_anamnesis_ped'):
                 return handle_save_anamnesis_odontopediatria(request)
+            elif action in ('save_anamnesis_endodoncia', 'guardar_anamnesis_endo'):
+                return handle_save_anamnesis_endodoncia(request)
             else:
-                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal, create_familiar, create_nota_evolucion o save_anamnesis_odontologia"}, 400)
+                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal, create_familiar, create_nota_evolucion, save_anamnesis_odontologia, save_anamnesis_odontopediatria o save_anamnesis_endodoncia"}, 400)
 
         if request.method == 'PUT':
             if action in ('update_filiacion', 'actualizar_filiacion'):

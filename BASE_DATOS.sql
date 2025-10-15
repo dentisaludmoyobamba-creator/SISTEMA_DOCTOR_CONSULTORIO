@@ -1017,6 +1017,58 @@ CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontolo
   CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_paciente ON anamnesis_odontopediatria(id_paciente);
   CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_doctor ON anamnesis_odontopediatria(id_doctor);
   CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_fecha ON anamnesis_odontopediatria(fecha_creacion);
+
+-- Tabla de Anamnesis Endodóntica
+CREATE TABLE IF NOT EXISTS anamnesis_endodoncia (
+    id_anamnesis_endo SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER,
+    
+    -- Datos generales
+    motivo_consulta TEXT,
+    
+    -- Examen clínico (JSON)
+    examen_clinico JSONB, -- {dolor_espontaneo, dolor_provocado, movilidad, etc.}
+    
+    -- Características del dolor (JSON)
+    caracteristicas_dolor JSONB, -- {espontaneo, provocado, frio, calor, etc.}
+    
+    -- Dolor a percusión y palpación (JSON)
+    dolor_percusion_palpacion JSONB, -- {percusion_horizontal, percusion_vertical, palpacion_vestibular, etc.}
+    
+    -- Prueba de vitalidad (JSON)
+    prueba_vitalidad JSONB, -- {calor, frio, duracion, intensidad}
+    
+    -- Examen radiográfico (JSON)
+    examen_radiografico JSONB, -- {camara_pulpar, conductos, hallazgos_especificos}
+    
+    -- Ligamento periodontal y reabsorción (JSON)
+    ligamento_reabsorcion JSONB, -- {ligamento_periodontal, reabsorcion}
+    
+    -- Diagnósticos (JSON)
+    diagnosticos JSONB, -- {pulpar_presuncion, periapical, definitivo}
+    
+    -- Tratamiento indicado (JSON)
+    tratamiento_indicado JSONB, -- {biopulpectomia, apicectomia, etc.}
+    
+    -- Datos clínicos de conductos (JSON)
+    datos_clinicos_conductos JSONB, -- {conductos: [{tipo, longitud, referencia, lima_inicial, etc.}]}
+    
+    -- Accidentes operatorios y pronóstico (JSON)
+    accidentes_pronostico JSONB, -- {accidentes_operatorios, restauracion_post_endodontica, pronostico}
+    
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_anamnesis_endo_paciente ON anamnesis_endodoncia(id_paciente);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_endo_doctor ON anamnesis_endodoncia(id_doctor);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_endo_fecha ON anamnesis_endodoncia(fecha_creacion);
+
 -- =====================================================
 -- FIN DEL SCRIPT CONSOLIDADO
 -- =====================================================

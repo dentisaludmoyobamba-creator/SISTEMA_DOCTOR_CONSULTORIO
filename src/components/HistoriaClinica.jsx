@@ -124,6 +124,24 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [loadingAnamnesis, setLoadingAnamnesis] = useState(false);
   const [savingAnamnesis, setSavingAnamnesis] = useState(false);
 
+  // Estado para anamnesis endodoncia
+  const [anamnesisEndoData, setAnamnesisEndoData] = useState({
+    id_anamnesis_endo: null,
+    motivo_consulta: '',
+    examen_clinico: {},
+    caracteristicas_dolor: {},
+    dolor_percusion_palpacion: {},
+    prueba_vitalidad: {},
+    examen_radiografico: {},
+    ligamento_reabsorcion: {},
+    diagnosticos: {},
+    tratamiento_indicado: {},
+    datos_clinicos_conductos: {},
+    accidentes_pronostico: {}
+  });
+  const [loadingAnamnesisEndo, setLoadingAnamnesisEndo] = useState(false);
+  const [savingAnamnesisEndo, setSavingAnamnesisEndo] = useState(false);
+
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
     { id: 'historia-clinica', label: 'Historia clínica', icon: '📄' },
@@ -147,6 +165,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadCitas();
       loadNotasEvolucion();
       loadAnamnesisOdontologia();
+      loadAnamnesisOdontopediatria();
+      loadAnamnesisEndodoncia();
       setFotoPerfil(paciente.foto_perfil_url);
     }
   }, [paciente?.id]);
@@ -859,6 +879,85 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           ...prev.preguntas_adicionales[pregunta],
           [campo]: valor
         }
+      }
+    }));
+  };
+
+  // ===== FUNCIONES DE ANAMNESIS ENDODONCIA =====
+  
+  const loadAnamnesisEndodoncia = async () => {
+    try {
+      setLoadingAnamnesisEndo(true);
+      const result = await patientsService.getAnamnesisEndodoncia(paciente.id);
+      
+      if (result.success && result.anamnesis_endo) {
+        setAnamnesisEndoData(result.anamnesis_endo);
+      } else {
+        // Inicializar con valores por defecto si no hay datos
+        setAnamnesisEndoData({
+          id_anamnesis_endo: null,
+          motivo_consulta: '',
+          examen_clinico: {},
+          caracteristicas_dolor: {},
+          dolor_percusion_palpacion: {},
+          prueba_vitalidad: {},
+          examen_radiografico: {},
+          ligamento_reabsorcion: {},
+          diagnosticos: {},
+          tratamiento_indicado: {},
+          datos_clinicos_conductos: {},
+          accidentes_pronostico: {}
+        });
+      }
+    } catch (e) {
+      console.error('Error al cargar anamnesis endodoncia:', e);
+      alert('Error de conexión: ' + e.message);
+    } finally {
+      setLoadingAnamnesisEndo(false);
+    }
+  };
+
+  const handleSaveAnamnesisEndo = async () => {
+    try {
+      setSavingAnamnesisEndo(true);
+      const payload = {
+        ...anamnesisEndoData,
+        id_paciente: paciente.id,
+        doctor: 'Dr. Sistema' // Por ahora hardcodeado
+      };
+      
+      const result = await patientsService.saveAnamnesisEndodoncia(payload);
+      
+      if (result.success) {
+        setAnamnesisEndoData(prev => ({
+          ...prev,
+          id_anamnesis_endo: result.id
+        }));
+        alert('Anamnesis endodoncia guardada exitosamente');
+      } else {
+        alert('Error al guardar: ' + result.error);
+      }
+    } catch (e) {
+      console.error('Error al guardar anamnesis endodoncia:', e);
+      alert('Error de conexión: ' + e.message);
+    } finally {
+      setSavingAnamnesisEndo(false);
+    }
+  };
+
+  const handleAnamnesisEndoChange = (field, value) => {
+    setAnamnesisEndoData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAnamnesisEndoJsonChange = (jsonField, key, value) => {
+    setAnamnesisEndoData(prev => ({
+      ...prev,
+      [jsonField]: {
+        ...prev[jsonField],
+        [key]: value
       }
     }));
   };
@@ -2866,6 +2965,13 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               {/* Contenido - Endodoncia */}
               {activeHistoriaTab === 'endodoncia' && (
                 <div className="p-6 space-y-6">
+                  {loadingAnamnesisEndo && (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600">Cargando anamnesis endodoncia...</span>
+                    </div>
+                  )}
+                  {!loadingAnamnesisEndo && (
                   {/* Primera sección - Datos básicos */}
                   <div className="border border-gray-200 rounded-lg">
                     <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -2876,9 +2982,21 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     </div>
                     <div className="p-4 space-y-4">
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Motivo de consulta</label>
+                        <input
+                          type="text"
+                          value={anamnesisEndoData.motivo_consulta || ''}
+                          onChange={(e) => handleAnamnesisEndoChange('motivo_consulta', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder=""
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">¿Tratamiento endodóntico previo?</label>
                         <input
                           type="text"
+                          value={anamnesisEndoData.examen_clinico?.tratamiento_previo || ''}
+                          onChange={(e) => handleAnamnesisEndoJsonChange('examen_clinico', 'tratamiento_previo', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2887,14 +3005,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Historia del dolor</label>
                         <input
                           type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder=""
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nota adicional</label>
-                        <input
-                          type="text"
+                          value={anamnesisEndoData.examen_clinico?.historia_dolor || ''}
+                          onChange={(e) => handleAnamnesisEndoJsonChange('examen_clinico', 'historia_dolor', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2903,6 +3015,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">N° de diente</label>
                         <input
                           type="text"
+                          value={anamnesisEndoData.examen_clinico?.numero_diente || ''}
+                          onChange={(e) => handleAnamnesisEndoJsonChange('examen_clinico', 'numero_diente', e.target.value)}
                           className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -3032,7 +3146,12 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <div className="flex flex-wrap gap-4">
                             {['Espontáneo', 'Provocado', 'Frío', 'Calor', 'Masticación', 'Nocturno', 'Aire', 'Dulce', 'Ácido', 'Irradiado', 'Difuso', 'Punzante'].map((opcion) => (
                               <label key={opcion} className="flex items-center space-x-2">
-                                <input type="checkbox" className="text-blue-600" />
+                                <input 
+                                  type="checkbox" 
+                                  className="text-blue-600"
+                                  checked={anamnesisEndoData.caracteristicas_dolor?.[opcion.toLowerCase()] || false}
+                                  onChange={(e) => handleAnamnesisEndoJsonChange('caracteristicas_dolor', opcion.toLowerCase(), e.target.checked)}
+                                />
                                 <span className="text-sm text-gray-700">{opcion}</span>
                               </label>
                             ))}
@@ -3040,7 +3159,12 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <div className="flex flex-wrap gap-4">
                             {['Continuo', 'Intermitente', 'Esporádico'].map((opcion) => (
                               <label key={opcion} className="flex items-center space-x-2">
-                                <input type="checkbox" className="text-blue-600" />
+                                <input 
+                                  type="checkbox" 
+                                  className="text-blue-600"
+                                  checked={anamnesisEndoData.caracteristicas_dolor?.[opcion.toLowerCase()] || false}
+                                  onChange={(e) => handleAnamnesisEndoJsonChange('caracteristicas_dolor', opcion.toLowerCase(), e.target.checked)}
+                                />
                                 <span className="text-sm text-gray-700">{opcion}</span>
                               </label>
                             ))}
@@ -3291,7 +3415,18 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <div className="flex flex-wrap gap-4">
                         {['Pulpa normal', 'Pulpitis Reversible', 'Pulpitis Irreversible sintomática', 'Pulpitis Irreversible asintomática', 'Necrosis Pulpar', 'Previamente tratado', 'Previamente iniciado'].map((opcion) => (
                           <label key={opcion} className="flex items-center space-x-2">
-                            <input type="checkbox" className="text-blue-600" />
+                            <input 
+                              type="checkbox" 
+                              className="text-blue-600"
+                              checked={anamnesisEndoData.diagnosticos?.pulpar_presuncion?.[opcion.toLowerCase().replace(/\s+/g, '_')] || false}
+                              onChange={(e) => {
+                                const key = opcion.toLowerCase().replace(/\s+/g, '_');
+                                handleAnamnesisEndoJsonChange('diagnosticos', 'pulpar_presuncion', {
+                                  ...anamnesisEndoData.diagnosticos?.pulpar_presuncion,
+                                  [key]: e.target.checked
+                                });
+                              }}
+                            />
                             <span className="text-sm text-gray-700">{opcion}</span>
                           </label>
                         ))}
@@ -3318,7 +3453,18 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <div className="flex flex-wrap gap-4">
                         {['Tejidos apicales sanos', 'Periodontitis apical aguda (sintomática)', 'Periodontitis apical crónica (asintomática)', 'Absceso apical agudo (sin fístula)', 'Absceso apical crónico (con fístula)', 'Osteítis condensante'].map((opcion) => (
                           <label key={opcion} className="flex items-center space-x-2">
-                            <input type="checkbox" className="text-blue-600" />
+                            <input 
+                              type="checkbox" 
+                              className="text-blue-600"
+                              checked={anamnesisEndoData.diagnosticos?.periapical?.[opcion.toLowerCase().replace(/\s+/g, '_').replace(/[()]/g, '')] || false}
+                              onChange={(e) => {
+                                const key = opcion.toLowerCase().replace(/\s+/g, '_').replace(/[()]/g, '');
+                                handleAnamnesisEndoJsonChange('diagnosticos', 'periapical', {
+                                  ...anamnesisEndoData.diagnosticos?.periapical,
+                                  [key]: e.target.checked
+                                });
+                              }}
+                            />
                             <span className="text-sm text-gray-700">{opcion}</span>
                           </label>
                         ))}
@@ -3500,10 +3646,21 @@ const HistoriaClinica = ({ paciente, onClose }) => {
 
                   {/* Botón Guardar */}
                   <div className="flex justify-center pt-4">
-                    <button className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors">
-                      Guardar
+                    <button 
+                      onClick={handleSaveAnamnesisEndo}
+                      disabled={savingAnamnesisEndo}
+                      className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {savingAnamnesisEndo && (
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      <span>{savingAnamnesisEndo ? 'Guardando...' : 'Guardar'}</span>
                     </button>
                   </div>
+                  )}
                 </div>
               )}
 
