@@ -31,7 +31,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     telefono_fijo: '',
     direccion: '',
     fuente_captacion: '',
-    aseguradora: ''
+    aseguradora: '',
+    linea_negocio: ''
   });
   const [loadingDatos, setLoadingDatos] = useState(false);
   const [savingDatos, setSavingDatos] = useState(false);
@@ -146,10 +147,10 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
     { id: 'historia-clinica', label: 'Historia clínica', icon: '📄' },
     { id: 'odontograma', label: 'Odontograma', icon: '🦷' },
-    { id: 'periodontograma', label: 'Periodontograma', icon: '🦷' },
-    { id: 'ortodoncia', label: 'Ortodoncia', icon: '🦷' },
-    { id: 'estado-cuenta', label: 'Estado de cuenta', icon: '💰' },
-    { id: 'prescripciones', label: 'Prescripciones', icon: '📋' },
+    // { id: 'periodontograma', label: 'Periodontograma', icon: '🦷' },
+    // { id: 'ortodoncia', label: 'Ortodoncia', icon: '🦷' },
+    // { id: 'estado-cuenta', label: 'Estado de cuenta', icon: '💰' },
+    // { id: 'prescripciones', label: 'Prescripciones', icon: '📋' },
     { id: 'archivos', label: 'Archivos', icon: '📁' }
   ];
 
@@ -202,7 +203,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           telefono_fijo: '',
           direccion: filiacion.direccion || '',
           fuente_captacion: filiacion.fuente_captacion || '',
-          aseguradora: filiacion.aseguradora || ''
+          aseguradora: filiacion.aseguradora || '',
+          linea_negocio: filiacion.linea_negocio || ''
         });
       } else {
         console.error('Error al cargar datos personales:', result.error);
@@ -4117,8 +4119,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
             </div>
           )}
 
-          {/* Sección de Periodontograma */}
-          {activeSection === 'periodontograma' && (
+          {/* Sección de Periodontograma - DESACTIVADA */}
+          {false && activeSection === 'periodontograma' && (
             <div className="flex-1 bg-white p-4 sm:p-6 overflow-y-auto">
               {/* Header del periodontograma */}
               <div className="mb-6">
