@@ -2972,6 +2972,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     </div>
                   )}
                   {!loadingAnamnesisEndo && (
+                  <>
                   {/* Primera sección - Datos básicos */}
                   <div className="border border-gray-200 rounded-lg">
                     <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -3660,6 +3661,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <span>{savingAnamnesisEndo ? 'Guardando...' : 'Guardar'}</span>
                     </button>
                   </div>
+                  </>
                   )}
                 </div>
               )}
