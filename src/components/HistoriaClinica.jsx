@@ -89,6 +89,41 @@ const HistoriaClinica = ({ paciente, onClose }) => {
   const [savingOdontograma, setSavingOdontograma] = useState(false);
   const [codigosOdontologicos, setCodigosOdontologicos] = useState([]);
 
+  // Estados para anamnesis odontología
+  const [anamnesisData, setAnamnesisData] = useState({
+    id_anamnesis: null,
+    motivo_consulta: '',
+    tiempo_enfermedad: '',
+    signos_sintomas_principales: '',
+    relato_cronologico: '',
+    funciones_biologicas: '',
+    antecedentes_familiares: '',
+    antecedentes_personales: '',
+    comentario_adicional: '',
+    condiciones_medicas: {
+      presion_alta: 'no',
+      presion_baja: 'no',
+      hepatitis: 'no',
+      gastritis: 'no',
+      ulceras: 'no',
+      vih: 'no',
+      diabetes: 'no',
+      asma: 'no',
+      fuma: 'no'
+    },
+    preguntas_adicionales: {},
+    presion_arterial: '',
+    temperatura: '',
+    frecuencia_cardiaca: '',
+    frecuencia_respiratoria: '',
+    examen_extraoral: '',
+    examen_intraoral: '',
+    resultado_examenes_auxiliares: '',
+    observaciones_clinicas: ''
+  });
+  const [loadingAnamnesis, setLoadingAnamnesis] = useState(false);
+  const [savingAnamnesis, setSavingAnamnesis] = useState(false);
+
   const sections = [
     { id: 'filiacion', label: 'Filiación', icon: '👤' },
     { id: 'historia-clinica', label: 'Historia clínica', icon: '📄' },
@@ -111,6 +146,7 @@ const HistoriaClinica = ({ paciente, onClose }) => {
       loadFamiliares();
       loadCitas();
       loadNotasEvolucion();
+      loadAnamnesisOdontologia();
       setFotoPerfil(paciente.foto_perfil_url);
     }
   }, [paciente?.id]);
@@ -669,6 +705,107 @@ const HistoriaClinica = ({ paciente, onClose }) => {
         alert('Error de conexión: ' + e.message);
       }
     }
+  };
+
+  // ===== FUNCIONES PARA ANAMNESIS ODONTOLOGÍA =====
+  const loadAnamnesisOdontologia = async () => {
+    try {
+      setLoadingAnamnesis(true);
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.getAnamnesisOdontologia(paciente.id);
+      if (result.success && result.anamnesis) {
+        setAnamnesisData({
+          id_anamnesis: result.anamnesis.id,
+          motivo_consulta: result.anamnesis.motivo_consulta || '',
+          tiempo_enfermedad: result.anamnesis.tiempo_enfermedad || '',
+          signos_sintomas_principales: result.anamnesis.signos_sintomas_principales || '',
+          relato_cronologico: result.anamnesis.relato_cronologico || '',
+          funciones_biologicas: result.anamnesis.funciones_biologicas || '',
+          antecedentes_familiares: result.anamnesis.antecedentes_familiares || '',
+          antecedentes_personales: result.anamnesis.antecedentes_personales || '',
+          comentario_adicional: result.anamnesis.comentario_adicional || '',
+          condiciones_medicas: result.anamnesis.condiciones_medicas || {
+            presion_alta: 'no',
+            presion_baja: 'no',
+            hepatitis: 'no',
+            gastritis: 'no',
+            ulceras: 'no',
+            vih: 'no',
+            diabetes: 'no',
+            asma: 'no',
+            fuma: 'no'
+          },
+          preguntas_adicionales: result.anamnesis.preguntas_adicionales || {},
+          presion_arterial: result.anamnesis.presion_arterial || '',
+          temperatura: result.anamnesis.temperatura || '',
+          frecuencia_cardiaca: result.anamnesis.frecuencia_cardiaca || '',
+          frecuencia_respiratoria: result.anamnesis.frecuencia_respiratoria || '',
+          examen_extraoral: result.anamnesis.examen_extraoral || '',
+          examen_intraoral: result.anamnesis.examen_intraoral || '',
+          resultado_examenes_auxiliares: result.anamnesis.resultado_examenes_auxiliares || '',
+          observaciones_clinicas: result.anamnesis.observaciones_clinicas || ''
+        });
+      }
+    } catch (e) {
+      console.error('Error al cargar anamnesis:', e);
+    } finally {
+      setLoadingAnamnesis(false);
+    }
+  };
+
+  const handleSaveAnamnesis = async () => {
+    try {
+      setSavingAnamnesis(true);
+      patientsService.setAuthService?.(authService);
+      
+      const result = await patientsService.saveAnamnesisOdontologia({
+        id_paciente: paciente.id,
+        id_anamnesis: anamnesisData.id_anamnesis,
+        doctor: 'Eduardo Carmin', // Por ahora hardcodeado
+        ...anamnesisData
+      });
+      
+      if (result.success) {
+        alert('Anamnesis guardada exitosamente');
+        await loadAnamnesisOdontologia();
+      } else {
+        alert(result.error || 'Error al guardar anamnesis');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    } finally {
+      setSavingAnamnesis(false);
+    }
+  };
+
+  const handleAnamnesisChange = (field, value) => {
+    setAnamnesisData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCondicionMedicaChange = (condicion, valor) => {
+    setAnamnesisData(prev => ({
+      ...prev,
+      condiciones_medicas: {
+        ...prev.condiciones_medicas,
+        [condicion]: valor
+      }
+    }));
+  };
+
+  const handlePreguntaAdicionalChange = (pregunta, campo, valor) => {
+    setAnamnesisData(prev => ({
+      ...prev,
+      preguntas_adicionales: {
+        ...prev.preguntas_adicionales,
+        [pregunta]: {
+          ...prev.preguntas_adicionales[pregunta],
+          [campo]: valor
+        }
+      }
+    }));
   };
 
   // ===== FUNCIONES DE ODONTOGRAMA =====
@@ -1917,6 +2054,16 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               {/* Contenido del formulario - Anam. Odontología */}
               {activeHistoriaTab === 'anam-odontologia' && (
                 <div className="p-6 space-y-6">
+                {loadingAnamnesis ? (
+                  <div className="flex items-center justify-center py-12">
+                    <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="ml-2 text-gray-600">Cargando anamnesis...</span>
+                  </div>
+                ) : (
+                  <>
                 {/* Sección - Motivo de consulta */}
                 <div className="border border-gray-200 rounded-lg">
                   <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -1930,8 +2077,10 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Motivo de consulta</label>
                       <input
                         type="text"
+                        value={anamnesisData.motivo_consulta}
+                        onChange={(e) => handleAnamnesisChange('motivo_consulta', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Ingrese el motivo de consulta"
                       />
                     </div>
                   </div>
@@ -1950,32 +2099,40 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Tiempo de enfermedad</label>
                       <input
                         type="text"
+                        value={anamnesisData.tiempo_enfermedad}
+                        onChange={(e) => handleAnamnesisChange('tiempo_enfermedad', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Ej: 2 semanas, 3 meses"
                       />
                     </div>
                     <div className="flex items-center space-x-4">
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Signos y síntomas principales</label>
                       <input
                         type="text"
+                        value={anamnesisData.signos_sintomas_principales}
+                        onChange={(e) => handleAnamnesisChange('signos_sintomas_principales', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Describa signos y síntomas"
                       />
                     </div>
                     <div className="flex items-center space-x-4">
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Relato cronológico</label>
                       <input
                         type="text"
+                        value={anamnesisData.relato_cronologico}
+                        onChange={(e) => handleAnamnesisChange('relato_cronologico', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Secuencia de eventos"
                       />
                     </div>
                     <div className="flex items-center space-x-4">
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Funciones biológicas</label>
                       <input
                         type="text"
+                        value={anamnesisData.funciones_biologicas}
+                        onChange={(e) => handleAnamnesisChange('funciones_biologicas', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Apetito, sueño, sed, etc."
                       />
                     </div>
                   </div>
@@ -1994,16 +2151,20 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Antecedentes familiares</label>
                       <input
                         type="text"
+                        value={anamnesisData.antecedentes_familiares}
+                        onChange={(e) => handleAnamnesisChange('antecedentes_familiares', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Enfermedades hereditarias"
                       />
                     </div>
                     <div className="flex items-center space-x-4">
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Antecedentes personales</label>
                       <input
                         type="text"
+                        value={anamnesisData.antecedentes_personales}
+                        onChange={(e) => handleAnamnesisChange('antecedentes_personales', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder=""
+                        placeholder="Enfermedades previas"
                       />
                     </div>
                     
@@ -2012,18 +2173,39 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <h4 className="text-sm font-medium text-gray-700 mb-3">¿Tiene o ha tenido?</h4>
                       <div className="grid grid-cols-2 gap-4">
                         {[
-                          'Presión alta', 'Presión baja', 'Hepatitis', 'Gastritis',
-                          'Úlceras', 'VIH', 'Diabetes', 'Asma', '¿Fuma?'
+                          {label: 'Presión alta', key: 'presion_alta'},
+                          {label: 'Presión baja', key: 'presion_baja'},
+                          {label: 'Hepatitis', key: 'hepatitis'},
+                          {label: 'Gastritis', key: 'gastritis'},
+                          {label: 'Úlceras', key: 'ulceras'},
+                          {label: 'VIH', key: 'vih'},
+                          {label: 'Diabetes', key: 'diabetes'},
+                          {label: 'Asma', key: 'asma'},
+                          {label: '¿Fuma?', key: 'fuma'}
                         ].map((condicion) => (
-                          <div key={condicion} className="flex items-center space-x-3">
-                            <span className="text-sm text-gray-700 w-24">{condicion}</span>
+                          <div key={condicion.key} className="flex items-center space-x-3">
+                            <span className="text-sm text-gray-700 w-24">{condicion.label}</span>
                             <div className="flex space-x-2">
                               <label className="flex items-center space-x-1">
-                                <input type="radio" name={condicion} value="no" className="text-blue-600" />
+                                <input 
+                                  type="radio" 
+                                  name={condicion.key}
+                                  value="no"
+                                  checked={anamnesisData.condiciones_medicas[condicion.key] === 'no'}
+                                  onChange={(e) => handleCondicionMedicaChange(condicion.key, e.target.value)}
+                                  className="text-blue-600" 
+                                />
                                 <span className="text-sm text-gray-600">No</span>
                               </label>
                               <label className="flex items-center space-x-1">
-                                <input type="radio" name={condicion} value="si" className="text-blue-600" />
+                                <input 
+                                  type="radio" 
+                                  name={condicion.key}
+                                  value="si"
+                                  checked={anamnesisData.condiciones_medicas[condicion.key] === 'si'}
+                                  onChange={(e) => handleCondicionMedicaChange(condicion.key, e.target.value)}
+                                  className="text-blue-600" 
+                                />
                                 <span className="text-sm text-gray-600">Si</span>
                               </label>
                             </div>
@@ -2035,38 +2217,67 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <div className="flex items-start space-x-4">
                       <label className="text-sm font-medium text-gray-700 whitespace-nowrap mt-2">Comentario adicional</label>
                       <textarea
+                        value={anamnesisData.comentario_adicional}
+                        onChange={(e) => handleAnamnesisChange('comentario_adicional', e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
-                        placeholder=""
+                        placeholder="Comentarios adicionales sobre antecedentes"
                       />
                     </div>
 
                     {/* Preguntas adicionales */}
                     {[
-                      'Enfermedades sanguíneas', 'Problemas cardíacos', '¿Padece de alguna otra enfermedad?',
-                      '¿Cuántas veces al día se cepilla los dientes?', '¿Le sangra sus encías?',
-                      '¿Ha tenido hemorragias anormales después de una extracción?', '¿Hace rechinar o aprieta los dientes?',
-                      'Otras molestias en la boca', 'Alergias', '¿Ha tenido alguna operación grande en los últimos años?',
-                      '¿Toma alguna medicación de manera permanente?'
-                    ].map((pregunta) => (
-                      <div key={pregunta} className="flex items-center space-x-4">
-                        <span className="text-sm text-gray-700 w-48">{pregunta}</span>
-                        <div className="flex space-x-2">
-                          <label className="flex items-center space-x-1">
-                            <input type="radio" name={pregunta} value="no" className="text-blue-600" />
-                            <span className="text-sm text-gray-600">No</span>
-                          </label>
-                          <label className="flex items-center space-x-1">
-                            <input type="radio" name={pregunta} value="si" className="text-blue-600" />
-                            <span className="text-sm text-gray-600">Si</span>
-                          </label>
+                      {label: 'Enfermedades sanguíneas', key: 'enfermedades_sanguineas'},
+                      {label: 'Problemas cardíacos', key: 'problemas_cardiacos'},
+                      {label: '¿Padece de alguna otra enfermedad?', key: 'otra_enfermedad'},
+                      {label: '¿Cuántas veces al día se cepilla los dientes?', key: 'cepillado_diario'},
+                      {label: '¿Le sangra sus encías?', key: 'sangrado_encias'},
+                      {label: '¿Ha tenido hemorragias anormales después de una extracción?', key: 'hemorragias_extraccion'},
+                      {label: '¿Hace rechinar o aprieta los dientes?', key: 'bruxismo'},
+                      {label: 'Otras molestias en la boca', key: 'otras_molestias'},
+                      {label: 'Alergias', key: 'alergias_medicamentos'},
+                      {label: '¿Ha tenido alguna operación grande en los últimos años?', key: 'operaciones_previas'},
+                      {label: '¿Toma alguna medicación de manera permanente?', key: 'medicacion_permanente'}
+                    ].map((pregunta) => {
+                      const respuesta = anamnesisData.preguntas_adicionales[pregunta.key]?.respuesta || 'no';
+                      const detalle = anamnesisData.preguntas_adicionales[pregunta.key]?.detalle || '';
+                      
+                      return (
+                        <div key={pregunta.key} className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-700 w-48">{pregunta.label}</span>
+                          <div className="flex space-x-2">
+                            <label className="flex items-center space-x-1">
+                              <input 
+                                type="radio" 
+                                name={pregunta.key}
+                                value="no"
+                                checked={respuesta === 'no'}
+                                onChange={(e) => handlePreguntaAdicionalChange(pregunta.key, 'respuesta', e.target.value)}
+                                className="text-blue-600" 
+                              />
+                              <span className="text-sm text-gray-600">No</span>
+                            </label>
+                            <label className="flex items-center space-x-1">
+                              <input 
+                                type="radio" 
+                                name={pregunta.key}
+                                value="si"
+                                checked={respuesta === 'si'}
+                                onChange={(e) => handlePreguntaAdicionalChange(pregunta.key, 'respuesta', e.target.value)}
+                                className="text-blue-600" 
+                              />
+                              <span className="text-sm text-gray-600">Si</span>
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            value={detalle}
+                            onChange={(e) => handlePreguntaAdicionalChange(pregunta.key, 'detalle', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Detalles adicionales"
+                          />
                         </div>
-                        <input
-                          type="text"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder=""
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -2089,17 +2300,21 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                               <span className="text-sm text-gray-700 w-20">PA</span>
                               <input
                                 type="text"
+                                value={anamnesisData.presion_arterial}
+                                onChange={(e) => handleAnamnesisChange('presion_arterial', e.target.value)}
                                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder=""
+                                placeholder="120/80"
                               />
-                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">mmgh</span>
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">mmHg</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="text-sm text-gray-700 w-20">Temperatura</span>
                               <input
                                 type="text"
+                                value={anamnesisData.temperatura}
+                                onChange={(e) => handleAnamnesisChange('temperatura', e.target.value)}
                                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder=""
+                                placeholder="36.5"
                               />
                               <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">°C</span>
                             </div>
@@ -2109,16 +2324,20 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Examen extraoral</h4>
                           <textarea
+                            value={anamnesisData.examen_extraoral}
+                            onChange={(e) => handleAnamnesisChange('examen_extraoral', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
-                            placeholder=""
+                            placeholder="Observaciones del examen extraoral"
                           />
                         </div>
                         
                         <div>
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Resultado de exámenes auxiliares</h4>
                           <textarea
+                            value={anamnesisData.resultado_examenes_auxiliares}
+                            onChange={(e) => handleAnamnesisChange('resultado_examenes_auxiliares', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
-                            placeholder=""
+                            placeholder="Resultados de laboratorio, radiografías, etc."
                           />
                         </div>
                       </div>
@@ -2132,8 +2351,10 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                               <span className="text-sm text-gray-700 w-20">FC</span>
                               <input
                                 type="text"
+                                value={anamnesisData.frecuencia_cardiaca}
+                                onChange={(e) => handleAnamnesisChange('frecuencia_cardiaca', e.target.value)}
                                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder=""
+                                placeholder="70"
                               />
                               <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">bpm</span>
                             </div>
@@ -2141,8 +2362,10 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                               <span className="text-sm text-gray-700 w-20">FR</span>
                               <input
                                 type="text"
+                                value={anamnesisData.frecuencia_respiratoria}
+                                onChange={(e) => handleAnamnesisChange('frecuencia_respiratoria', e.target.value)}
                                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder=""
+                                placeholder="16"
                               />
                               <span className="text-sm text-gray-500 bg-gray-100 px-2 py-2 rounded border">r/m</span>
                             </div>
@@ -2152,16 +2375,20 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Examen intraoral</h4>
                           <textarea
+                            value={anamnesisData.examen_intraoral}
+                            onChange={(e) => handleAnamnesisChange('examen_intraoral', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
-                            placeholder=""
+                            placeholder="Observaciones del examen intraoral"
                           />
                         </div>
                         
                         <div>
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Observaciones</h4>
                           <textarea
+                            value={anamnesisData.observaciones_clinicas}
+                            onChange={(e) => handleAnamnesisChange('observaciones_clinicas', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
-                            placeholder=""
+                            placeholder="Observaciones clínicas generales"
                           />
                         </div>
                       </div>
@@ -2169,12 +2396,28 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     
                     {/* Botón Guardar */}
                     <div className="flex justify-center mt-6">
-                      <button className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors">
-                        Guardar
+                      <button 
+                        onClick={handleSaveAnamnesis}
+                        disabled={savingAnamnesis}
+                        className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        {savingAnamnesis ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Guardando...</span>
+                          </>
+                        ) : (
+                          <span>Guardar</span>
+                        )}
                       </button>
                     </div>
                   </div>
                 </div>
+                </>
+                )}
               </div>
               )}
 

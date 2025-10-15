@@ -1501,6 +1501,189 @@ def handle_delete_nota_evolucion(request):
             pass
         return json_response({"error": f"Error al eliminar nota: {str(e)}"}, 500)
 
+# ===== ANAMNESIS ODONTOLOGÍA =====
+def handle_get_anamnesis_odontologia(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT a.id_anamnesis, a.motivo_consulta, a.tiempo_enfermedad, 
+                   a.signos_sintomas_principales, a.relato_cronologico, a.funciones_biologicas,
+                   a.antecedentes_familiares, a.antecedentes_personales, a.comentario_adicional,
+                   a.condiciones_medicas, a.preguntas_adicionales,
+                   a.presion_arterial, a.temperatura, a.frecuencia_cardiaca, a.frecuencia_respiratoria,
+                   a.examen_extraoral, a.examen_intraoral, a.resultado_examenes_auxiliares,
+                   a.observaciones_clinicas, a.fecha_creacion,
+                   d.nombres as doctor_nombres, d.apellidos as doctor_apellidos
+            FROM anamnesis_odontologia a
+            LEFT JOIN doctores d ON a.id_doctor = d.id_doctor
+            WHERE a.id_paciente = %s AND a.activo = true
+            ORDER BY a.fecha_creacion DESC
+            LIMIT 1
+        """, (patient_id,))
+        
+        row = cur.fetchone()
+        
+        if row:
+            anamnesis = {
+                "id": row['id_anamnesis'],
+                "motivo_consulta": row['motivo_consulta'],
+                "tiempo_enfermedad": row['tiempo_enfermedad'],
+                "signos_sintomas_principales": row['signos_sintomas_principales'],
+                "relato_cronologico": row['relato_cronologico'],
+                "funciones_biologicas": row['funciones_biologicas'],
+                "antecedentes_familiares": row['antecedentes_familiares'],
+                "antecedentes_personales": row['antecedentes_personales'],
+                "comentario_adicional": row['comentario_adicional'],
+                "condiciones_medicas": row['condiciones_medicas'] or {},
+                "preguntas_adicionales": row['preguntas_adicionales'] or {},
+                "presion_arterial": row['presion_arterial'],
+                "temperatura": row['temperatura'],
+                "frecuencia_cardiaca": row['frecuencia_cardiaca'],
+                "frecuencia_respiratoria": row['frecuencia_respiratoria'],
+                "examen_extraoral": row['examen_extraoral'],
+                "examen_intraoral": row['examen_intraoral'],
+                "resultado_examenes_auxiliares": row['resultado_examenes_auxiliares'],
+                "observaciones_clinicas": row['observaciones_clinicas'],
+                "doctor": f"{row['doctor_nombres']} {row['doctor_apellidos']}" if row['doctor_nombres'] else None,
+                "fecha": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
+            }
+        else:
+            anamnesis = None
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "anamnesis": anamnesis
+        })
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener anamnesis: {str(e)}"}, 500)
+
+def handle_save_anamnesis_odontologia(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        anamnesis_id = data.get('id_anamnesis')
+        
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Buscar ID del doctor por nombre (si viene)
+        id_doctor = None
+        doctor_nombre = data.get('doctor', '')
+        if doctor_nombre:
+            cur.execute("""
+                SELECT id_doctor FROM doctores 
+                WHERE CONCAT(nombres, ' ', apellidos) ILIKE %s
+                LIMIT 1
+            """, (f"%{doctor_nombre}%",))
+            doctor_row = cur.fetchone()
+            if doctor_row:
+                id_doctor = doctor_row['id_doctor']
+
+        # Convertir a JSON los campos complejos
+        import json as json_lib
+        condiciones_medicas = json_lib.dumps(data.get('condiciones_medicas', {}))
+        preguntas_adicionales = json_lib.dumps(data.get('preguntas_adicionales', {}))
+
+        if anamnesis_id:
+            # Actualizar anamnesis existente
+            cur.execute("""
+                UPDATE anamnesis_odontologia
+                SET id_doctor = %s, motivo_consulta = %s, tiempo_enfermedad = %s,
+                    signos_sintomas_principales = %s, relato_cronologico = %s, funciones_biologicas = %s,
+                    antecedentes_familiares = %s, antecedentes_personales = %s, comentario_adicional = %s,
+                    condiciones_medicas = %s, preguntas_adicionales = %s,
+                    presion_arterial = %s, temperatura = %s, frecuencia_cardiaca = %s, frecuencia_respiratoria = %s,
+                    examen_extraoral = %s, examen_intraoral = %s, resultado_examenes_auxiliares = %s,
+                    observaciones_clinicas = %s, fecha_modificacion = CURRENT_TIMESTAMP
+                WHERE id_anamnesis = %s AND id_paciente = %s
+                RETURNING id_anamnesis
+            """, (
+                id_doctor, data.get('motivo_consulta'), data.get('tiempo_enfermedad'),
+                data.get('signos_sintomas_principales'), data.get('relato_cronologico'), data.get('funciones_biologicas'),
+                data.get('antecedentes_familiares'), data.get('antecedentes_personales'), data.get('comentario_adicional'),
+                condiciones_medicas, preguntas_adicionales,
+                data.get('presion_arterial'), data.get('temperatura'), data.get('frecuencia_cardiaca'), data.get('frecuencia_respiratoria'),
+                data.get('examen_extraoral'), data.get('examen_intraoral'), data.get('resultado_examenes_auxiliares'),
+                data.get('observaciones_clinicas'), anamnesis_id, patient_id
+            ))
+            result = cur.fetchone()
+            if not result:
+                return json_response({"error": "Anamnesis no encontrada"}, 404)
+            saved_id = result['id_anamnesis']
+        else:
+            # Crear nueva anamnesis
+            cur.execute("""
+                INSERT INTO anamnesis_odontologia 
+                (id_paciente, id_doctor, motivo_consulta, tiempo_enfermedad,
+                 signos_sintomas_principales, relato_cronologico, funciones_biologicas,
+                 antecedentes_familiares, antecedentes_personales, comentario_adicional,
+                 condiciones_medicas, preguntas_adicionales,
+                 presion_arterial, temperatura, frecuencia_cardiaca, frecuencia_respiratoria,
+                 examen_extraoral, examen_intraoral, resultado_examenes_auxiliares, observaciones_clinicas)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id_anamnesis
+            """, (
+                patient_id, id_doctor, data.get('motivo_consulta'), data.get('tiempo_enfermedad'),
+                data.get('signos_sintomas_principales'), data.get('relato_cronologico'), data.get('funciones_biologicas'),
+                data.get('antecedentes_familiares'), data.get('antecedentes_personales'), data.get('comentario_adicional'),
+                condiciones_medicas, preguntas_adicionales,
+                data.get('presion_arterial'), data.get('temperatura'), data.get('frecuencia_cardiaca'), data.get('frecuencia_respiratoria'),
+                data.get('examen_extraoral'), data.get('examen_intraoral'), data.get('resultado_examenes_auxiliares'),
+                data.get('observaciones_clinicas')
+            ))
+            saved_id = cur.fetchone()['id_anamnesis']
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Anamnesis guardada exitosamente",
+            "id": saved_id
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al guardar anamnesis: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -1536,8 +1719,10 @@ def hello_http(request):
                 return handle_get_familiares(request)
             elif action in ('notas_evolucion', 'evolution_notes'):
                 return handle_get_notas_evolucion(request)
+            elif action in ('anamnesis_odontologia', 'anamnesis'):
+                return handle_get_anamnesis_odontologia(request)
             else:
-                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales, familiares o notas_evolucion"}, 400)
+                return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales, familiares, notas_evolucion o anamnesis_odontologia"}, 400)
 
         if request.method == 'POST':
             if action in ('create', 'crear'):
@@ -1550,8 +1735,10 @@ def hello_http(request):
                 return handle_create_familiar(request)
             elif action in ('create_nota_evolucion', 'crear_nota_evolucion'):
                 return handle_create_nota_evolucion(request)
+            elif action in ('save_anamnesis_odontologia', 'guardar_anamnesis'):
+                return handle_save_anamnesis_odontologia(request)
             else:
-                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal, create_familiar o create_nota_evolucion"}, 400)
+                return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal, create_familiar, create_nota_evolucion o save_anamnesis_odontologia"}, 400)
 
         if request.method == 'PUT':
             if action in ('update_filiacion', 'actualizar_filiacion'):

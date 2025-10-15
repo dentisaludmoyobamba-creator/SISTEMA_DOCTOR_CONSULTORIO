@@ -968,6 +968,57 @@ CREATE TABLE IF NOT EXISTS notas_evolucion_paciente (
 CREATE INDEX IF NOT EXISTS idx_notas_evolucion_paciente ON notas_evolucion_paciente(id_paciente);
 CREATE INDEX IF NOT EXISTS idx_notas_evolucion_fecha ON notas_evolucion_paciente(fecha_creacion);
 
+-- Tabla de Anamnesis Odontológica
+CREATE TABLE IF NOT EXISTS anamnesis_odontologia (
+    id_anamnesis SERIAL PRIMARY KEY,
+    id_paciente INTEGER NOT NULL,
+    id_doctor INTEGER,
+    
+    -- Sección básica
+    motivo_consulta TEXT,
+    
+    -- Enfermedad actual
+    tiempo_enfermedad VARCHAR(100),
+    signos_sintomas_principales TEXT,
+    relato_cronologico TEXT,
+    funciones_biologicas TEXT,
+    
+    -- Antecedentes
+    antecedentes_familiares TEXT,
+    antecedentes_personales TEXT,
+    comentario_adicional TEXT,
+    
+    -- ¿Tiene o ha tenido? (JSON para checkboxes)
+    condiciones_medicas JSONB, -- {presion_alta: "no", presion_baja: "no", hepatitis: "no", etc.}
+    
+    -- Preguntas adicionales con respuestas (JSON)
+    preguntas_adicionales JSONB, -- {enfermedades_sanguineas: {respuesta: "no", detalle: ""}, etc.}
+    
+    -- Examen clínico - Signos vitales
+    presion_arterial VARCHAR(20),
+    temperatura VARCHAR(20),
+    frecuencia_cardiaca VARCHAR(20),
+    frecuencia_respiratoria VARCHAR(20),
+    
+    -- Examen clínico - Observaciones
+    examen_extraoral TEXT,
+    examen_intraoral TEXT,
+    resultado_examenes_auxiliares TEXT,
+    observaciones_clinicas TEXT,
+    
+    -- Control
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+    FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_paciente ON anamnesis_odontologia(id_paciente);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_doctor ON anamnesis_odontologia(id_doctor);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontologia(fecha_creacion);
+
 -- =====================================================
 -- 10. COMENTARIOS Y DOCUMENTACIÓN
 -- =====================================================

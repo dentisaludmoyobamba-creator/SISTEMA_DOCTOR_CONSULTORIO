@@ -448,6 +448,41 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  // ===== ANAMNESIS ODONTOLOGÍA =====
+  async getAnamnesisOdontologia(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'anamnesis_odontologia', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, anamnesis: data.anamnesis };
+      }
+      return { success: false, error: data.error || 'Error al obtener anamnesis' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async saveAnamnesisOdontologia(anamnesisData) {
+    try {
+      const res = await fetch(`${API_URL}?action=save_anamnesis_odontologia`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(anamnesisData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, id: data.id };
+      }
+      return { success: false, error: data.error || 'Error al guardar anamnesis' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();
