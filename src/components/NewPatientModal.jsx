@@ -86,42 +86,18 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
   const canSubmit = useMemo(() => {
     const hasNames = form.nombres.trim() && form.apellidos.trim();
     const hasDoc = hasNoDocument || (!!form.documento.trim() && documentType);
-    const hasFoto = !!form.foto_perfil; // Requerir foto
-    return hasNames && hasDoc && hasFoto;
+    // Foto ya no es requerida
+    return hasNames && hasDoc;
   }, [form, hasNoDocument, documentType]);
 
   const [uploading, setUploading] = useState(false);
 
   const handleCreate = async () => {
     if (!canSubmit) return;
-    
     setUploading(true);
     try {
-      let foto_url = null;
-      
-      // Si hay foto, subirla primero a Cloud Storage
-      if (form.foto_perfil) {
-        const uploadResult = await archivosService.subirArchivo(form.foto_perfil, {
-          id_paciente: 0, // Temporal, se actualizará después
-          categoria: 'Foto de Perfil',
-          descripcion: `Foto de perfil de ${form.nombres} ${form.apellidos}`,
-          compartir_con_paciente: false
-        });
-        
-        if (uploadResult.success) {
-          foto_url = uploadResult.url_publica;
-        } else {
-          throw new Error('Error al subir foto de perfil');
-        }
-      }
-      
-      // Crear paciente con la URL de la foto
-      const formData = {
-        ...form,
-        genero: gender,
-        foto_perfil_url: foto_url
-      };
-      
+      // Enviar el formulario al padre; allí se creará el paciente y luego se subirá la foto
+      const formData = { ...form, genero: gender };
       await onCreate?.(formData);
     } catch (error) {
       alert(`Error: ${error.message}`);
@@ -162,13 +138,14 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="text-center">
-                    <svg className="w-12 h-12 text-white mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <p className="text-white text-xs">Click para</p>
-                    <p className="text-white text-xs">subir foto</p>
-                  </div>
+              <div className="text-center">
+                <svg className="w-12 h-12 text-white mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <p className="text-white text-xs">Click para</p>
+                <p className="text-white text-xs">subir foto</p>
+                <p className="text-white text-xs opacity-75">(opcional)</p>
+              </div>
                 )}
               </div>
               <div className="absolute bottom-0 right-0 bg-[#30B0B0] rounded-full p-2 border-2 border-white">
@@ -221,10 +198,7 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
                 />
               </div>
 
-              <label className="mt-2 inline-flex items-center space-x-2 text-sm text-gray-600">
-                <input type="checkbox" checked={hasNoDocument} onChange={(e) => setHasNoDocument(e.target.checked)} />
-                <span>No tiene</span>
-              </label>
+              {/* Eliminado: casilla 'No tiene' */}
 
               {/* Nombres */}
               <div className="mt-4">
@@ -266,10 +240,7 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
                     className="flex-1 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
-                <label className="mt-2 inline-flex items-center space-x-2 text-sm text-gray-600">
-                  <input type="checkbox" checked={phoneHasNo} onChange={(e) => setPhoneHasNo(e.target.checked)} />
-                  <span>No tiene</span>
-                </label>
+                {/* Eliminado: casilla 'No tiene' para teléfono */}
               </div>
             </div>
 
@@ -382,16 +353,7 @@ const NewPatientModal = ({ isOpen, onClose, onCreate }) => {
                 </div>
               </div>
 
-              {/* Etiquetas (placeholder) */}
-              <div className="mt-4">
-                <label className="block text-sm text-gray-700 mb-1">Etiquetas</label>
-                <button className="inline-flex items-center space-x-2 text-teal-700 hover:text-teal-800">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Etiquetas</span>
-                </button>
-              </div>
+              {/* Eliminado: botón de etiquetas */}
             </div>
           </div>
         </div>

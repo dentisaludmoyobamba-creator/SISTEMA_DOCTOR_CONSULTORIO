@@ -688,12 +688,28 @@ const Pacientes = () => {
               fuente: form.fuente,
               aseguradora: form.aseguradora,
               linea_negocio: form.linea_negocio,
-              genero: 'Hombre'
+              genero: form.genero || 'Hombre'
             };
             const res = await patientsService.create(payload);
             if (res.success) {
+              // Si hay foto, subirla ahora usando el id del paciente y actualizar foto_perfil_url
+              if (form.foto_perfil) {
+                try {
+                  const upload = await (await import('../services/archivosService')).default.subirArchivo(form.foto_perfil, {
+                    id_paciente: res.patient_id,
+                    categoria: 'Foto de Perfil',
+                    descripcion: `Foto de perfil de ${form.nombres} ${form.apellidos}`,
+                    compartir_con_paciente: false
+                  });
+                  if (upload.success && upload.url_publica) {
+                    await patientsService.updateFotoPerfil(res.patient_id, upload.url_publica);
+                  }
+                } catch (e) {
+                  console.error('Error subiendo foto de perfil:', e);
+                }
+              }
+
               setIsNewPatientOpen(false);
-              // recargar lista
               setPagination(p => ({ ...p }));
             } else {
               alert(res.error || 'Error al crear paciente');
