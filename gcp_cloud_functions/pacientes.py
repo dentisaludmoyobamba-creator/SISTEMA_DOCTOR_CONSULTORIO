@@ -1705,6 +1705,151 @@ def handle_save_anamnesis_odontologia(request):
             pass
         return json_response({"error": f"Error al guardar anamnesis: {str(e)}"}, 500)
 
+# ===== ANAMNESIS ODONTOPEDIATRÍA =====
+def handle_get_anamnesis_odontopediatria(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT a.id_anamnesis_ped, a.motivo_consulta, a.datos_familia, a.enfermedad_actual, a.antecedentes_prenatales,
+                   a.fecha_creacion, d.nombres AS doctor_nombres, d.apellidos AS doctor_apellidos
+            FROM anamnesis_odontopediatria a
+            LEFT JOIN doctores d ON a.id_doctor = d.id_doctor
+            WHERE a.id_paciente = %s AND a.activo = true
+            ORDER BY a.fecha_creacion DESC
+            LIMIT 1
+            """,
+            (patient_id,)
+        )
+        row = cur.fetchone()
+
+        anamnesis = None
+        if row:
+            anamnesis = {
+                "id": row['id_anamnesis_ped'],
+                "motivo_consulta": row['motivo_consulta'],
+                "datos_familia": row['datos_familia'] or {},
+                "enfermedad_actual": row['enfermedad_actual'] or {},
+                "antecedentes_prenatales": row['antecedentes_prenatales'] or {},
+                "doctor": f"{row['doctor_nombres']} {row['doctor_apellidos']}" if row['doctor_nombres'] else None,
+                "fecha": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
+            }
+
+        cur.close()
+        conn.close()
+
+        return json_response({"success": True, "anamnesis_ped": anamnesis})
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener anamnesis odontopediatría: {str(e)}"}, 500)
+
+
+def handle_save_anamnesis_odontopediatria(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return json_response({"error": "Token de autorización requerido"}, 401)
+
+    token = auth_header.replace('Bearer ', '')
+    payload = verify_token(token)
+    if not payload:
+        return json_response({"error": "Token inválido o expirado"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        patient_id = data.get('id_paciente')
+        anamnesis_id = data.get('id_anamnesis_ped')
+        if not patient_id:
+            return json_response({"error": "ID de paciente requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Buscar ID del doctor por nombre (si viene)
+        id_doctor = None
+        doctor_nombre = data.get('doctor', '')
+        if doctor_nombre:
+            cur.execute(
+                """
+                SELECT id_doctor FROM doctores 
+                WHERE CONCAT(nombres, ' ', apellidos) ILIKE %s
+                LIMIT 1
+                """,
+                (f"%{doctor_nombre}%",)
+            )
+            doctor_row = cur.fetchone()
+            if doctor_row:
+                id_doctor = doctor_row['id_doctor']
+
+        import json as json_lib
+        datos_familia = json_lib.dumps(data.get('datos_familia', {}))
+        enfermedad_actual = json_lib.dumps(data.get('enfermedad_actual', {}))
+        antecedentes_prenatales = json_lib.dumps(data.get('antecedentes_prenatales', {}))
+
+        if anamnesis_id:
+            cur.execute(
+                """
+                UPDATE anamnesis_odontopediatria
+                SET id_doctor = %s, motivo_consulta = %s,
+                    datos_familia = %s, enfermedad_actual = %s, antecedentes_prenatales = %s,
+                    fecha_modificacion = CURRENT_TIMESTAMP
+                WHERE id_anamnesis_ped = %s AND id_paciente = %s
+                RETURNING id_anamnesis_ped
+                """,
+                (
+                    id_doctor, data.get('motivo_consulta'),
+                    datos_familia, enfermedad_actual, antecedentes_prenatales,
+                    anamnesis_id, patient_id
+                )
+            )
+            result = cur.fetchone()
+            if not result:
+                return json_response({"error": "Anamnesis odontopediatría no encontrada"}, 404)
+            saved_id = result['id_anamnesis_ped']
+        else:
+            cur.execute(
+                """
+                INSERT INTO anamnesis_odontopediatria 
+                (id_paciente, id_doctor, motivo_consulta, datos_familia, enfermedad_actual, antecedentes_prenatales)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id_anamnesis_ped
+                """,
+                (
+                    patient_id, id_doctor, data.get('motivo_consulta'),
+                    datos_familia, enfermedad_actual, antecedentes_prenatales
+                )
+            )
+            saved_id = cur.fetchone()['id_anamnesis_ped']
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({"success": True, "message": "Anamnesis odontopediatría guardada", "id": saved_id})
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al guardar anamnesis odontopediatría: {str(e)}"}, 500)
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -1742,6 +1887,8 @@ def hello_http(request):
                 return handle_get_notas_evolucion(request)
             elif action in ('anamnesis_odontologia', 'anamnesis'):
                 return handle_get_anamnesis_odontologia(request)
+            elif action in ('anamnesis_odontopediatria', 'anamnesis_ped'):
+                return handle_get_anamnesis_odontopediatria(request)
             else:
                 return json_response({"error": "Acción GET no válida. Use action=list, citas, filiacion, tareas, lookup_options, notas_alergias, etiquetas, datos_fiscales, familiares, notas_evolucion o anamnesis_odontologia"}, 400)
 
@@ -1758,6 +1905,8 @@ def hello_http(request):
                 return handle_create_nota_evolucion(request)
             elif action in ('save_anamnesis_odontologia', 'guardar_anamnesis'):
                 return handle_save_anamnesis_odontologia(request)
+            elif action in ('save_anamnesis_odontopediatria', 'guardar_anamnesis_ped'):
+                return handle_save_anamnesis_odontopediatria(request)
             else:
                 return json_response({"error": "Acción POST no válida. Use action=create, add_etiqueta, create_dato_fiscal, create_familiar, create_nota_evolucion o save_anamnesis_odontologia"}, 400)
 

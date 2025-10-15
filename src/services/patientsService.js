@@ -483,6 +483,41 @@ class PatientsService {
       return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
     }
   }
+
+  // ===== ANAMNESIS ODONTOPEDIATRÍA =====
+  async getAnamnesisOdontopediatria(patientId) {
+    try {
+      const params = new URLSearchParams({ action: 'anamnesis_odontopediatria', patient_id: String(patientId) });
+      const res = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, anamnesis_ped: data.anamnesis_ped };
+      }
+      return { success: false, error: data.error || 'Error al obtener anamnesis odontopediatría' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
+
+  async saveAnamnesisOdontopediatria(anamnesisData) {
+    try {
+      const res = await fetch(`${API_URL}?action=save_anamnesis_odontopediatria`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(anamnesisData)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, id: data.id };
+      }
+      return { success: false, error: data.error || 'Error al guardar anamnesis odontopediatría' };
+    } catch (e) {
+      return { success: false, error: 'Error de conexión con el servidor: ' + e.message };
+    }
+  }
 }
 
 const patientsService = new PatientsService();

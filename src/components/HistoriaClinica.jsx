@@ -778,6 +778,61 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     }
   };
 
+  // ===== FUNCIONES PARA ANAMNESIS ODONTOPEDIATRÍA =====
+  const [loadingAnamPed, setLoadingAnamPed] = useState(false);
+  const [savingAnamPed, setSavingAnamPed] = useState(false);
+  const [anamnesisPedData, setAnamnesisPedData] = useState({
+    id_anamnesis_ped: null,
+    motivo_consulta: '',
+    datos_familia: { madre_nombre: '', padre_nombre: '', numero_hermanos: '', orden: '' },
+    enfermedad_actual: { tipo: '', relato: '' },
+    antecedentes_prenatales: {}
+  });
+
+  const loadAnamnesisOdontopediatria = async () => {
+    try {
+      setLoadingAnamPed(true);
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.getAnamnesisOdontopediatria(paciente.id);
+      if (result.success && result.anamnesis_ped) {
+        setAnamnesisPedData({
+          id_anamnesis_ped: result.anamnesis_ped.id,
+          motivo_consulta: result.anamnesis_ped.motivo_consulta || '',
+          datos_familia: result.anamnesis_ped.datos_familia || { madre_nombre: '', padre_nombre: '', numero_hermanos: '', orden: '' },
+          enfermedad_actual: result.anamnesis_ped.enfermedad_actual || { tipo: '', relato: '' },
+          antecedentes_prenatales: result.anamnesis_ped.antecedentes_prenatales || {}
+        });
+      }
+    } catch (e) {
+      console.error('Error al cargar anamnesis odontopediatría:', e);
+    } finally {
+      setLoadingAnamPed(false);
+    }
+  };
+
+  const handleSaveAnamnesisPed = async () => {
+    try {
+      setSavingAnamPed(true);
+      patientsService.setAuthService?.(authService);
+      const result = await patientsService.saveAnamnesisOdontopediatria({
+        id_paciente: paciente.id,
+        id_anamnesis_ped: anamnesisPedData.id_anamnesis_ped,
+        doctor: 'Eduardo Carmin',
+        ...anamnesisPedData
+      });
+      if (result.success) {
+        alert('Anamnesis odontopediatría guardada');
+        await loadAnamnesisOdontopediatria();
+      } else {
+        alert(result.error || 'Error al guardar anamnesis odontopediatría');
+      }
+    } catch (e) {
+      alert('Error de conexión: ' + e.message);
+    } finally {
+      setSavingAnamPed(false);
+    }
+  };
+
   const handleAnamnesisChange = (field, value) => {
     setAnamnesisData(prev => ({
       ...prev,
@@ -2472,6 +2527,16 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               {/* Contenido - Anam. Odontopediatría */}
               {activeHistoriaTab === 'anam-odontopediatria' && (
                 <div className="p-6 space-y-6">
+                  {loadingAnamPed ? (
+                    <div className="flex items-center justify-center py-12">
+                      <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="ml-2 text-gray-600">Cargando anamnesis...</span>
+                    </div>
+                  ) : (
+                  <>
                   {/* Sección - Motivo de consulta y datos familiares */}
                   <div className="border border-gray-200 rounded-lg">
                     <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -2484,6 +2549,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Motivo de consulta</label>
                         <textarea
+                          value={anamnesisPedData.motivo_consulta}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, motivo_consulta:e.target.value}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                           placeholder=""
                         />
@@ -2495,6 +2562,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Nombre mamá</label>
                           <input
                             type="text"
+                            value={anamnesisPedData.datos_familia.madre_nombre}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, datos_familia:{...v.datos_familia, madre_nombre:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2503,6 +2572,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Nombre papá</label>
                           <input
                             type="text"
+                            value={anamnesisPedData.datos_familia.padre_nombre}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, datos_familia:{...v.datos_familia, padre_nombre:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2511,6 +2582,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Número de hermanos</label>
                           <input
                             type="text"
+                            value={anamnesisPedData.datos_familia.numero_hermanos}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, datos_familia:{...v.datos_familia, numero_hermanos:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2519,6 +2592,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
                           <input
                             type="text"
+                            value={anamnesisPedData.datos_familia.orden}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, datos_familia:{...v.datos_familia, orden:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2539,6 +2614,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de enfermedad</label>
                         <textarea
+                          value={anamnesisPedData.enfermedad_actual.tipo}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, enfermedad_actual:{...v.enfermedad_actual, tipo:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                           placeholder=""
                         />
@@ -2546,6 +2623,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Relato cronológico</label>
                         <textarea
+                          value={anamnesisPedData.enfermedad_actual.relato}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, enfermedad_actual:{...v.enfermedad_actual, relato:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                           placeholder=""
                         />
@@ -2566,6 +2645,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Enfermedades maternas</label>
                         <input
                           type="text"
+                          value={anamnesisPedData.antecedentes_prenatales.enfermedades_maternas || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_prenatales:{...v.antecedentes_prenatales, enfermedades_maternas:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2574,6 +2655,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">¿Hubo complicaciones en el embarazo?</label>
                         <input
                           type="text"
+                          value={anamnesisPedData.antecedentes_prenatales.complicaciones_embarazo || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_prenatales:{...v.antecedentes_prenatales, complicaciones_embarazo:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2755,6 +2838,28 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       </div>
                     </div>
                   </div>
+                  {/* Botón Guardar */}
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      onClick={handleSaveAnamnesisPed}
+                      disabled={savingAnamPed}
+                      className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {savingAnamPed ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <span>Guardar</span>
+                      )}
+                    </button>
+                  </div>
+                  </>
+                  )}
                 </div>
               )}
 

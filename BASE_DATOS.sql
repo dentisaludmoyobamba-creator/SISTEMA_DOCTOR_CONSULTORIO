@@ -987,6 +987,36 @@ CREATE TABLE IF NOT EXISTS anamnesis_odontologia (
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_paciente ON anamnesis_odontologia(id_paciente);
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_doctor ON anamnesis_odontologia(id_doctor);
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontologia(fecha_creacion);
+  
+  -- Tabla de Anamnesis Odontopediátrica
+  CREATE TABLE IF NOT EXISTS anamnesis_odontopediatria (
+      id_anamnesis_ped SERIAL PRIMARY KEY,
+      id_paciente INTEGER NOT NULL,
+      id_doctor INTEGER,
+      
+      -- Datos generales
+      motivo_consulta TEXT,
+      
+      -- Datos familiares y del entorno (JSON)
+      datos_familia JSONB, -- {madre_nombre:"", padre_nombre:"", numero_hermanos:0, orden:""}
+      
+      -- Enfermedad actual (JSON)
+      enfermedad_actual JSONB, -- {tipo:"", relato:""}
+      
+      -- Antecedentes prenatales (JSON)
+      antecedentes_prenatales JSONB, -- {enfermedades_maternas:"", complicaciones_embarazo:"", ...}
+      
+      activo BOOLEAN DEFAULT TRUE,
+      fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      
+      FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+      FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE SET NULL
+  );
+  
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_paciente ON anamnesis_odontopediatria(id_paciente);
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_doctor ON anamnesis_odontopediatria(id_doctor);
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_fecha ON anamnesis_odontopediatria(fecha_creacion);
 -- =====================================================
 -- FIN DEL SCRIPT CONSOLIDADO
 -- =====================================================
