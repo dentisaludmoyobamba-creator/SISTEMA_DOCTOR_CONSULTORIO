@@ -1004,7 +1004,13 @@ CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontolo
       enfermedad_actual JSONB, -- {tipo:"", relato:""}
       
       -- Antecedentes prenatales (JSON)
-      antecedentes_prenatales JSONB, -- {enfermedades_maternas:"", complicaciones_embarazo:"", ...}
+      antecedentes_prenatales JSONB, -- {enfermedades_maternas:"", complicaciones_embarazo:"", bebe_prematuro:"", peso_nacer:"", comentario:""}
+      
+      -- Antecedentes postnatales (JSON)
+      antecedentes_postnatales JSONB, -- {problemas_parto:"", uso_chupon:"", uso_biberon:"", etc.}
+      
+      -- Evaluación parental y examen clínico (JSON)
+      evaluacion_clinica JSONB, -- {tipo_padre:"", habitos_orales:"", tecnica_cepillado:"", examen_clinico:"", observaciones:""}
       
       activo BOOLEAN DEFAULT TRUE,
       fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

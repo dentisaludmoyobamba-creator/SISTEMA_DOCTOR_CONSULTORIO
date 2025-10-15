@@ -1726,7 +1726,8 @@ def handle_get_anamnesis_odontopediatria(request):
 
         cur.execute(
             """
-            SELECT a.id_anamnesis_ped, a.motivo_consulta, a.datos_familia, a.enfermedad_actual, a.antecedentes_prenatales,
+            SELECT a.id_anamnesis_ped, a.motivo_consulta, a.datos_familia, a.enfermedad_actual, 
+                   a.antecedentes_prenatales, a.antecedentes_postnatales, a.evaluacion_clinica,
                    a.fecha_creacion, d.nombres AS doctor_nombres, d.apellidos AS doctor_apellidos
             FROM anamnesis_odontopediatria a
             LEFT JOIN doctores d ON a.id_doctor = d.id_doctor
@@ -1746,6 +1747,8 @@ def handle_get_anamnesis_odontopediatria(request):
                 "datos_familia": row['datos_familia'] or {},
                 "enfermedad_actual": row['enfermedad_actual'] or {},
                 "antecedentes_prenatales": row['antecedentes_prenatales'] or {},
+                "antecedentes_postnatales": row['antecedentes_postnatales'] or {},
+                "evaluacion_clinica": row['evaluacion_clinica'] or {},
                 "doctor": f"{row['doctor_nombres']} {row['doctor_apellidos']}" if row['doctor_nombres'] else None,
                 "fecha": row['fecha_creacion'].isoformat() if row['fecha_creacion'] else None
             }
@@ -1802,6 +1805,8 @@ def handle_save_anamnesis_odontopediatria(request):
         datos_familia = json_lib.dumps(data.get('datos_familia', {}))
         enfermedad_actual = json_lib.dumps(data.get('enfermedad_actual', {}))
         antecedentes_prenatales = json_lib.dumps(data.get('antecedentes_prenatales', {}))
+        antecedentes_postnatales = json_lib.dumps(data.get('antecedentes_postnatales', {}))
+        evaluacion_clinica = json_lib.dumps(data.get('evaluacion_clinica', {}))
 
         if anamnesis_id:
             cur.execute(
@@ -1809,6 +1814,7 @@ def handle_save_anamnesis_odontopediatria(request):
                 UPDATE anamnesis_odontopediatria
                 SET id_doctor = %s, motivo_consulta = %s,
                     datos_familia = %s, enfermedad_actual = %s, antecedentes_prenatales = %s,
+                    antecedentes_postnatales = %s, evaluacion_clinica = %s,
                     fecha_modificacion = CURRENT_TIMESTAMP
                 WHERE id_anamnesis_ped = %s AND id_paciente = %s
                 RETURNING id_anamnesis_ped
@@ -1816,6 +1822,7 @@ def handle_save_anamnesis_odontopediatria(request):
                 (
                     id_doctor, data.get('motivo_consulta'),
                     datos_familia, enfermedad_actual, antecedentes_prenatales,
+                    antecedentes_postnatales, evaluacion_clinica,
                     anamnesis_id, patient_id
                 )
             )
@@ -1827,13 +1834,15 @@ def handle_save_anamnesis_odontopediatria(request):
             cur.execute(
                 """
                 INSERT INTO anamnesis_odontopediatria 
-                (id_paciente, id_doctor, motivo_consulta, datos_familia, enfermedad_actual, antecedentes_prenatales)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                (id_paciente, id_doctor, motivo_consulta, datos_familia, enfermedad_actual, 
+                 antecedentes_prenatales, antecedentes_postnatales, evaluacion_clinica)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id_anamnesis_ped
                 """,
                 (
                     patient_id, id_doctor, data.get('motivo_consulta'),
-                    datos_familia, enfermedad_actual, antecedentes_prenatales
+                    datos_familia, enfermedad_actual, antecedentes_prenatales,
+                    antecedentes_postnatales, evaluacion_clinica
                 )
             )
             saved_id = cur.fetchone()['id_anamnesis_ped']

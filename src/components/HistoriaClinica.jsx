@@ -806,7 +806,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     motivo_consulta: '',
     datos_familia: { madre_nombre: '', padre_nombre: '', numero_hermanos: '', orden: '' },
     enfermedad_actual: { tipo: '', relato: '' },
-    antecedentes_prenatales: {}
+    antecedentes_prenatales: {},
+    antecedentes_postnatales: {},
+    evaluacion_clinica: {}
   });
 
   const loadAnamnesisOdontopediatria = async () => {
@@ -820,7 +822,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           motivo_consulta: result.anamnesis_ped.motivo_consulta || '',
           datos_familia: result.anamnesis_ped.datos_familia || { madre_nombre: '', padre_nombre: '', numero_hermanos: '', orden: '' },
           enfermedad_actual: result.anamnesis_ped.enfermedad_actual || { tipo: '', relato: '' },
-          antecedentes_prenatales: result.anamnesis_ped.antecedentes_prenatales || {}
+          antecedentes_prenatales: result.anamnesis_ped.antecedentes_prenatales || {},
+          antecedentes_postnatales: result.anamnesis_ped.antecedentes_postnatales || {},
+          evaluacion_clinica: result.anamnesis_ped.evaluacion_clinica || {}
         });
       }
     } catch (e) {
@@ -2764,6 +2768,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">¿Fue un bebé prematuro?</label>
                         <input
                           type="text"
+                          value={anamnesisPedData.antecedentes_prenatales.bebe_prematuro || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_prenatales:{...v.antecedentes_prenatales, bebe_prematuro:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2772,6 +2778,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700">Peso al nacer</label>
                         <input
                           type="text"
+                          value={anamnesisPedData.antecedentes_prenatales.peso_nacer || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_prenatales:{...v.antecedentes_prenatales, peso_nacer:e.target.value}}))}
                           className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2780,6 +2788,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Comentario</label>
                         <textarea
+                          value={anamnesisPedData.antecedentes_prenatales.comentario || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_prenatales:{...v.antecedentes_prenatales, comentario:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                           placeholder=""
                         />
@@ -2798,33 +2808,78 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <div className="p-4 space-y-4">
                       {/* Preguntas Sí/No con campos de texto */}
                       {[
-                        '¿Problemas en el parto?', '¿Usó chupón?', '¿Usó biberón?', '¿Se chupa/chupaba el dedo?',
-                        '¿Toma alguna medicación o terapia?', '¿Es alérgico o intolerante a algo?',
-                        '¿Se cepilla antes de dormir?', '¿Duerme con la boca abierta o ronca?'
-                      ].map((pregunta) => (
-                        <div key={pregunta} className="flex items-center space-x-4">
-                          <span className="text-sm text-gray-700 w-48">{pregunta}</span>
+                        {pregunta: '¿Problemas en el parto?', key: 'problemas_parto'},
+                        {pregunta: '¿Usó chupón?', key: 'uso_chupon'},
+                        {pregunta: '¿Usó biberón?', key: 'uso_biberon'},
+                        {pregunta: '¿Se chupa/chupaba el dedo?', key: 'chupa_dedo'},
+                        {pregunta: '¿Toma alguna medicación o terapia?', key: 'medicacion_terapia'},
+                        {pregunta: '¿Es alérgico o intolerante a algo?', key: 'alergias'},
+                        {pregunta: '¿Se cepilla antes de dormir?', key: 'cepilla_dormir'},
+                        {pregunta: '¿Duerme con la boca abierta o ronca?', key: 'duerme_boca_abierta'}
+                      ].map((item) => {
+                        const respuesta = anamnesisPedData.antecedentes_postnatales[item.key]?.respuesta || 'no';
+                        const detalle = anamnesisPedData.antecedentes_postnatales[item.key]?.detalle || '';
+                        return (
+                        <div key={item.key} className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-700 w-48">{item.pregunta}</span>
                           <div className="flex space-x-2">
                             <label className="flex items-center space-x-1">
-                              <input type="radio" name={pregunta} value="no" className="text-blue-600" />
+                              <input 
+                                type="radio" 
+                                name={item.key} 
+                                value="no" 
+                                checked={respuesta === 'no'}
+                                onChange={(e) => setAnamnesisPedData(v => ({
+                                  ...v, 
+                                  antecedentes_postnatales: {
+                                    ...v.antecedentes_postnatales,
+                                    [item.key]: {...v.antecedentes_postnatales[item.key], respuesta: e.target.value}
+                                  }
+                                }))}
+                                className="text-blue-600" 
+                              />
                               <span className="text-sm text-gray-600">No</span>
                             </label>
                             <label className="flex items-center space-x-1">
-                              <input type="radio" name={pregunta} value="si" className="text-blue-600" />
+                              <input 
+                                type="radio" 
+                                name={item.key} 
+                                value="si" 
+                                checked={respuesta === 'si'}
+                                onChange={(e) => setAnamnesisPedData(v => ({
+                                  ...v, 
+                                  antecedentes_postnatales: {
+                                    ...v.antecedentes_postnatales,
+                                    [item.key]: {...v.antecedentes_postnatales[item.key], respuesta: e.target.value}
+                                  }
+                                }))}
+                                className="text-blue-600" 
+                              />
                               <span className="text-sm text-gray-600">Si</span>
                             </label>
                           </div>
                           <input
                             type="text"
+                            value={detalle}
+                            onChange={(e) => setAnamnesisPedData(v => ({
+                              ...v, 
+                              antecedentes_postnatales: {
+                                ...v.antecedentes_postnatales,
+                                [item.key]: {...v.antecedentes_postnatales[item.key], detalle: e.target.value}
+                              }
+                            }))}
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
                         </div>
-                      ))}
+                      );
+                      })}
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Comentario adicional</label>
                         <textarea
+                          value={anamnesisPedData.antecedentes_postnatales.comentario_adicional || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_postnatales:{...v.antecedentes_postnatales, comentario_adicional:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                           placeholder=""
                         />
@@ -2836,6 +2891,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <span className="text-sm text-gray-700 w-48">¿Cuánto dulce come?</span>
                           <input
                             type="text"
+                            value={anamnesisPedData.antecedentes_postnatales.dulce_cantidad || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_postnatales:{...v.antecedentes_postnatales, dulce_cantidad:e.target.value}}))}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2848,6 +2905,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <span className="text-sm text-gray-700 w-48">¿Con qué frecuencia?</span>
                           <input
                             type="text"
+                            value={anamnesisPedData.antecedentes_postnatales.dulce_frecuencia || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_postnatales:{...v.antecedentes_postnatales, dulce_frecuencia:e.target.value}}))}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2860,6 +2919,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué tipo de leche recibe el bebé?</label>
                           <input
                             type="text"
+                            value={anamnesisPedData.antecedentes_postnatales.tipo_leche || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_postnatales:{...v.antecedentes_postnatales, tipo_leche:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder=""
                           />
@@ -2868,6 +2929,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">¿Cómo le lava los dientes al bebé o niño?</label>
                           <textarea
+                            value={anamnesisPedData.antecedentes_postnatales.como_lava_dientes || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_postnatales:{...v.antecedentes_postnatales, como_lava_dientes:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                             placeholder=""
                           />
@@ -2876,6 +2939,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Describa un día de comida de su bebé/niño desde el desayuno.</label>
                           <textarea
+                            value={anamnesisPedData.antecedentes_postnatales.descripcion_alimentacion || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, antecedentes_postnatales:{...v.antecedentes_postnatales, descripcion_alimentacion:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                             placeholder=""
                           />
@@ -2893,6 +2958,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         </label>
                         <input
                           type="text"
+                          value={anamnesisPedData.evaluacion_clinica.tipo_padre || ''}
+                          onChange={(e)=>setAnamnesisPedData(v=>({...v, evaluacion_clinica:{...v.evaluacion_clinica, tipo_padre:e.target.value}}))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder=""
                         />
@@ -2902,6 +2969,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Hábitos orales</label>
                           <textarea
+                            value={anamnesisPedData.evaluacion_clinica.habitos_orales || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, evaluacion_clinica:{...v.evaluacion_clinica, habitos_orales:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                             placeholder=""
                           />
@@ -2909,6 +2978,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Técnica de cepillado</label>
                           <textarea
+                            value={anamnesisPedData.evaluacion_clinica.tecnica_cepillado || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, evaluacion_clinica:{...v.evaluacion_clinica, tecnica_cepillado:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                             placeholder=""
                           />
@@ -2916,6 +2987,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Examen clínico</label>
                           <textarea
+                            value={anamnesisPedData.evaluacion_clinica.examen_clinico || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, evaluacion_clinica:{...v.evaluacion_clinica, examen_clinico:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                             placeholder=""
                           />
@@ -2923,17 +2996,12 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
                           <textarea
+                            value={anamnesisPedData.evaluacion_clinica.observaciones || ''}
+                            onChange={(e)=>setAnamnesisPedData(v=>({...v, evaluacion_clinica:{...v.evaluacion_clinica, observaciones:e.target.value}}))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
                             placeholder=""
                           />
                         </div>
-                      </div>
-                      
-                      {/* Botón Guardar */}
-                      <div className="flex justify-center pt-4">
-                        <button className="bg-teal-500 text-white px-8 py-2 rounded-md hover:bg-teal-600 transition-colors">
-                          Guardar
-                        </button>
                       </div>
                     </div>
                   </div>
