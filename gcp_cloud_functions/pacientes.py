@@ -219,6 +219,27 @@ def handle_create_paciente(request):
         ))
 
         new_id = cur.fetchone()['id_paciente']
+
+        # Crear registro de anamnesis odontológica con valores por defecto
+        import json as json_lib
+        condiciones_default = json_lib.dumps({
+            'presion_alta': 'no',
+            'presion_baja': 'no',
+            'hepatitis': 'no',
+            'gastritis': 'no',
+            'ulceras': 'no',
+            'vih': 'no',
+            'diabetes': 'no',
+            'asma': 'no',
+            'fuma': 'no'
+        })
+        
+        cur.execute("""
+            INSERT INTO anamnesis_odontologia 
+            (id_paciente, condiciones_medicas, preguntas_adicionales)
+            VALUES (%s, %s, %s)
+        """, (new_id, condiciones_default, '{}'))
+
         conn.commit()
         cur.close()
         conn.close()
