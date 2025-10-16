@@ -3,6 +3,7 @@ import authService from '../services/authService';
 import usersService from '../services/usersService';
 import UserModal from '../components/UserModal';
 import AddDoctorModal from '../components/AddDoctorModal';
+import EditDoctorModal from '../components/EditDoctorModal';
 
 const Configuracion = () => {
   const [activeSection, setActiveSection] = useState('mi-perfil');
@@ -337,7 +338,9 @@ const Usuarios = () => {
   const [error, setError] = useState('');
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
+  const [isEditDoctorModalOpen, setIsEditDoctorModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [editingDoctor, setEditingDoctor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
@@ -416,6 +419,16 @@ const Usuarios = () => {
   const handleEditUser = (user) => {
     setEditingUser(user);
     setIsUserModalOpen(true);
+  };
+
+  const handleEditDoctor = (user) => {
+    setEditingDoctor(user);
+    setIsEditDoctorModalOpen(true);
+  };
+
+  const handleDoctorUpdated = () => {
+    loadUsers(); // Recargar lista después de actualizar doctor
+    setIsEditDoctorModalOpen(false);
   };
 
   const handleDeleteUser = async (user) => {
@@ -572,7 +585,8 @@ const Usuarios = () => {
             )}
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-visible">
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-slate-700">
                 <tr>
@@ -652,15 +666,60 @@ const Usuarios = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEditUser(usuario)}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
-                          title="Editar usuario"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
+                        {/* Dropdown de opciones de edición para doctores */}
+                        {usuario.isDoctor ? (
+                          <div className="relative group">
+                            <button
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 flex items-center space-x-1"
+                              title="Editar"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {/* Dropdown menu - Opens upward to avoid table overflow */}
+                            <div className="hidden group-hover:block absolute right-0 bottom-full mb-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                              <button
+                                onClick={() => handleEditDoctor(usuario)}
+                                className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center space-x-3 border-b border-gray-100 rounded-t-lg"
+                              >
+                                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">Editar Doctor</div>
+                                  <div className="text-xs text-gray-500">DNI, colegiatura, teléfono</div>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => handleEditUser(usuario)}
+                                className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center space-x-3 rounded-b-lg"
+                              >
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">Editar Usuario</div>
+                                  <div className="text-xs text-gray-500">Email, contraseña, rol</div>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleEditUser(usuario)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
+                            title="Editar usuario"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        )}
+                        
                         <button
                           onClick={() => handleDeleteUser(usuario)}
                           className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
@@ -712,6 +771,7 @@ const Usuarios = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
       </div>
@@ -729,6 +789,14 @@ const Usuarios = () => {
         isOpen={isAddDoctorModalOpen}
         onClose={() => setIsAddDoctorModalOpen(false)}
         onDoctorAdded={handleDoctorAdded}
+      />
+
+      {/* Modal para Editar Doctor */}
+      <EditDoctorModal
+        isOpen={isEditDoctorModalOpen}
+        onClose={() => setIsEditDoctorModalOpen(false)}
+        doctor={editingDoctor}
+        onDoctorUpdated={handleDoctorUpdated}
       />
     </div>
   );

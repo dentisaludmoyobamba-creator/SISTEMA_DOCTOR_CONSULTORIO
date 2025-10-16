@@ -7,14 +7,7 @@ const UserModal = ({ isOpen, onClose, onUserSaved, editingUser = null }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    role_id: '',
-    doctorInfo: {
-      nombres: '',
-      apellidos: '',
-      dni: '',
-      colegiatura: '',
-      telefono: ''
-    }
+    role_id: ''
   });
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
@@ -33,14 +26,7 @@ const UserModal = ({ isOpen, onClose, onUserSaved, editingUser = null }) => {
           email: editingUser.email || '',
           password: '',
           confirmPassword: '',
-          role_id: '',
-          doctorInfo: {
-            nombres: editingUser.doctorInfo?.nombres || '',
-            apellidos: editingUser.doctorInfo?.apellidos || '',
-            dni: editingUser.doctorInfo?.dni || '',
-            colegiatura: editingUser.doctorInfo?.colegiatura || '',
-            telefono: editingUser.doctorInfo?.telefono || ''
-          }
+          role_id: ''
         });
       } else {
         // Limpiar formulario para nuevo usuario
@@ -49,14 +35,7 @@ const UserModal = ({ isOpen, onClose, onUserSaved, editingUser = null }) => {
           email: '',
           password: '',
           confirmPassword: '',
-          role_id: '',
-          doctorInfo: {
-            nombres: '',
-            apellidos: '',
-            dni: '',
-            colegiatura: '',
-            telefono: ''
-          }
+          role_id: ''
         });
       }
       setError('');
@@ -83,15 +62,7 @@ const UserModal = ({ isOpen, onClose, onUserSaved, editingUser = null }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('doctor_')) {
-      const doctorField = name.replace('doctor_', '');
-      setFormData(prev => ({
-        ...prev,
-        doctorInfo: { ...prev.doctorInfo, [doctorField]: value }
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
     
     // Limpiar mensajes
     if (error) setError('');
@@ -127,28 +98,7 @@ const UserModal = ({ isOpen, onClose, onUserSaved, editingUser = null }) => {
         userData.role_id = formData.role_id;
       }
       
-      // Datos del doctor si es necesario
-      if (selectedRole?.name === 'Doctor' || editingUser.isDoctor) {
-        const doctorInfo = {};
-        let hasDoctorChanges = false;
-        
-        if (formData.doctorInfo.nombres !== (editingUser.doctorInfo?.nombres || '')) {
-          doctorInfo.nombres = formData.doctorInfo.nombres;
-          hasDoctorChanges = true;
-        }
-        if (formData.doctorInfo.apellidos !== (editingUser.doctorInfo?.apellidos || '')) {
-          doctorInfo.apellidos = formData.doctorInfo.apellidos;
-          hasDoctorChanges = true;
-        }
-        if (formData.doctorInfo.telefono !== (editingUser.doctorInfo?.telefono || '')) {
-          doctorInfo.telefono = formData.doctorInfo.telefono;
-          hasDoctorChanges = true;
-        }
-        
-        if (hasDoctorChanges) {
-          userData.doctor_info = doctorInfo;
-        }
-      }
+      // Los datos del doctor se manejan por separado en EditDoctorModal
     } else {
       // Para creación, usar todos los datos
       userData = usersService.prepareUserDataForCreation(formData, selectedRole);
@@ -340,89 +290,20 @@ const UserModal = ({ isOpen, onClose, onUserSaved, editingUser = null }) => {
               </div>
             </div>
 
-            {/* Información del doctor (solo si el rol es Doctor) */}
+            {/* Nota informativa para doctores */}
             {isDoctor && (
-              <div className="space-y-4 border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900">Información del Doctor</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombres *
-                    </label>
-                    <input
-                      type="text"
-                      name="doctor_nombres"
-                      value={formData.doctorInfo.nombres}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0]"
-                      placeholder="Nombres del doctor"
-                      required
-                    />
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Apellidos *
-                    </label>
-                    <input
-                      type="text"
-                      name="doctor_apellidos"
-                      value={formData.doctorInfo.apellidos}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0]"
-                      placeholder="Apellidos del doctor"
-                      required
-                    />
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Nota:</strong> Este usuario tiene rol de Doctor. Los datos específicos del doctor (DNI, colegiatura, teléfono, nombres) se editan desde la opción "Editar Doctor" en la tabla de usuarios.
+                    </p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      DNI *
-                    </label>
-                    <input
-                      type="text"
-                      name="doctor_dni"
-                      value={formData.doctorInfo.dni}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0]"
-                      placeholder="DNI del doctor"
-                      required
-                      disabled={editingUser} // DNI no se puede cambiar en edición
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Colegiatura *
-                    </label>
-                    <input
-                      type="text"
-                      name="doctor_colegiatura"
-                      value={formData.doctorInfo.colegiatura}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0]"
-                      placeholder="Número de colegiatura"
-                      required
-                      disabled={editingUser} // Colegiatura no se puede cambiar en edición
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    name="doctor_telefono"
-                    value={formData.doctorInfo.telefono}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#30B0B0] focus:border-[#30B0B0]"
-                    placeholder="Teléfono del doctor"
-                  />
                 </div>
               </div>
             )}

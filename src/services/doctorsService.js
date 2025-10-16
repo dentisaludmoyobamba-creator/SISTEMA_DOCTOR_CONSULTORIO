@@ -178,6 +178,69 @@ class DoctorsService {
       return { success: false, error: 'Error de conexión con el servidor' };
     }
   }
+
+  async updateDoctor(userId, doctorData) {
+    try {
+      const token = this.authService?.getToken();
+      if (!token) {
+        return { success: false, error: 'No hay sesión activa' };
+      }
+
+      console.log('🔵 Actualizando datos del doctor...');
+      console.log('User ID:', userId);
+      console.log('Data:', doctorData);
+
+      const response = await fetch(`${BASE_URL}?action=update_user&user_id=${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          doctor_info: {
+            nombres: doctorData.nombres,
+            apellidos: doctorData.apellidos,
+            dni: doctorData.dni,
+            colegiatura: doctorData.colegiatura,
+            telefono: doctorData.telefono || ''
+          }
+        })
+      });
+
+      console.log('🔵 Response status:', response.status);
+
+      const responseText = await response.text();
+      console.log('🔵 Response text:', responseText);
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Error al parsear JSON:', parseError);
+        return { 
+          success: false, 
+          error: `Error en la respuesta del servidor. Status: ${response.status}` 
+        };
+      }
+
+      if (response.ok && result.success) {
+        console.log('✅ Doctor actualizado exitosamente');
+        return { 
+          success: true, 
+          message: result.message || 'Doctor actualizado exitosamente'
+        };
+      } else {
+        console.error('❌ Error en la respuesta:', result);
+        return { success: false, error: result.error || 'Error al actualizar doctor' };
+      }
+    } catch (error) {
+      console.error('❌ Error en updateDoctor:', error);
+      return { 
+        success: false, 
+        error: `Error de conexión: ${error.message}` 
+      };
+    }
+  }
 }
 
 const doctorsService = new DoctorsService();
