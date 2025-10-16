@@ -16,14 +16,38 @@ const EditDoctorModal = ({ isOpen, onClose, doctor, onDoctorUpdated }) => {
   });
 
   useEffect(() => {
-    if (isOpen && doctor?.doctor_info) {
-      setFormData({
-        nombres: doctor.doctor_info.nombres || '',
-        apellidos: doctor.doctor_info.apellidos || '',
-        dni: doctor.doctor_info.dni || '',
-        colegiatura: doctor.doctor_info.colegiatura || '',
-        telefono: doctor.doctor_info.telefono || ''
-      });
+    if (isOpen && doctor) {
+      console.log('🔵 Doctor data received:', doctor);
+      
+      // Los datos del doctor pueden estar en doctor.doctorInfo (formateado) o doctor.doctor_info (raw)
+      const doctorInfo = doctor.doctorInfo || doctor.doctor_info;
+      console.log('🔵 Doctor info:', doctorInfo);
+      
+      if (doctorInfo) {
+        setFormData({
+          nombres: doctorInfo.nombres || '',
+          apellidos: doctorInfo.apellidos || '',
+          dni: doctorInfo.dni || '',
+          colegiatura: doctorInfo.colegiatura || '',
+          telefono: doctorInfo.telefono || ''
+        });
+        console.log('🔵 Form data set:', {
+          nombres: doctorInfo.nombres || '',
+          apellidos: doctorInfo.apellidos || '',
+          dni: doctorInfo.dni || '',
+          colegiatura: doctorInfo.colegiatura || '',
+          telefono: doctorInfo.telefono || ''
+        });
+      } else {
+        console.log('⚠️ No doctor info found');
+        setFormData({
+          nombres: '',
+          apellidos: '',
+          dni: '',
+          colegiatura: '',
+          telefono: ''
+        });
+      }
       setError('');
       setSuccess('');
     }
@@ -70,6 +94,17 @@ const EditDoctorModal = ({ isOpen, onClose, doctor, onDoctorUpdated }) => {
     try {
       // Configurar el servicio con authService
       doctorsService.setAuthService(authService);
+      
+      console.log('🔵 Updating doctor with data:', {
+        userId: doctor.id,
+        formData: {
+          nombres: formData.nombres.trim(),
+          apellidos: formData.apellidos.trim(),
+          dni: formData.dni.trim(),
+          colegiatura: formData.colegiatura.trim(),
+          telefono: formData.telefono.trim()
+        }
+      });
       
       // Actualizar el doctor
       const result = await doctorsService.updateDoctor(doctor.id, {
