@@ -692,6 +692,106 @@ def obtener_roles(request, headers):
     except Exception as e:
         return (json.dumps({"error": f"Error al obtener roles: {str(e)}"}), 500, headers)
 
+def registrar_doctor(request, headers):
+    """Función para registrar un usuario como doctor en la tabla doctores"""
+    try:
+        # Verificar token de autorización
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return (json.dumps({"error": "Token de autorización requerido"}), 401, headers)
+        
+        token = auth_header.replace('Bearer ', '')
+        payload = verify_token(token)
+        
+        if not payload:
+            return (json.dumps({"error": "Token inválido o expirado"}), 401, headers)
+        
+        # Verificar que sea administrador
+        user_role = payload.get('role')
+        if user_role != 'Administrador':
+            return (json.dumps({"error": "Solo administradores pueden registrar doctores"}), 403, headers)
+        
+        # Obtener datos del request
+        data = request.get_json()
+        if not data:
+            return (json.dumps({"error": "No se enviaron datos"}), 400, headers)
+        
+        # Validar campos requeridos
+        user_id = data.get('user_id')
+        nombres = data.get('nombres', '').strip()
+        apellidos = data.get('apellidos', '').strip()
+        telefono = data.get('telefono', '').strip()
+        
+        if not user_id:
+            return (json.dumps({"error": "user_id es requerido"}), 400, headers)
+        
+        if not nombres or not apellidos:
+            return (json.dumps({"error": "Nombres y apellidos son requeridos"}), 400, headers)
+        
+        # Conectar a la base de datos
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Verificar que el usuario existe y tiene rol de Doctor
+        user_query = """
+            SELECT u.id_usuario, u.id_rol, r.nombre_rol 
+            FROM usuarios u
+            LEFT JOIN roles r ON u.id_rol = r.id_rol
+            WHERE u.id_usuario = %s
+        """
+        cursor.execute(user_query, (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            return (json.dumps({"error": "Usuario no encontrado"}), 404, headers)
+        
+        if user['nombre_rol'] != 'Doctor':
+            conn.close()
+            return (json.dumps({"error": "El usuario no tiene rol de Doctor"}), 400, headers)
+        
+        # Verificar si ya existe un doctor para este usuario
+        check_doctor = "SELECT id_doctor FROM doctores WHERE id_usuario = %s"
+        cursor.execute(check_doctor, (user_id,))
+        existing_doctor = cursor.fetchone()
+        
+        if existing_doctor:
+            conn.close()
+            return (json.dumps({"error": "Este usuario ya tiene un perfil de doctor registrado"}), 400, headers)
+        
+        # Generar DNI y colegiatura temporales únicos
+        import time
+        timestamp = int(time.time())
+        dni_temp = f"TEMP_DNI_{user_id}_{timestamp}"
+        colegiatura_temp = f"TEMP_COL_{user_id}_{timestamp}"
+        
+        # Insertar el nuevo doctor
+        insert_query = """
+            INSERT INTO doctores (nombres, apellidos, dni, colegiatura, telefono, id_usuario)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id_doctor
+        """
+        cursor.execute(insert_query, (nombres, apellidos, dni_temp, colegiatura_temp, telefono, user_id))
+        result = cursor.fetchone()
+        nuevo_id_doctor = result['id_doctor']
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return (json.dumps({
+            "success": True,
+            "message": f"Doctor registrado exitosamente. IMPORTANTE: Debe actualizar el DNI ({dni_temp}) y la colegiatura ({colegiatura_temp}) en la base de datos.",
+            "id_doctor": nuevo_id_doctor,
+            "warning": "Los valores de DNI y colegiatura son temporales y deben ser actualizados manualmente en la base de datos."
+        }), 200, headers)
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
+        return (json.dumps({"error": f"Error al registrar doctor: {str(e)}"}), 500, headers)
+
 @functions_framework.http
 def hello_http(request):
 
@@ -714,8 +814,10 @@ def hello_http(request):
                 return login_usuario(request, headers)
             elif action == "create_user" or "create_user" in path:
                 return crear_usuario(request, headers)
+            elif action == "register_doctor" or "register_doctor" in path:
+                return registrar_doctor(request, headers)
             else:
-                return (json.dumps({"error": "Acción no válida para POST. Use ?action=login o ?action=create_user"}), 400, headers)
+                return (json.dumps({"error": "Acción no válida para POST. Use ?action=login, ?action=create_user o ?action=register_doctor"}), 400, headers)
         
         elif request.method == "GET":
             if action == "profile" or "profile" in path:

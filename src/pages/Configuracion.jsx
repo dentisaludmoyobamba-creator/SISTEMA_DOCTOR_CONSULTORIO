@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
 import usersService from '../services/usersService';
 import UserModal from '../components/UserModal';
+import AddDoctorModal from '../components/AddDoctorModal';
 
 const Configuracion = () => {
   const [activeSection, setActiveSection] = useState('mi-perfil');
@@ -335,6 +336,7 @@ const Usuarios = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({
@@ -448,6 +450,15 @@ const Usuarios = () => {
     loadUsers(); // Recargar lista después de guardar
   };
 
+  const handleDoctorAdded = () => {
+    loadUsers(); // Recargar lista después de agregar doctor
+    setIsAddDoctorModalOpen(false);
+  };
+
+  const handleOpenAddDoctor = () => {
+    setIsAddDoctorModalOpen(true);
+  };
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     setPagination(prev => ({ ...prev, page: 1 })); // Reset a página 1
@@ -502,6 +513,18 @@ const Usuarios = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
+            {activeSubTab === 'staff-medico' && (
+              <button 
+                onClick={handleOpenAddDoctor}
+                className="bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white px-4 py-2 rounded-md hover:from-[#2D1B69] hover:to-[#1A0F3D] transition-all flex items-center space-x-2 text-sm"
+                title="Registrar doctor desde usuarios existentes"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Registrar como doctor</span>
+              </button>
+            )}
             <button 
               onClick={handleNewUser}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm"
@@ -699,6 +722,13 @@ const Usuarios = () => {
         onClose={() => setIsUserModalOpen(false)}
         onUserSaved={handleUserSaved}
         editingUser={editingUser}
+      />
+
+      {/* Modal para Agregar Doctor */}
+      <AddDoctorModal
+        isOpen={isAddDoctorModalOpen}
+        onClose={() => setIsAddDoctorModalOpen(false)}
+        onDoctorAdded={handleDoctorAdded}
       />
     </div>
   );
