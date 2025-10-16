@@ -328,12 +328,32 @@ def handle_get_patient_filiacion(request):
         cur = conn.cursor()
 
         # Obtener información completa del paciente
-        filiacion_query = """
+        # Verificar si las columnas ocupacion y adicional existen
+        cur.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'pacientes' 
+            AND column_name IN ('ocupacion', 'adicional')
+        """)
+        columnas_extra = [row['column_name'] for row in cur.fetchall()]
+        tiene_ocupacion = 'ocupacion' in columnas_extra
+        tiene_adicional = 'adicional' in columnas_extra
+        
+        # Construir query dinámicamente según las columnas disponibles
+        campos_extra = []
+        if tiene_ocupacion:
+            campos_extra.append('p.ocupacion')
+        if tiene_adicional:
+            campos_extra.append('p.adicional')
+        
+        campos_extra_str = ', ' + ', '.join(campos_extra) if campos_extra else ''
+        
+        filiacion_query = f"""
             SELECT p.id_paciente, p.nombres, p.apellidos, p.dni, p.telefono, p.email, 
                    p.fecha_nacimiento, p.genero, p.direccion, p.fecha_registro,
                    p.id_fuente_captacion, p.id_aseguradora, p.id_linea_negocio,
                    p.presupuesto, p.ultima_cita, p.proxima_cita, p.tarea, p.comentario,
-                   p.estado_paciente, p.avatar, p.etiqueta, p.etiqueta_color,
+                   p.estado_paciente, p.avatar, p.etiqueta, p.etiqueta_color{campos_extra_str},
                    fc.nombre as fuente_captacion, a.nombre as aseguradora, ln.nombre as linea_negocio
             FROM pacientes p
             LEFT JOIN fuente_captacion fc ON p.id_fuente_captacion = fc.id
@@ -379,7 +399,9 @@ def handle_get_patient_filiacion(request):
             "estado_paciente": paciente_row['estado_paciente'],
             "avatar": paciente_row['avatar'],
             "etiqueta": paciente_row['etiqueta'],
-            "etiqueta_color": paciente_row['etiqueta_color']
+            "etiqueta_color": paciente_row['etiqueta_color'],
+            "ocupacion": paciente_row.get('ocupacion'),
+            "adicional": paciente_row.get('adicional')
         }
 
         cur.close()
@@ -430,7 +452,9 @@ def handle_update_patient_filiacion(request):
             'linea_negocio': 'id_linea_negocio',
             'comentario': 'comentario',
             'tarea': 'tarea',
-            'presupuesto': 'presupuesto'
+            'presupuesto': 'presupuesto',
+            'ocupacion': 'ocupacion',
+            'adicional': 'adicional'
         }
 
         for campo_frontend, campo_db in campos_actualizables.items():

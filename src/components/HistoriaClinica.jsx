@@ -32,7 +32,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
     direccion: '',
     fuente_captacion: '',
     aseguradora: '',
-    linea_negocio: ''
+    linea_negocio: '',
+    ocupacion: '',
+    adicional: ''
   });
   const [loadingDatos, setLoadingDatos] = useState(false);
   const [savingDatos, setSavingDatos] = useState(false);
@@ -204,7 +206,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
           direccion: filiacion.direccion || '',
           fuente_captacion: filiacion.fuente_captacion || '',
           aseguradora: filiacion.aseguradora || '',
-          linea_negocio: filiacion.linea_negocio || ''
+          linea_negocio: filiacion.linea_negocio || '',
+          ocupacion: filiacion.ocupacion || '',
+          adicional: filiacion.adicional || ''
         });
       } else {
         console.error('Error al cargar datos personales:', result.error);
@@ -478,7 +482,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
         direccion: datosPersonales.direccion,
         fuente_captacion: datosPersonales.fuente_captacion,
         aseguradora: datosPersonales.aseguradora,
-        linea_negocio: datosPersonales.linea_negocio
+        linea_negocio: datosPersonales.linea_negocio,
+        ocupacion: datosPersonales.ocupacion,
+        adicional: datosPersonales.adicional
       };
       
       const result = await patientsService.updateFiliacion(updateData);
@@ -1284,62 +1290,10 @@ const HistoriaClinica = ({ paciente, onClose }) => {
               </select>
             </div>
           </div>
-          {/* Barra superior con etiquetas y notas */}
+
+          {/* Barra superior con notas y alergias */}
           <div className="bg-white border-b p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">Etiquetas</span>
-                  <div className="flex space-x-1">
-                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                  </div>
-                </div>
-                <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                  </svg>
-                  <span>Agregar</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Tarjeta de Etiquetas */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                    </svg>
-                    <span className="text-sm font-semibold text-gray-800">Etiquetas</span>
-                  </div>
-                  <button className="text-blue-600 text-sm flex items-center space-x-1 hover:text-blue-800">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                    </svg>
-                    <span>Agregar</span>
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
-                    <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    <span>VIP</span>
-                    <button className="ml-1 text-yellow-600 hover:text-yellow-800">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Tarjeta de Notas */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -1355,9 +1309,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       className="text-yellow-600 text-sm flex items-center space-x-1 hover:text-yellow-800"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                       </svg>
-                      <span>Agregar</span>
+                      <span>Editar</span>
                     </button>
                   )}
                 </div>
@@ -1425,9 +1379,9 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                       className="text-red-600 text-sm flex items-center space-x-1 hover:text-red-800"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                       </svg>
-                      <span>Agregar</span>
+                      <span>Editar</span>
                     </button>
                   )}
                 </div>
@@ -1477,15 +1431,6 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                   </div>
                 )}
               </div>
-            </div>
-
-            <div className="mt-4">
-              <button className="text-blue-600 text-sm flex items-center space-x-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span>Ver 'Barra de progreso'</span>
-              </button>
             </div>
           </div>
 
@@ -1790,6 +1735,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <input
                       type="text"
                       placeholder=""
+                      value={datosPersonales.ocupacion}
+                      onChange={(e) => setDatosPersonales({...datosPersonales, ocupacion: e.target.value})}
                       disabled={!isEditing}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
@@ -1799,6 +1746,8 @@ const HistoriaClinica = ({ paciente, onClose }) => {
                     <input
                       type="text"
                       placeholder=""
+                      value={datosPersonales.adicional}
+                      onChange={(e) => setDatosPersonales({...datosPersonales, adicional: e.target.value})}
                       disabled={!isEditing}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
                     />
