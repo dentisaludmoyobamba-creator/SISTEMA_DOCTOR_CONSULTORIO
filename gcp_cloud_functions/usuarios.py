@@ -759,11 +759,13 @@ def registrar_doctor(request, headers):
             conn.close()
             return (json.dumps({"error": "Este usuario ya tiene un perfil de doctor registrado"}), 400, headers)
         
-        # Generar DNI y colegiatura temporales únicos
+        # Generar DNI y colegiatura temporales únicos (limitados a los caracteres permitidos)
         import time
         timestamp = int(time.time())
-        dni_temp = f"TEMP_DNI_{user_id}_{timestamp}"
-        colegiatura_temp = f"TEMP_COL_{user_id}_{timestamp}"
+        # DNI: máximo 15 caracteres - usar solo últimos 6 dígitos del timestamp
+        dni_temp = f"TMP{user_id:04d}{str(timestamp)[-6:]}"  # Ejemplo: TMP000512345
+        # Colegiatura: máximo 20 caracteres
+        colegiatura_temp = f"COL{user_id:04d}{str(timestamp)[-10:]}"  # Ejemplo: COL00051234567890
         
         # Insertar el nuevo doctor
         insert_query = """
@@ -781,9 +783,11 @@ def registrar_doctor(request, headers):
         
         return (json.dumps({
             "success": True,
-            "message": f"Doctor registrado exitosamente. IMPORTANTE: Debe actualizar el DNI ({dni_temp}) y la colegiatura ({colegiatura_temp}) en la base de datos.",
+            "message": f"Doctor registrado exitosamente con ID {nuevo_id_doctor}.",
             "id_doctor": nuevo_id_doctor,
-            "warning": "Los valores de DNI y colegiatura son temporales y deben ser actualizados manualmente en la base de datos."
+            "dni_temporal": dni_temp,
+            "colegiatura_temporal": colegiatura_temp,
+            "warning": f"IMPORTANTE: Los valores de DNI ({dni_temp}) y colegiatura ({colegiatura_temp}) son temporales. Debe actualizarlos manualmente en la base de datos con los datos reales del doctor."
         }), 200, headers)
         
     except Exception as e:
