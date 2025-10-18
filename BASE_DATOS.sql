@@ -385,6 +385,21 @@ CREATE TABLE ordenes_compra (
     nota_interna TEXT
 );
 
+-- Tabla para items de órdenes de compra
+CREATE TABLE IF NOT EXISTS items_orden_compra (
+    id_item SERIAL PRIMARY KEY,
+    id_orden INTEGER NOT NULL,
+    id_producto INTEGER NOT NULL,
+    cantidad NUMERIC(10,2) NOT NULL,
+    lote VARCHAR(50),
+    precio_unitario NUMERIC(10,2) NOT NULL,
+    subtotal NUMERIC(10,2) NOT NULL,
+    fecha_vencimiento DATE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_orden) REFERENCES ordenes_compra(id_orden) ON DELETE CASCADE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+);
+
 -- Tabla para consumos de inventario (descuenta stock)
 CREATE TABLE consumos (
     id_consumo SERIAL PRIMARY KEY,

@@ -72,6 +72,20 @@ const Inventario = () => {
     nota_interna: ''
   });
 
+  // Estado para items de la orden de compra
+  const [itemsOrden, setItemsOrden] = useState([]);
+  const [currentItem, setCurrentItem] = useState({
+    id_producto: '',
+    nombre_producto: '',
+    cantidad: 1,
+    lote: '',
+    precio_unitario: 0,
+    fecha_vencimiento: ''
+  });
+  const [searchProducto, setSearchProducto] = useState('');
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [showProductosList, setShowProductosList] = useState(false);
+
   // Estado para datos de Consumo
   const [consumos, setConsumos] = useState([]);
   const [loadingConsumos, setLoadingConsumos] = useState(true);
@@ -317,10 +331,103 @@ const Inventario = () => {
     }
   }, [paginationCompras.page, paginationCompras.limit, searchTerm]);
 
+  // Buscar productos para agregar a la orden
+  const handleSearchProducto = async (searchTerm) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setProductosDisponibles([]);
+      setShowProductosList(false);
+      return;
+    }
+
+    try {
+      inventarioService.setAuthService(authService);
+      const result = await inventarioService.getProductos({
+        search: searchTerm,
+        page: 1,
+        limit: 10
+      });
+
+      if (result.success) {
+        setProductosDisponibles(result.productos);
+        setShowProductosList(true);
+      }
+    } catch (err) {
+      console.error('Error al buscar productos:', err);
+    }
+  };
+
+  // Seleccionar producto de la lista
+  const handleSelectProducto = (producto) => {
+    setCurrentItem(prev => ({
+      ...prev,
+      id_producto: producto.id,
+      nombre_producto: producto.nombre,
+      precio_unitario: producto.costo_unitario || 0
+    }));
+    setSearchProducto(producto.nombre);
+    setShowProductosList(false);
+  };
+
+  // Agregar item a la orden
+  const handleAgregarItem = () => {
+    if (!currentItem.id_producto || currentItem.cantidad <= 0 || currentItem.precio_unitario <= 0) {
+      alert('Complete todos los campos requeridos del producto');
+      return;
+    }
+
+    const subtotal = currentItem.cantidad * currentItem.precio_unitario;
+    const nuevoItem = {
+      ...currentItem,
+      subtotal,
+      id_temp: Date.now() // ID temporal para manejar en frontend
+    };
+
+    setItemsOrden(prev => [...prev, nuevoItem]);
+    
+    // Limpiar formulario de item
+    setCurrentItem({
+      id_producto: '',
+      nombre_producto: '',
+      cantidad: 1,
+      lote: '',
+      precio_unitario: 0,
+      fecha_vencimiento: ''
+    });
+    setSearchProducto('');
+    
+    // Actualizar monto total
+    actualizarMontoTotal([...itemsOrden, nuevoItem]);
+  };
+
+  // Eliminar item de la orden
+  const handleEliminarItem = (idTemp) => {
+    const nuevosItems = itemsOrden.filter(item => item.id_temp !== idTemp);
+    setItemsOrden(nuevosItems);
+    actualizarMontoTotal(nuevosItems);
+  };
+
+  // Calcular monto total de la orden
+  const actualizarMontoTotal = (items) => {
+    const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+    setNuevaCompra(prev => ({ ...prev, monto_total: total }));
+  };
+
   // Manejar guardado de nueva compra
   const handleSaveCompra = async () => {
     try {
-      const result = await inventarioService.createCompra(nuevaCompra);
+      const compraData = {
+        ...nuevaCompra,
+        items: itemsOrden.map(item => ({
+          id_producto: item.id_producto,
+          cantidad: item.cantidad,
+          lote: item.lote,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
+          fecha_vencimiento: item.fecha_vencimiento
+        }))
+      };
+
+      const result = await inventarioService.createCompra(compraData);
       if (result.success) {
         setIsNuevaCompraOpen(false);
         setNuevaCompra({
@@ -331,6 +438,15 @@ const Inventario = () => {
           fecha_entrega: '',
           fecha_pago: '',
           nota_interna: ''
+        });
+        setItemsOrden([]);
+        setCurrentItem({
+          id_producto: '',
+          nombre_producto: '',
+          cantidad: 1,
+          lote: '',
+          precio_unitario: 0,
+          fecha_vencimiento: ''
         });
         loadCompras();
       } else {
@@ -1054,13 +1170,26 @@ const Inventario = () => {
       {/* Modal lateral: Nueva Orden de Compra */}
       {isNuevaCompraOpen && (
         <div className="fixed inset-0 z-[100]">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setIsNuevaCompraOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-full sm:w-[820px] bg-white shadow-2xl overflow-y-auto">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setIsNuevaCompraOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-full max-w-[1200px] bg-white shadow-2xl overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white border-b">
-              <div className="px-6 py-4 flex items-center justify-between">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-wide">NUEVA ORDEN DE COMPRA</h3>
-                <button onClick={() => setIsNuevaCompraOpen(false)} className="p-2 text-gray-500 hover:text-gray-700">
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-cyan-600 to-cyan-700 border-b border-cyan-800 shadow-md">
+              <div className="px-8 py-5 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white tracking-wide">Nueva Orden de Compra</h3>
+                    <p className="text-cyan-100 text-sm">Complete los datos de la orden</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsNuevaCompraOpen(false)} 
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -1069,179 +1198,338 @@ const Inventario = () => {
             </div>
 
             {/* Form principal */}
-            <div className="p-6 space-y-6">
-              {/* Fila 1 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre interno *</label>
-                  <input 
-                    type="text" 
-                    value={nuevaCompra.nombre_interno}
-                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, nombre_interno: e.target.value }))}
-                    placeholder="Nombre interno" 
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
-                  <input 
-                    type="text" 
-                    value={nuevaCompra.proveedor}
-                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, proveedor: e.target.value }))}
-                    placeholder="Nombre del proveedor" 
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
-                  />
-                </div>
-              </div>
-
-              {/* Fila 2 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                  <select 
-                    value={nuevaCompra.estado}
-                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, estado: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="Orden ingresada a almacén">Orden ingresada a almacén</option>
-                    <option value="En proceso">En proceso</option>
-                    <option value="Emitida">Emitida</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
-                  <input 
-                    type="date" 
-                    value={nuevaCompra.fecha_entrega}
-                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_entrega: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha pago al proveedor</label>
-                  <input 
-                    type="date" 
-                    value={nuevaCompra.fecha_pago}
-                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_pago: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
-                  />
-                </div>
-              </div>
-
-              {/* Monto total */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monto total (S/)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  min="0"
-                  value={nuevaCompra.monto_total}
-                  onChange={(e) => setNuevaCompra(prev => ({ ...prev, monto_total: parseFloat(e.target.value) || 0 }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
-                />
-              </div>
-
-              {/* Alerta informativa */}
-              <div className="flex items-start space-x-3 bg-blue-50 text-blue-700 border border-blue-200 px-4 py-3 rounded">
-                <span className="mt-0.5">ℹ️</span>
-                <p className="text-sm">Solo al seleccionar el estado “Orden ingresada a almacén” las nuevas compras serán sumadas al stock.</p>
-              </div>
-
-              {/* Nota interna */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nota interna</label>
-                <textarea 
-                  value={nuevaCompra.nota_interna}
-                  onChange={(e) => setNuevaCompra(prev => ({ ...prev, nota_interna: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" 
-                  rows="3" 
-                  placeholder="Escribe una nota para uso interno" 
-                />
-              </div>
-
-              {/* Agregar producto */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Agregar producto</label>
-                <div className="relative">
-                  <input type="text" placeholder="Buscar producto" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500" />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+            <div className="p-8 space-y-6 bg-gray-50">
+              
+              {/* Sección: Información General */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 text-cyan-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Información General
+                </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre interno <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      value={nuevaCompra.nombre_interno}
+                      onChange={(e) => setNuevaCompra(prev => ({ ...prev, nombre_interno: e.target.value }))}
+                      placeholder="Ej: Compra de Insumos Enero 2024" 
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Proveedor</label>
+                    <input 
+                      type="text" 
+                      value={nuevaCompra.proveedor}
+                      onChange={(e) => setNuevaCompra(prev => ({ ...prev, proveedor: e.target.value }))}
+                      placeholder="Nombre del proveedor" 
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Item editor */}
-              <div className="space-y-4">
-                <div className="text-sm text-gray-700">
-                  <span className="font-medium">Nombre:</span> <span className="ml-1">jeringa</span>
-                  <span className="mx-2">/</span>
-                  <span className="font-medium">presentación:</span> <span className="ml-1">Unidad</span>
+              {/* Sección: Fechas y Estado */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 text-cyan-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Fechas y Estado
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select 
+                      value={nuevaCompra.estado}
+                      onChange={(e) => setNuevaCompra(prev => ({ ...prev, estado: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow"
+                    >
+                      <option value="Orden ingresada a almacén">Orden ingresada a almacén</option>
+                      <option value="En proceso">En proceso</option>
+                      <option value="Emitida">Emitida</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de entrega</label>
+                    <input 
+                      type="date" 
+                      value={nuevaCompra.fecha_entrega}
+                      onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_entrega: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de pago</label>
+                    <input 
+                      type="date" 
+                      value={nuevaCompra.fecha_pago}
+                      onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_pago: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+                {/* Alerta informativa */}
+                <div className="mt-4 flex items-start space-x-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 px-4 py-3 rounded-lg">
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Importante:</span> Solo al seleccionar el estado "Orden ingresada a almacén" las nuevas compras serán sumadas al stock.
+                  </p>
+                </div>
+              </div>
+
+              {/* Sección: Monto y Notas */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 text-cyan-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Monto y Observaciones
+                </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">N° Lote*</label>
-                    <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad*</label>
-                    <input type="number" min="1" defaultValue="1" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Precio Compra Unit.*</label>
-                    <div className="flex items-center space-x-2">
-                      <select className="border border-gray-300 rounded-md px-2 py-2 text-sm">
-                        <option>S/</option>
-                        <option>US$</option>
-                      </select>
-                      <input type="number" step="0.01" className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Monto total (S/)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">S/</span>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        value={nuevaCompra.monto_total}
+                        onChange={(e) => setNuevaCompra(prev => ({ ...prev, monto_total: parseFloat(e.target.value) || 0 }))}
+                        className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                        placeholder="0.00"
+                      />
                     </div>
                   </div>
-                  <div className="md:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Vencimiento</label>
-                    <input type="date" className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500" />
-                  </div>
-                  <div className="md:col-span-1 flex items-end space-x-2">
-                    <button className="px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 text-sm">Agregar</button>
-                    <button className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Descartar</button>
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nota interna</label>
+                    <textarea 
+                      value={nuevaCompra.nota_interna}
+                      onChange={(e) => setNuevaCompra(prev => ({ ...prev, nota_interna: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                      rows="3" 
+                      placeholder="Escribe una nota para uso interno (opcional)" 
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Items agregados */}
-              <div className="bg-white rounded border">
-                <div className="bg-slate-700 text-white">
-                  <div className="grid grid-cols-6 md:grid-cols-7 lg:grid-cols-7 gap-4 px-6 py-3 text-sm font-medium">
-                    <div>Producto</div>
-                    <div>Cantidad</div>
-                    <div>Presentación</div>
-                    <div>Precio Unit.</div>
-                    <div>Fecha vencimiento</div>
-                    <div className="hidden md:block">Subtotal</div>
-                    <div className="text-right">Acción</div>
+              {/* Sección: Detalles de Items */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 text-cyan-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  Productos de la Orden
+                </h4>
+                
+                {/* Buscador de productos */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Buscar producto</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={searchProducto}
+                      onChange={(e) => {
+                        setSearchProducto(e.target.value);
+                        handleSearchProducto(e.target.value);
+                      }}
+                      onFocus={() => {
+                        if (searchProducto.length >= 2) {
+                          handleSearchProducto(searchProducto);
+                        }
+                      }}
+                      placeholder="Escribe para buscar producto..." 
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow" 
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Lista de productos encontrados */}
+                    {showProductosList && productosDisponibles.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {productosDisponibles.map(producto => (
+                          <button
+                            key={producto.id}
+                            onClick={() => handleSelectProducto(producto)}
+                            className="w-full text-left px-4 py-3 hover:bg-cyan-50 border-b last:border-b-0 transition-colors"
+                          >
+                            <div className="font-medium text-gray-900">{producto.nombre}</div>
+                            <div className="text-sm text-gray-500">
+                              Stock: {producto.stock} | Costo: S/ {producto.costo_unitario?.toFixed(2) || '0.00'}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="px-6 py-3 text-sm text-gray-600">Sin items agregados</div>
-                <div className="flex items-center justify-end px-6 py-4 border-t text-sm">
-                  <div className="space-x-6">
-                    <span className="font-medium">Total:</span>
-                    <span className="font-semibold">S/ 0.00</span>
+
+                {/* Formulario para agregar item */}
+                {currentItem.id_producto && (
+                  <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg p-4 mb-4">
+                    <div className="text-sm font-medium text-gray-900 mb-3">
+                      Producto seleccionado: <span className="text-cyan-700">{currentItem.nombre_producto}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Cantidad <span className="text-red-500">*</span></label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          step="0.01"
+                          value={currentItem.cantidad}
+                          onChange={(e) => setCurrentItem(prev => ({ ...prev, cantidad: parseFloat(e.target.value) || 0 }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Lote</label>
+                        <input 
+                          type="text" 
+                          value={currentItem.lote}
+                          onChange={(e) => setCurrentItem(prev => ({ ...prev, lote: e.target.value }))}
+                          placeholder="Nº Lote"
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Precio Unit. <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">S/</span>
+                          <input 
+                            type="number" 
+                            step="0.01"
+                            min="0"
+                            value={currentItem.precio_unitario}
+                            onChange={(e) => setCurrentItem(prev => ({ ...prev, precio_unitario: parseFloat(e.target.value) || 0 }))}
+                            className="w-full border border-gray-300 rounded-md pl-8 pr-3 py-2 focus:ring-2 focus:ring-cyan-500 text-sm" 
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">F. Vencimiento</label>
+                        <input 
+                          type="date" 
+                          value={currentItem.fecha_vencimiento}
+                          onChange={(e) => setCurrentItem(prev => ({ ...prev, fecha_vencimiento: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 text-sm" 
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button 
+                          onClick={handleAgregarItem}
+                          className="w-full px-4 py-2 rounded-md bg-cyan-600 text-white hover:bg-cyan-700 text-sm font-medium transition-colors"
+                        >
+                          + Agregar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-cyan-700">
+                      Subtotal: S/ {(currentItem.cantidad * currentItem.precio_unitario).toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tabla de items agregados */}
+                <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                    <div className="grid grid-cols-7 gap-4 px-6 py-3 text-sm font-medium">
+                      <div>Producto</div>
+                      <div>Cantidad</div>
+                      <div>Lote</div>
+                      <div>Precio Unit.</div>
+                      <div>F. Vencimiento</div>
+                      <div>Subtotal</div>
+                      <div className="text-right">Acción</div>
+                    </div>
+                  </div>
+                  
+                  {itemsOrden.length === 0 ? (
+                    <div className="px-6 py-8 text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-3">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-500">No hay productos agregados a esta orden</p>
+                      <p className="text-xs text-gray-400 mt-1">Busca y selecciona productos para agregarlos</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200">
+                      {itemsOrden.map((item) => (
+                        <div key={item.id_temp} className="grid grid-cols-7 gap-4 px-6 py-3 items-center hover:bg-gray-100 transition-colors">
+                          <div className="text-sm text-gray-900 font-medium">{item.nombre_producto}</div>
+                          <div className="text-sm text-gray-700">{item.cantidad}</div>
+                          <div className="text-sm text-gray-700">{item.lote || '-'}</div>
+                          <div className="text-sm text-gray-700">S/ {item.precio_unitario.toFixed(2)}</div>
+                          <div className="text-sm text-gray-700">
+                            {item.fecha_vencimiento ? new Date(item.fecha_vencimiento).toLocaleDateString('es-PE') : '-'}
+                          </div>
+                          <div className="text-sm text-gray-900 font-semibold">S/ {item.subtotal.toFixed(2)}</div>
+                          <div className="text-right">
+                            <button
+                              onClick={() => handleEliminarItem(item.id_temp)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between px-6 py-4 border-t bg-white">
+                    <span className="text-sm text-gray-600">Total de items: <span className="font-semibold">{itemsOrden.length}</span></span>
+                    <div className="text-right">
+                      <span className="text-sm text-gray-600 mr-3">Monto total:</span>
+                      <span className="text-2xl font-bold text-cyan-700">S/ {nuevaCompra.monto_total.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 z-10 bg-white px-6 py-4 border-t flex justify-end space-x-3">
-              <button onClick={() => setIsNuevaCompraOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
-              <button 
-                onClick={handleSaveCompra}
-                disabled={!nuevaCompra.nombre_interno.trim()}
-                className="px-4 py-2 rounded-md bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Confirmar
-              </button>
+            <div className="sticky bottom-0 z-10 bg-white px-8 py-5 border-t shadow-lg">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Campos requeridos:</span> <span className="text-red-500">*</span>
+                </div>
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => setIsNuevaCompraOpen(false)} 
+                    className="px-6 py-2.5 rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleSaveCompra}
+                    disabled={!nuevaCompra.nombre_interno.trim()}
+                    className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-700 text-white hover:from-cyan-700 hover:to-cyan-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed font-medium shadow-lg transition-all transform hover:scale-105 disabled:transform-none"
+                  >
+                    <span className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Guardar Orden
+                    </span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

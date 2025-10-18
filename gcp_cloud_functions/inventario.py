@@ -171,13 +171,36 @@ def crear_producto(request):
         conn = get_connection()
         cur = conn.cursor()
 
+        # Insertar el producto con stock = 0 (el trigger lo actualizará)
         cur.execute("""
             INSERT INTO productos (nombre_producto, descripcion, stock, stock_minimo, proveedor, costo_unitario, id_tipo, id_categoria)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, 0, %s, %s, %s, %s, %s)
             RETURNING id_producto, nombre_producto
-        """, (nombre, descripcion, stock, stock_minimo, proveedor, costo_unitario, id_tipo, id_categoria))
+        """, (nombre, descripcion, stock_minimo, proveedor, costo_unitario, id_tipo, id_categoria))
 
         result = cur.fetchone()
+        id_producto_nuevo = result['id_producto']
+        nombre_producto = result['nombre_producto']
+
+        # Si el stock inicial es mayor a 0, registrar movimiento de entrada
+        # El trigger actualizar_stock_producto() se encargará de sumar el stock automáticamente
+        if stock > 0:
+            id_usuario = payload.get('user_id', 1)  # Obtener ID del usuario del token
+            
+            cur.execute("""
+                INSERT INTO movimientos_inventario 
+                (id_producto, tipo_movimiento, cantidad, motivo, id_usuario, costo_unitario, proveedor)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                id_producto_nuevo,
+                'entrada',
+                stock,
+                f'Stock inicial del producto "{nombre_producto}"',
+                id_usuario,
+                costo_unitario if costo_unitario > 0 else None,
+                proveedor if proveedor else None
+            ))
+
         conn.commit()
         cur.close()
         conn.close()
@@ -185,9 +208,11 @@ def crear_producto(request):
         return json_response({
             "success": True,
             "producto": {
-                "id": result['id_producto'],
-                "nombre": result['nombre_producto']
-            }
+                "id": id_producto_nuevo,
+                "nombre": nombre_producto
+            },
+            "movimiento_registrado": stock > 0,
+            "stock_final": stock
         })
 
     except Exception as e:
@@ -289,6 +314,7 @@ def crear_compra(request):
         estado = data.get('estado', 'Orden ingresada a almacén')
         monto_total = float(data.get('monto_total', 0))
         nota_interna = data.get('nota_interna', '').strip()
+        items = data.get('items', [])  # Lista de items de la orden
 
         # Fechas
         fecha_creacion = datetime.datetime.now()
@@ -310,6 +336,7 @@ def crear_compra(request):
         conn = get_connection()
         cur = conn.cursor()
 
+        # Insertar la orden de compra
         cur.execute("""
             INSERT INTO ordenes_compra (nombre_interno, proveedor, estado, monto_total, 
                                       fecha_creacion, fecha_entrega, fecha_pago, nota_interna)
@@ -318,6 +345,56 @@ def crear_compra(request):
         """, (nombre_interno, proveedor, estado, monto_total, fecha_creacion, fecha_entrega, fecha_pago, nota_interna))
 
         result = cur.fetchone()
+        id_orden = result['id_orden']
+        nombre_orden = result['nombre_interno']
+
+        # Insertar los items de la orden y crear movimientos de inventario
+        items_creados = 0
+        movimientos_creados = 0
+        id_usuario = payload.get('user_id', 1)
+
+        for item in items:
+            id_producto = item.get('id_producto')
+            cantidad = float(item.get('cantidad', 0))
+            lote = item.get('lote', '').strip() or None
+            precio_unitario = float(item.get('precio_unitario', 0))
+            subtotal = float(item.get('subtotal', 0))
+            fecha_venc = item.get('fecha_vencimiento')
+
+            if not id_producto or cantidad <= 0 or precio_unitario <= 0:
+                continue  # Saltar items inválidos
+
+            # Insertar item de la orden
+            cur.execute("""
+                INSERT INTO items_orden_compra 
+                (id_orden, id_producto, cantidad, lote, precio_unitario, subtotal, fecha_vencimiento)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (id_orden, id_producto, cantidad, lote, precio_unitario, subtotal, fecha_venc))
+            items_creados += 1
+
+            # Si el estado es "Orden ingresada a almacén", crear movimiento de entrada
+            if estado == 'Orden ingresada a almacén':
+                # Obtener nombre del producto
+                cur.execute("SELECT nombre_producto FROM productos WHERE id_producto = %s", (id_producto,))
+                producto_row = cur.fetchone()
+                nombre_producto = producto_row['nombre_producto'] if producto_row else f'Producto {id_producto}'
+
+                cur.execute("""
+                    INSERT INTO movimientos_inventario 
+                    (id_producto, tipo_movimiento, cantidad, motivo, id_usuario, costo_unitario, proveedor, numero_factura)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    id_producto,
+                    'entrada',
+                    cantidad,
+                    f'Ingreso por orden de compra "{nombre_orden}" - Lote: {lote or "N/A"}',
+                    id_usuario,
+                    precio_unitario,
+                    proveedor,
+                    f'OC-{id_orden}'
+                ))
+                movimientos_creados += 1
+
         conn.commit()
         cur.close()
         conn.close()
@@ -325,9 +402,11 @@ def crear_compra(request):
         return json_response({
             "success": True,
             "compra": {
-                "id": result['id_orden'],
-                "nombre_interno": result['nombre_interno']
-            }
+                "id": id_orden,
+                "nombre_interno": nombre_orden
+            },
+            "items_creados": items_creados,
+            "movimientos_creados": movimientos_creados
         })
 
     except Exception as e:
