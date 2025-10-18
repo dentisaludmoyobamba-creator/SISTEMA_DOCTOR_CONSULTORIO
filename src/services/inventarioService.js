@@ -132,6 +132,27 @@ class InventarioService {
     }
   }
 
+  async getOrdenDetalles(ordenId) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=orden_detalles&id=${ordenId}`, {
+        method: 'GET',
+        headers: headers
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, orden: data.orden };
+      } else {
+        return { success: false, error: data.error || 'Error al obtener detalles de orden' };
+      }
+    } catch (error) {
+      console.error('Error al obtener detalles de orden:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
   // ===== CONSUMO =====
   async getConsumos(filters = {}) {
     try {

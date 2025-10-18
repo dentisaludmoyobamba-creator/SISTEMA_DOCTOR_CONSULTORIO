@@ -298,6 +298,86 @@ def obtener_compras(request):
             pass
         return json_response({"error": f"Error al obtener compras: {str(e)}"}, 500)
 
+def obtener_detalles_orden(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        orden_id = request.args.get('id')
+        if not orden_id:
+            return json_response({"error": "ID de orden requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener datos de la orden
+        cur.execute("""
+            SELECT id_orden, nombre_interno, proveedor, estado, monto_total,
+                   fecha_creacion, fecha_entrega, fecha_pago, nota_interna
+            FROM ordenes_compra
+            WHERE id_orden = %s
+        """, (orden_id,))
+        
+        orden_row = cur.fetchone()
+        if not orden_row:
+            return json_response({"error": "Orden no encontrada"}, 404)
+
+        # Obtener items de la orden
+        cur.execute("""
+            SELECT i.id_item, i.cantidad, i.lote, i.precio_unitario, i.subtotal,
+                   i.fecha_vencimiento, i.fecha_creacion,
+                   p.nombre_producto, p.id_producto
+            FROM items_orden_compra i
+            JOIN productos p ON i.id_producto = p.id_producto
+            WHERE i.id_orden = %s
+            ORDER BY i.fecha_creacion ASC
+        """, (orden_id,))
+        
+        items_rows = cur.fetchall()
+        
+        items = []
+        for item in items_rows:
+            items.append({
+                "id": item['id_item'],
+                "id_producto": item['id_producto'],
+                "nombre_producto": item['nombre_producto'],
+                "cantidad": float(item['cantidad']),
+                "lote": item['lote'],
+                "precio_unitario": float(item['precio_unitario']),
+                "subtotal": float(item['subtotal']),
+                "fecha_vencimiento": item['fecha_vencimiento'].isoformat() if item['fecha_vencimiento'] else None,
+                "fecha_creacion": item['fecha_creacion'].isoformat() if item['fecha_creacion'] else None
+            })
+
+        orden = {
+            "id": orden_row['id_orden'],
+            "nombre_interno": orden_row['nombre_interno'],
+            "proveedor": orden_row['proveedor'],
+            "estado": orden_row['estado'],
+            "monto_total": float(orden_row['monto_total']) if orden_row['monto_total'] else 0,
+            "fecha_creacion": orden_row['fecha_creacion'].isoformat() if orden_row['fecha_creacion'] else None,
+            "fecha_entrega": orden_row['fecha_entrega'].isoformat() if orden_row['fecha_entrega'] else None,
+            "fecha_pago": orden_row['fecha_pago'].isoformat() if orden_row['fecha_pago'] else None,
+            "nota_interna": orden_row['nota_interna'],
+            "items": items
+        }
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "orden": orden
+        })
+
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener detalles de orden: {str(e)}"}, 500)
+
 def crear_compra(request):
     payload = require_auth(request)
     if not payload:
@@ -850,6 +930,8 @@ def hello_http(request):
                 return obtener_productos(request)
             elif section == 'compras' or action == 'compras':
                 return obtener_compras(request)
+            elif section == 'orden_detalles' or action == 'orden_detalles':
+                return obtener_detalles_orden(request)
             elif section == 'consumo' or action == 'consumo':
                 return obtener_consumos(request)
             elif section == 'tipos' or action == 'tipos':
@@ -857,7 +939,7 @@ def hello_http(request):
             elif section == 'categorias' or action == 'categorias':
                 return obtener_categorias(request)
             else:
-                return json_response({"error": "Sección no válida. Use section=productos, compras, consumo, tipos o categorias"}, 400)
+                return json_response({"error": "Sección no válida. Use section=productos, compras, orden_detalles, consumo, tipos o categorias"}, 400)
 
         elif request.method == 'POST':
             if section == 'productos' or action == 'productos':

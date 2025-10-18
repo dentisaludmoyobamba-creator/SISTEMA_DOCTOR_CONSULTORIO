@@ -2,6 +2,7 @@
 import AddOptionModal from '../components/AddOptionModal';
 import DeleteCategoriaModal from '../components/DeleteCategoriaModal';
 import DeleteTipoModal from '../components/DeleteTipoModal';
+import DetallesOrdenModal from '../components/DetallesOrdenModal';
 import inventarioService from '../services/inventarioService';
 import authService from '../services/authService';
 
@@ -125,6 +126,10 @@ const Inventario = () => {
   // Estado para modal de Nueva Compra (Compras -> Órdenes de compra)
   const [isNuevaCompraOpen, setIsNuevaCompraOpen] = useState(false);
   
+  // Estado para modal de Detalles de Orden
+  const [isDetallesOrdenOpen, setIsDetallesOrdenOpen] = useState(false);
+  const [selectedOrdenId, setSelectedOrdenId] = useState(null);
+  
   // Estado para modal de Nuevo Consumo (Consumo)
   const [isNuevoConsumoOpen, setIsNuevoConsumoOpen] = useState(false);
   const [isConsumoOptionsOpen, setIsConsumoOptionsOpen] = useState(false);
@@ -145,6 +150,12 @@ const Inventario = () => {
       ...prev,
       [filterType]: value
     }));
+  };
+
+  // Abrir modal de detalles de orden
+  const handleOpenDetallesOrden = (ordenId) => {
+    setSelectedOrdenId(ordenId);
+    setIsDetallesOrdenOpen(true);
   };
 
   // Cargar tipos y categorías
@@ -1060,10 +1071,14 @@ const Inventario = () => {
                 ) : compras.length > 0 ? (
                   <div className="divide-y divide-gray-200">
                     {compras.map((compra, index) => (
-                      <div key={compra.id} className={`p-4 hover:bg-gray-50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <div 
+                        key={compra.id} 
+                        onClick={() => handleOpenDetallesOrden(compra.id)}
+                        className={`p-4 hover:bg-cyan-50 hover:shadow-md cursor-pointer transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                      >
                         <div className="grid grid-cols-9 gap-4 items-center">
-                          <div className="text-sm font-medium text-gray-900">{compra.id}</div>
-                          <div className="text-sm text-gray-700">{compra.nombre_interno}</div>
+                          <div className="text-sm font-medium text-cyan-700">#{compra.id}</div>
+                          <div className="text-sm font-semibold text-gray-900">{compra.nombre_interno}</div>
                           <div className="text-sm text-gray-700">
                             {compra.fecha_creacion ? new Date(compra.fecha_creacion).toLocaleDateString('es-PE') : '-'}
                           </div>
@@ -1084,9 +1099,11 @@ const Inventario = () => {
                               {compra.estado}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-700">S/ {compra.monto_total.toFixed(2)}</div>
+                          <div className="text-sm font-semibold text-gray-900">S/ {compra.monto_total.toFixed(2)}</div>
                           <div className="text-sm text-gray-700">{compra.proveedor || '-'}</div>
-                          <div className="text-sm text-gray-700">{compra.nota_interna || '-'}</div>
+                          <div className="text-sm text-gray-500 truncate" title={compra.nota_interna}>
+                            {compra.nota_interna || '-'}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1535,7 +1552,12 @@ const Inventario = () => {
         </div>
       )}
 
-      
+      {/* Modal de Detalles de Orden */}
+      <DetallesOrdenModal
+        isOpen={isDetallesOrdenOpen}
+        onClose={() => setIsDetallesOrdenOpen(false)}
+        ordenId={selectedOrdenId}
+      />
     </>
   );
 
