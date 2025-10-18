@@ -658,6 +658,99 @@ def eliminar_categoria(request):
             pass
         return json_response({"error": f"Error al eliminar categoría: {str(e)}"}, 500)
 
+def crear_tipo(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            return json_response({"error": "El nombre del tipo es requerido"}, 400)
+
+        descripcion = data.get('descripcion', '').strip()
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Verificar si ya existe
+        cur.execute("SELECT id_tipo FROM tipos_producto WHERE nombre = %s", (nombre,))
+        if cur.fetchone():
+            return json_response({"error": "Ya existe un tipo con ese nombre"}, 400)
+
+        cur.execute("""
+            INSERT INTO tipos_producto (nombre, descripcion)
+            VALUES (%s, %s)
+            RETURNING id_tipo, nombre
+        """, (nombre, descripcion))
+
+        result = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "tipo": {
+                "id": result['id_tipo'],
+                "nombre": result['nombre']
+            }
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al crear tipo: {str(e)}"}, 500)
+
+def eliminar_tipo(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        tipo_id = request.args.get('id')
+        if not tipo_id:
+            return json_response({"error": "ID de tipo requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Verificar si hay productos con este tipo
+        cur.execute("SELECT COUNT(*) as total FROM productos WHERE id_tipo = %s", (tipo_id,))
+        count = cur.fetchone()['total']
+        
+        if count > 0:
+            return json_response({"error": f"No se puede eliminar. Hay {count} producto(s) con este tipo"}, 400)
+
+        # Marcar como inactivo en lugar de eliminar
+        cur.execute("""
+            UPDATE tipos_producto 
+            SET activo = false
+            WHERE id_tipo = %s
+        """, (tipo_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Tipo eliminado exitosamente"
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al eliminar tipo: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -696,14 +789,18 @@ def hello_http(request):
                 return crear_consumo(request)
             elif section == 'categorias' or action == 'categorias':
                 return crear_categoria(request)
+            elif section == 'tipos' or action == 'tipos':
+                return crear_tipo(request)
             else:
-                return json_response({"error": "Sección no válida para POST. Use section=productos, compras, consumo o categorias"}, 400)
+                return json_response({"error": "Sección no válida para POST. Use section=productos, compras, consumo, categorias o tipos"}, 400)
 
         elif request.method == 'DELETE':
             if section == 'categorias' or action == 'categorias':
                 return eliminar_categoria(request)
+            elif section == 'tipos' or action == 'tipos':
+                return eliminar_tipo(request)
             else:
-                return json_response({"error": "Sección no válida para DELETE. Use section=categorias"}, 400)
+                return json_response({"error": "Sección no válida para DELETE. Use section=categorias o tipos"}, 400)
 
         else:
             return json_response({"error": "Método no soportado"}, 405)

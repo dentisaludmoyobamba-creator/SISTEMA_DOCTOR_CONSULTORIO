@@ -272,6 +272,50 @@ class InventarioService {
       return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
     }
   }
+
+  // ===== GESTIÓN DE TIPOS =====
+  async createTipo(tipoData) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=tipos`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(tipoData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, tipo: data.tipo };
+      } else {
+        return { success: false, error: data.error || 'Error al crear tipo' };
+      }
+    } catch (error) {
+      console.error('Error al crear tipo:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
+  async deleteTipo(tipoId) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=tipos&id=${tipoId}`, {
+        method: 'DELETE',
+        headers: headers
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || 'Error al eliminar tipo' };
+      }
+    } catch (error) {
+      console.error('Error al eliminar tipo:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
 }
 
 const inventarioService = new InventarioService();

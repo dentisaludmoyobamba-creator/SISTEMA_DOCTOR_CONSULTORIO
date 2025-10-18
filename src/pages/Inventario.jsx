@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import AddOptionModal from '../components/AddOptionModal';
 import DeleteCategoriaModal from '../components/DeleteCategoriaModal';
+import DeleteTipoModal from '../components/DeleteTipoModal';
 import inventarioService from '../services/inventarioService';
 import authService from '../services/authService';
 
@@ -19,6 +20,8 @@ const Inventario = () => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isAddCategoriaOpen, setIsAddCategoriaOpen] = useState(false);
   const [isDeleteCategoriaOpen, setIsDeleteCategoriaOpen] = useState(false);
+  const [isAddTipoOpen, setIsAddTipoOpen] = useState(false);
+  const [isDeleteTipoOpen, setIsDeleteTipoOpen] = useState(false);
 
   // Estado para tipos y categorías
   const [tipos, setTipos] = useState([]);
@@ -238,6 +241,36 @@ const Inventario = () => {
       }
     } catch (err) {
       return { success: false, error: 'Error de conexión al eliminar categoría.' };
+    }
+  };
+
+  // Manejar adición de tipo
+  const handleAddTipo = async (nombre) => {
+    try {
+      const result = await inventarioService.createTipo({ nombre, descripcion: '' });
+      if (result.success) {
+        loadTiposYCategorias();
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      return { success: false, error: 'Error de conexión al crear tipo.' };
+    }
+  };
+
+  // Manejar eliminación de tipo
+  const handleDeleteTipo = async (tipoId) => {
+    try {
+      const result = await inventarioService.deleteTipo(tipoId);
+      if (result.success) {
+        loadTiposYCategorias();
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      return { success: false, error: 'Error de conexión al eliminar tipo.' };
     }
   };
 
@@ -506,6 +539,18 @@ const Inventario = () => {
             {isOptionsOpen && (
               <div className="absolute right-0 top-10 w-56 bg-white rounded-lg shadow-lg border z-20">
                 <button
+                  onClick={() => { setIsAddTipoOpen(true); setIsOptionsOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 border-b"
+                >
+                  Agregar tipo
+                </button>
+                <button
+                  onClick={() => { setIsDeleteTipoOpen(true); setIsOptionsOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 border-b"
+                >
+                  Eliminar tipo
+                </button>
+                <button
                   onClick={() => { setIsAddCategoriaOpen(true); setIsOptionsOpen(false); }}
                   className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
                 >
@@ -519,7 +564,7 @@ const Inventario = () => {
                 </button>
                 <button
                   onClick={() => { setIsOptionsOpen(false); /* implementar descarga */ }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 border-t"
                 >
                   Descargar productos
                 </button>
@@ -779,6 +824,26 @@ const Inventario = () => {
           </div>
         </div>
       )}
+
+      {/* Modales de tipos */}
+      <AddOptionModal
+        title="Agregar tipo de producto"
+        placeholder="Nombre del tipo"
+        isOpen={isAddTipoOpen}
+        onClose={() => setIsAddTipoOpen(false)}
+        onAdd={async (nombre) => {
+          const result = await handleAddTipo(nombre);
+          if (!result.success) {
+            alert(`Error: ${result.error}`);
+          }
+        }}
+      />
+      <DeleteTipoModal
+        isOpen={isDeleteTipoOpen}
+        onClose={() => setIsDeleteTipoOpen(false)}
+        tipos={tipos}
+        onDelete={handleDeleteTipo}
+      />
 
       {/* Modales de categoría */}
       <AddOptionModal
