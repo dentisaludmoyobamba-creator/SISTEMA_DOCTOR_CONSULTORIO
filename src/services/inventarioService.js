@@ -185,6 +185,93 @@ class InventarioService {
       return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
     }
   }
+
+  // ===== TIPOS DE PRODUCTO =====
+  async getTipos() {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=tipos`, {
+        method: 'GET',
+        headers: headers
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, tipos: data.tipos };
+      } else {
+        return { success: false, error: data.error || 'Error al obtener tipos' };
+      }
+    } catch (error) {
+      console.error('Error al obtener tipos:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
+  // ===== CATEGORÍAS DE PRODUCTO =====
+  async getCategorias() {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=categorias`, {
+        method: 'GET',
+        headers: headers
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, categorias: data.categorias };
+      } else {
+        return { success: false, error: data.error || 'Error al obtener categorías' };
+      }
+    } catch (error) {
+      console.error('Error al obtener categorías:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
+  async createCategoria(categoriaData) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=categorias`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(categoriaData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, categoria: data.categoria };
+      } else {
+        return { success: false, error: data.error || 'Error al crear categoría' };
+      }
+    } catch (error) {
+      console.error('Error al crear categoría:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
+  async deleteCategoria(categoriaId) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=categorias&id=${categoriaId}`, {
+        method: 'DELETE',
+        headers: headers
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || 'Error al eliminar categoría' };
+      }
+    } catch (error) {
+      console.error('Error al eliminar categoría:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
 }
 
 const inventarioService = new InventarioService();

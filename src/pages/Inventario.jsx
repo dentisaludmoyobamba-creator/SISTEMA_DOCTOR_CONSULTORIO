@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import AddOptionModal from '../components/AddOptionModal';
+import DeleteCategoriaModal from '../components/DeleteCategoriaModal';
 import inventarioService from '../services/inventarioService';
 import authService from '../services/authService';
 
@@ -9,7 +10,6 @@ const Inventario = () => {
   const [filters, setFilters] = useState({
     tipo: 'Ver todos',
     categoria: 'Ver todos',
-    almacen: 'Ver todos',
     alertaStock: false
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,6 +19,10 @@ const Inventario = () => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isAddCategoriaOpen, setIsAddCategoriaOpen] = useState(false);
   const [isDeleteCategoriaOpen, setIsDeleteCategoriaOpen] = useState(false);
+
+  // Estado para tipos y categorías
+  const [tipos, setTipos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
 
   // Estado para datos de la API
   const [productos, setProductos] = useState([]);
@@ -38,7 +42,9 @@ const Inventario = () => {
     stock: 0,
     stock_minimo: 0,
     proveedor: '',
-    costo_unitario: 0
+    costo_unitario: 0,
+    id_tipo: '',
+    id_categoria: ''
   });
 
   // Estado para datos de Compras
@@ -124,6 +130,28 @@ const Inventario = () => {
     }));
   };
 
+  // Cargar tipos y categorías
+  const loadTiposYCategorias = useCallback(async () => {
+    try {
+      inventarioService.setAuthService(authService);
+      
+      const [resultTipos, resultCategorias] = await Promise.all([
+        inventarioService.getTipos(),
+        inventarioService.getCategorias()
+      ]);
+
+      if (resultTipos.success) {
+        setTipos(resultTipos.tipos);
+      }
+      
+      if (resultCategorias.success) {
+        setCategorias(resultCategorias.categorias);
+      }
+    } catch (err) {
+      console.error('Error al cargar tipos y categorías:', err);
+    }
+  }, []);
+
   // Cargar productos desde la API
   const loadProductos = useCallback(async () => {
     setLoading(true);
@@ -136,7 +164,6 @@ const Inventario = () => {
         search: searchTerm,
         tipo: filters.tipo !== 'Ver todos' ? filters.tipo : '',
         categoria: filters.categoria !== 'Ver todos' ? filters.categoria : '',
-        almacen: filters.almacen !== 'Ver todos' ? filters.almacen : '',
         alerta_stock: filters.alertaStock
       });
 
@@ -171,7 +198,9 @@ const Inventario = () => {
           stock: 0,
           stock_minimo: 0,
           proveedor: '',
-          costo_unitario: 0
+          costo_unitario: 0,
+          id_tipo: '',
+          id_categoria: ''
         });
         loadProductos();
       } else {
@@ -179,6 +208,36 @@ const Inventario = () => {
       }
     } catch (err) {
       alert('Error de conexión al crear producto.');
+    }
+  };
+
+  // Manejar adición de categoría
+  const handleAddCategoria = async (nombre) => {
+    try {
+      const result = await inventarioService.createCategoria({ nombre, descripcion: '' });
+      if (result.success) {
+        loadTiposYCategorias();
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      return { success: false, error: 'Error de conexión al crear categoría.' };
+    }
+  };
+
+  // Manejar eliminación de categoría
+  const handleDeleteCategoria = async (categoriaId) => {
+    try {
+      const result = await inventarioService.deleteCategoria(categoriaId);
+      if (result.success) {
+        loadTiposYCategorias();
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      return { success: false, error: 'Error de conexión al eliminar categoría.' };
     }
   };
 
@@ -332,6 +391,11 @@ const Inventario = () => {
     setPaginationConsumos(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
   };
 
+  // Cargar tipos y categorías al inicio
+  useEffect(() => {
+    loadTiposYCategorias();
+  }, [loadTiposYCategorias]);
+
   // Efectos para cargar datos
   useEffect(() => {
     if (activeTab === 'productos') {
@@ -371,10 +435,10 @@ const Inventario = () => {
               onChange={(e) => handleFilterChange('tipo', e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             >
-              <option>Ver todos</option>
-              <option>Medicamentos</option>
-              <option>Instrumental</option>
-              <option>Materiales</option>
+              <option value="Ver todos">Ver todos</option>
+              {tipos.map(tipo => (
+                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+              ))}
             </select>
           </div>
 
@@ -385,24 +449,10 @@ const Inventario = () => {
               onChange={(e) => handleFilterChange('categoria', e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             >
-              <option>Ver todos</option>
-              <option>Odontología</option>
-              <option>Cirugía</option>
-              <option>Diagnóstico</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600 mb-1">Almacén</label>
-            <select 
-              value={filters.almacen}
-              onChange={(e) => handleFilterChange('almacen', e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-            >
-              <option>Ver todos</option>
-              <option>Principal</option>
-              <option>Secundario</option>
-              <option>Emergencia</option>
+              <option value="Ver todos">Ver todos</option>
+              {categorias.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+              ))}
             </select>
           </div>
 
@@ -636,6 +686,36 @@ const Inventario = () => {
                 />
               </div>
 
+              {/* Tipo y Categoría */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Tipo</label>
+                  <select 
+                    value={nuevoProducto.id_tipo}
+                    onChange={(e) => setNuevoProducto(prev => ({ ...prev, id_tipo: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    {tipos.map(tipo => (
+                      <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Categoría</label>
+                  <select 
+                    value={nuevoProducto.id_categoria}
+                    onChange={(e) => setNuevoProducto(prev => ({ ...prev, id_categoria: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Seleccionar categoría</option>
+                    {categorias.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Stock inicial y stock mínimo */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -700,19 +780,24 @@ const Inventario = () => {
         </div>
       )}
 
-      {/* Modales de categoría reutilizando AddOptionModal */}
+      {/* Modales de categoría */}
       <AddOptionModal
         title="Agregar categoría"
+        placeholder="Nombre de la categoría"
         isOpen={isAddCategoriaOpen}
         onClose={() => setIsAddCategoriaOpen(false)}
-        onAdd={() => {}}
+        onAdd={async (nombre) => {
+          const result = await handleAddCategoria(nombre);
+          if (!result.success) {
+            alert(`Error: ${result.error}`);
+          }
+        }}
       />
-      <AddOptionModal
-        title="Eliminar categoría"
-        placeholder="Nombre de la categoría"
+      <DeleteCategoriaModal
         isOpen={isDeleteCategoriaOpen}
         onClose={() => setIsDeleteCategoriaOpen(false)}
-        onAdd={() => {}}
+        categorias={categorias}
+        onDelete={handleDeleteCategoria}
       />
     </>
   );

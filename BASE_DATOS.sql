@@ -124,6 +124,25 @@ CREATE TABLE historial_tratamientos (
     FOREIGN KEY (id_tratamiento) REFERENCES tratamientos(id_tratamiento)
 );
 
+[cite_start]-- Tablas de catálogos para Inventario [cite: 12]
+-- Tabla de Tipos de Producto
+CREATE TABLE IF NOT EXISTS tipos_producto (
+    id_tipo SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL,
+    descripcion TEXT,
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Categorías de Producto
+CREATE TABLE IF NOT EXISTS categorias_producto (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL,
+    descripcion TEXT,
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 [cite_start]-- Tabla de Productos e Inventario [cite: 12]
 CREATE TABLE productos (
     id_producto SERIAL PRIMARY KEY,
@@ -132,7 +151,11 @@ CREATE TABLE productos (
     stock INTEGER NOT NULL DEFAULT 0,
     proveedor VARCHAR(100),
     stock_minimo INTEGER NOT NULL DEFAULT 0,
-    costo_unitario NUMERIC(10, 2)
+    costo_unitario NUMERIC(10, 2),
+    id_tipo INTEGER,
+    id_categoria INTEGER,
+    FOREIGN KEY (id_tipo) REFERENCES tipos_producto(id_tipo),
+    FOREIGN KEY (id_categoria) REFERENCES categorias_producto(id_categoria)
 );
 
 [cite_start]-- Tabla de Facturas [cite: 13]
@@ -986,44 +1009,6 @@ CREATE TABLE IF NOT EXISTS anamnesis_odontologia (
 
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_paciente ON anamnesis_odontologia(id_paciente);
 CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_doctor ON anamnesis_odontologia(id_doctor);
-CREATE INDEX IF NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontologia(fecha_creacion);
-  
-  -- Tabla de Anamnesis Odontopediátrica
-  CREATE TABLE IF NOT EXISTS anamnesis_odontopediatria (
-      id_anamnesis_ped SERIAL PRIMARY KEY,
-      id_paciente INTEGER NOT NULL,
-      id_doctor INTEGER,
-      
-      -- Datos generales
-      motivo_consulta TEXT,
-      
-      -- Datos familiares y del entorno (JSON)
-      datos_familia JSONB, -- {madre_nombre:"", padre_nombre:"", numero_hermanos:0, orden:""}
-      
-      -- Enfermedad actual (JSON)
-      enfermedad_actual JSONB, -- {tipo:"", relato:""}
-      
-      -- Antecedentes prenatales (JSON)
-      antecedentes_prenatales JSONB, -- {enfermedades_maternas:"", complicaciones_embarazo:"", bebe_prematuro:"", peso_nacer:"", comentario:""}
-      
-      -- Antecedentes postnatales (JSON)
-      antecedentes_postnatales JSONB, -- {problemas_parto:"", uso_chupon:"", uso_biberon:"", etc.}
-      
-      -- Evaluación parental y examen clínico (JSON)
-      evaluacion_clinica JSONB, -- {tipo_padre:"", habitos_orales:"", tecnica_cepillado:"", examen_clinico:"", observaciones:""}
-      
-      activo BOOLEAN DEFAULT TRUE,
-      fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      
-      FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
-      FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE SET NULL
-  );
-  
-  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_paciente ON anamnesis_odontopediatria(id_paciente);
-  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_doctor ON anamnesis_odontopediatria(id_doctor);
-  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_fecha ON anamnesis_odontopediatria(fecha_creacion);
-
 -- Tabla de Anamnesis Endodóntica
 CREATE TABLE IF NOT EXISTS anamnesis_endodoncia (
     id_anamnesis_endo SERIAL PRIMARY KEY,
@@ -1075,6 +1060,47 @@ CREATE INDEX IF NOT EXISTS idx_anamnesis_endo_paciente ON anamnesis_endodoncia(i
 CREATE INDEX IF NOT EXISTS idx_anamnesis_endo_doctor ON anamnesis_endodoncia(id_doctor);
 CREATE INDEX IF NOT EXISTS idx_anamnesis_endo_fecha ON anamnesis_endodoncia(fecha_creacion);
 
+  
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_paciente ON anamnesis_odontopediatria(id_paciente);
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_doctor ON anamnesis_odontopediatria(id_doctor);
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_fecha ON anamnesis_odontopediatria(fecha_creacion);NOT EXISTS idx_anamnesis_odontologia_fecha ON anamnesis_odontologia(fecha_creacion);
+
+-- Tabla de Anamnesis Odontopediátrica
+  CREATE TABLE IF NOT EXISTS anamnesis_odontopediatria (
+      id_anamnesis_ped SERIAL PRIMARY KEY,
+      id_paciente INTEGER NOT NULL,
+      id_doctor INTEGER,
+      
+      -- Datos generales
+      motivo_consulta TEXT,
+      
+      -- Datos familiares y del entorno (JSON)
+      datos_familia JSONB, -- {madre_nombre:"", padre_nombre:"", numero_hermanos:0, orden:""}
+      
+      -- Enfermedad actual (JSON)
+      enfermedad_actual JSONB, -- {tipo:"", relato:""}
+
+	  antecedentes_prenatales JSONB, -- {enfermedades_maternas:"", complicaciones_embarazo:"", bebe_prematuro:"", peso_nacer:"", comentario:""}
+      
+      -- Antecedentes postnatales (JSON)
+      antecedentes_postnatales JSONB, -- {problemas_parto:"", uso_chupon:"", uso_biberon:"", etc.}
+      
+      -- Evaluación parental y examen clínico (JSON)
+      evaluacion_clinica JSONB, -- {tipo_padre:"", habitos_orales:"", tecnica_cepillado:"", examen_clinico:"", observaciones:""}
+	  
+      activo BOOLEAN DEFAULT TRUE,
+      fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      fecha_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      
+      FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE CASCADE,
+      FOREIGN KEY (id_doctor) REFERENCES doctores(id_doctor) ON DELETE SET NULL
+  );
+  
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_paciente ON anamnesis_odontopediatria(id_paciente);
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_doctor ON anamnesis_odontopediatria(id_doctor);
+  CREATE INDEX IF NOT EXISTS idx_anamnesis_odo_ped_fecha ON anamnesis_odontopediatria(fecha_creacion);
+
+  
 -- =====================================================
 -- FIN DEL SCRIPT CONSOLIDADO
 -- =====================================================

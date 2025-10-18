@@ -61,19 +61,22 @@ def obtener_productos(request):
         cur = conn.cursor()
 
         # Filtros
-        tipo = request.args.get('tipo', '')
-        categoria = request.args.get('categoria', '')
-        almacen = request.args.get('almacen', '')
+        tipo_id = request.args.get('tipo', '')
+        categoria_id = request.args.get('categoria', '')
         alerta_stock = request.args.get('alerta_stock', 'false').lower() == 'true'
         search = request.args.get('search', '')
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 20))
 
-        # Query base
+        # Query base con JOIN a tipos y categorías
         base_query = """
             SELECT p.id_producto, p.nombre_producto, p.descripcion, p.stock, 
-                   p.proveedor, p.costo_unitario, p.stock_minimo
+                   p.proveedor, p.costo_unitario, p.stock_minimo,
+                   p.id_tipo, p.id_categoria,
+                   t.nombre as tipo_nombre, c.nombre as categoria_nombre
             FROM productos p
+            LEFT JOIN tipos_producto t ON p.id_tipo = t.id_tipo
+            LEFT JOIN categorias_producto c ON p.id_categoria = c.id_categoria
             WHERE 1=1
         """
         params = []
@@ -82,6 +85,14 @@ def obtener_productos(request):
         if search:
             base_query += " AND (p.nombre_producto ILIKE %s OR p.descripcion ILIKE %s)"
             params.extend([f'%{search}%', f'%{search}%'])
+
+        if tipo_id and tipo_id != 'Ver todos':
+            base_query += " AND p.id_tipo = %s"
+            params.append(int(tipo_id))
+
+        if categoria_id and categoria_id != 'Ver todos':
+            base_query += " AND p.id_categoria = %s"
+            params.append(int(categoria_id))
 
         if alerta_stock:
             base_query += " AND p.stock <= p.stock_minimo"
@@ -109,6 +120,10 @@ def obtener_productos(request):
                 "stock_minimo": row['stock_minimo'] or 0,
                 "proveedor": row['proveedor'] or '',
                 "costo_unitario": float(row['costo_unitario']) if row['costo_unitario'] else 0,
+                "id_tipo": row['id_tipo'],
+                "tipo": row['tipo_nombre'],
+                "id_categoria": row['id_categoria'],
+                "categoria": row['categoria_nombre'],
                 "alerta_stock": row['stock'] <= (row['stock_minimo'] or 0)
             })
 
@@ -150,15 +165,17 @@ def crear_producto(request):
         stock_minimo = int(data.get('stock_minimo', 0))
         proveedor = data.get('proveedor', '').strip()
         costo_unitario = float(data.get('costo_unitario', 0))
+        id_tipo = data.get('id_tipo')
+        id_categoria = data.get('id_categoria')
 
         conn = get_connection()
         cur = conn.cursor()
 
         cur.execute("""
-            INSERT INTO productos (nombre_producto, descripcion, stock, stock_minimo, proveedor, costo_unitario)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO productos (nombre_producto, descripcion, stock, stock_minimo, proveedor, costo_unitario, id_tipo, id_categoria)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id_producto, nombre_producto
-        """, (nombre, descripcion, stock, stock_minimo, proveedor, costo_unitario))
+        """, (nombre, descripcion, stock, stock_minimo, proveedor, costo_unitario, id_tipo, id_categoria))
 
         result = cur.fetchone()
         conn.commit()
@@ -468,6 +485,179 @@ def crear_consumo(request):
             pass
         return json_response({"error": f"Error al crear consumo: {str(e)}"}, 500)
 
+# ===== TIPOS DE PRODUCTO =====
+def obtener_tipos(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id_tipo, nombre, descripcion
+            FROM tipos_producto
+            WHERE activo = true
+            ORDER BY nombre ASC
+        """)
+        
+        tipos = []
+        for row in cur.fetchall():
+            tipos.append({
+                "id": row['id_tipo'],
+                "nombre": row['nombre'],
+                "descripcion": row['descripcion'] or ''
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "tipos": tipos
+        })
+
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener tipos: {str(e)}"}, 500)
+
+# ===== CATEGORÍAS DE PRODUCTO =====
+def obtener_categorias(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id_categoria, nombre, descripcion
+            FROM categorias_producto
+            WHERE activo = true
+            ORDER BY nombre ASC
+        """)
+        
+        categorias = []
+        for row in cur.fetchall():
+            categorias.append({
+                "id": row['id_categoria'],
+                "nombre": row['nombre'],
+                "descripcion": row['descripcion'] or ''
+            })
+
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "categorias": categorias
+        })
+
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al obtener categorías: {str(e)}"}, 500)
+
+def crear_categoria(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            return json_response({"error": "El nombre de la categoría es requerido"}, 400)
+
+        descripcion = data.get('descripcion', '').strip()
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Verificar si ya existe
+        cur.execute("SELECT id_categoria FROM categorias_producto WHERE nombre = %s", (nombre,))
+        if cur.fetchone():
+            return json_response({"error": "Ya existe una categoría con ese nombre"}, 400)
+
+        cur.execute("""
+            INSERT INTO categorias_producto (nombre, descripcion)
+            VALUES (%s, %s)
+            RETURNING id_categoria, nombre
+        """, (nombre, descripcion))
+
+        result = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "categoria": {
+                "id": result['id_categoria'],
+                "nombre": result['nombre']
+            }
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al crear categoría: {str(e)}"}, 500)
+
+def eliminar_categoria(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        categoria_id = request.args.get('id')
+        if not categoria_id:
+            return json_response({"error": "ID de categoría requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Verificar si hay productos con esta categoría
+        cur.execute("SELECT COUNT(*) as total FROM productos WHERE id_categoria = %s", (categoria_id,))
+        count = cur.fetchone()['total']
+        
+        if count > 0:
+            return json_response({"error": f"No se puede eliminar. Hay {count} producto(s) con esta categoría"}, 400)
+
+        # Marcar como inactiva en lugar de eliminar
+        cur.execute("""
+            UPDATE categorias_producto 
+            SET activo = false
+            WHERE id_categoria = %s
+        """, (categoria_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Categoría eliminada exitosamente"
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al eliminar categoría: {str(e)}"}, 500)
+
 @functions_framework.http
 def hello_http(request):
     headers = {
@@ -490,8 +680,12 @@ def hello_http(request):
                 return obtener_compras(request)
             elif section == 'consumo' or action == 'consumo':
                 return obtener_consumos(request)
+            elif section == 'tipos' or action == 'tipos':
+                return obtener_tipos(request)
+            elif section == 'categorias' or action == 'categorias':
+                return obtener_categorias(request)
             else:
-                return json_response({"error": "Sección no válida. Use section=productos, compras o consumo"}, 400)
+                return json_response({"error": "Sección no válida. Use section=productos, compras, consumo, tipos o categorias"}, 400)
 
         elif request.method == 'POST':
             if section == 'productos' or action == 'productos':
@@ -500,8 +694,16 @@ def hello_http(request):
                 return crear_compra(request)
             elif section == 'consumo' or action == 'consumo':
                 return crear_consumo(request)
+            elif section == 'categorias' or action == 'categorias':
+                return crear_categoria(request)
             else:
-                return json_response({"error": "Sección no válida para POST. Use section=productos, compras o consumo"}, 400)
+                return json_response({"error": "Sección no válida para POST. Use section=productos, compras, consumo o categorias"}, 400)
+
+        elif request.method == 'DELETE':
+            if section == 'categorias' or action == 'categorias':
+                return eliminar_categoria(request)
+            else:
+                return json_response({"error": "Sección no válida para DELETE. Use section=categorias"}, 400)
 
         else:
             return json_response({"error": "Método no soportado"}, 405)
