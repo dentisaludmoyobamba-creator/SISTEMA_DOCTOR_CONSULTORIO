@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileModal from './ProfileModal';
 
-const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate, onOpenAppointmentModal, onOpenNewPatientModal }) => {
+const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate, onOpenAppointmentModal, onOpenNewPatientModal, onOpenCrearPresupuestoModal }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMarketingMenuOpen, setIsMarketingMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -344,7 +344,10 @@ const Navbar = ({ activeTab, onTabChange, user, onLogout, onUserUpdate, onOpenAp
                 {isQuickMenuOpen && (
                   <div className="absolute right-0 mt-2 bg-white text-gray-800 rounded-xl shadow-xl p-3 z-50 w-80">
                     <div className="grid grid-cols-2 gap-2">
-                      <button className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700">
+                      <button 
+                        onClick={() => { setIsQuickMenuOpen(false); onOpenCrearPresupuestoModal(); }} 
+                        className="border border-teal-200 rounded-xl p-3 hover:bg-teal-50 text-teal-700"
+                      >
                         <div className="flex items-center justify-center mb-2">
                           <svg className="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l2 2 4-4m-2-7a2 2 0 012 2v2h-6V7a2 2 0 012-2zM7 11a2 2 0 012-2h6a2 2 0 012 2v7H7v-7z" /></svg>
                         </div>

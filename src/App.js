@@ -21,6 +21,7 @@ import SoylaIA from './pages/SoylaIA';
 import Configuracion from './pages/Configuracion';
 import AppointmentModal from './components/AppointmentModal';
 import NewPatientModal from './components/NewPatientModal';
+import CrearPresupuestoModal from './components/CrearPresupuestoModal';
 import citasService from './services/citasService';
 import patientsService from './services/patientsService';
 
@@ -64,6 +65,7 @@ function AppContent() {
   // Estados para modales globales
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [showCrearPresupuestoModal, setShowCrearPresupuestoModal] = useState(false);
   const [doctores, setDoctores] = useState([]);
 
   // Cargar doctores para el modal de citas
@@ -162,12 +164,20 @@ function AppContent() {
     setShowNewPatientModal(true);
   };
 
+  const handleOpenCrearPresupuestoModal = () => {
+    setShowCrearPresupuestoModal(true);
+  };
+
   const handleCloseAppointmentModal = () => {
     setShowAppointmentModal(false);
   };
 
   const handleCloseNewPatientModal = () => {
     setShowNewPatientModal(false);
+  };
+
+  const handleCloseCrearPresupuestoModal = () => {
+    setShowCrearPresupuestoModal(false);
   };
 
   // Handler para guardar cita desde modal global
@@ -229,6 +239,18 @@ function AppContent() {
     }
   };
 
+  // Handler para guardar presupuesto
+  const handleSavePresupuesto = async (presupuestoData) => {
+    try {
+      // Aquí implementarías la lógica para guardar el presupuesto
+      console.log('Guardando presupuesto:', presupuestoData);
+      setShowCrearPresupuestoModal(false);
+      alert('Presupuesto creado exitosamente');
+    } catch (e) {
+      alert('Error al crear presupuesto');
+    }
+  };
+
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
     return (
@@ -255,6 +277,7 @@ function AppContent() {
           onUserUpdate={handleUserUpdate}
           onOpenAppointmentModal={handleOpenAppointmentModal}
           onOpenNewPatientModal={handleOpenNewPatientModal}
+          onOpenCrearPresupuestoModal={handleOpenCrearPresupuestoModal}
         />
       )}
       
@@ -434,6 +457,12 @@ function AppContent() {
             isOpen={showNewPatientModal}
             onClose={handleCloseNewPatientModal}
             onCreate={handleCreatePatient}
+          />
+
+          <CrearPresupuestoModal
+            isOpen={showCrearPresupuestoModal}
+            onClose={handleCloseCrearPresupuestoModal}
+            onSave={handleSavePresupuesto}
           />
         </>
       )}
