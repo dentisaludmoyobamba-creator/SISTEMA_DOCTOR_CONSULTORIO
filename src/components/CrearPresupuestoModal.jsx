@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import patientsService from '../services/patientsService';
 import authService from '../services/authService';
+import presupuestosService from '../services/presupuestosService';
+import doctorsService from '../services/doctorsService';
 
 const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   const [paciente, setPaciente] = useState(null);
@@ -21,11 +23,15 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   useEffect(() => {
     const cargarDoctores = async () => {
       try {
-        // Aquí deberías cargar los doctores desde tu servicio
-        // Por ahora usaremos datos mock
-        setDoctorResponsable('Eduardo Carmin');
+        doctorsService.setAuthService(authService);
+        const result = await doctorsService.getDoctores();
+        if (result.success && result.doctores.length > 0) {
+          const primerDoctor = result.doctores[0];
+          setDoctorResponsable(`${primerDoctor.nombres} ${primerDoctor.apellidos}`);
+        }
       } catch (error) {
         console.error('Error al cargar doctores:', error);
+        setDoctorResponsable('Eduardo Carmin'); // Fallback
       }
     };
     cargarDoctores();
@@ -35,18 +41,21 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   useEffect(() => {
     const cargarServicios = async () => {
       try {
-        // Aquí deberías cargar los servicios desde tu servicio
-        // Por ahora usaremos datos mock
+        presupuestosService.setAuthService(authService);
+        const result = await presupuestosService.buscarServicios('', 'Servicio');
+        if (result.success) {
+          setServicios(result.servicios);
+        }
+      } catch (error) {
+        console.error('Error al cargar servicios:', error);
+        // Fallback con datos mock
         const serviciosMock = [
           { id: 1, nombre: 'Ortodoncia cuota mensual', precio: 600, tipo: 'Servicio' },
           { id: 2, nombre: 'Extracción', precio: 400, tipo: 'Servicio' },
           { id: 3, nombre: 'Limpieza dental', precio: 150, tipo: 'Servicio' },
           { id: 4, nombre: 'Empaste', precio: 200, tipo: 'Servicio' },
-          { id: 5, nombre: 'Corona dental', precio: 800, tipo: 'Producto' },
         ];
         setServicios(serviciosMock);
-      } catch (error) {
-        console.error('Error al cargar servicios:', error);
       }
     };
     cargarServicios();
@@ -80,7 +89,26 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
     setMostrarListaPacientes(false);
   };
 
-  // Filtrar servicios
+  // Buscar servicios en tiempo real
+  const buscarServicios = async (termino, tipoBusqueda) => {
+    if (termino.length < 2) {
+      return [];
+    }
+    
+    try {
+      presupuestosService.setAuthService(authService);
+      const result = await presupuestosService.buscarServicios(termino, tipoBusqueda);
+      if (result.success) {
+        return result.servicios;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error al buscar servicios:', error);
+      return [];
+    }
+  };
+
+  // Filtrar servicios localmente como fallback
   const serviciosFiltrados = servicios.filter(servicio =>
     servicio.nombre.toLowerCase().includes(busquedaServicio.toLowerCase()) &&
     servicio.tipo === tipo
@@ -143,7 +171,7 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   };
 
   // Guardar presupuesto
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (!paciente) {
       alert('Por favor selecciona un paciente');
       return;
@@ -154,17 +182,44 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
       return;
     }
 
-    const presupuestoData = {
-      paciente_id: paciente.id,
-      nombre_presupuesto: nombrePresupuesto,
-      doctor_responsable: doctorResponsable,
-      servicios: serviciosAgregados,
-      nota_paciente: notaPaciente,
-      nota_interna: notaInterna,
-      total: total
-    };
+    try {
+      const presupuestoData = {
+        id_paciente: paciente.id_paciente,
+        id_doctor: 1, // Por ahora usar doctor por defecto
+        nombre_presupuesto: nombrePresupuesto,
+        estado: 'Borrador',
+        nota_paciente: notaPaciente,
+        nota_interna: notaInterna,
+        items: serviciosAgregados.map(item => ({
+          tipo_item: item.tipo,
+          id_tratamiento: item.tipo === 'Servicio' ? item.id : null,
+          id_producto: item.tipo === 'Producto' ? item.id : null,
+          nombre_item: item.nombre,
+          descripcion: item.descripcion || '',
+          cantidad: item.cantidad,
+          precio_unitario: item.precio,
+          descuento_porcentaje: item.descuento,
+          descuento_monto: (item.precio * item.cantidad * item.descuento) / 100,
+          subtotal: item.subtotal,
+          diente: item.diente || '',
+          comentario: item.comentario || ''
+        }))
+      };
 
-    onSave(presupuestoData);
+      presupuestosService.setAuthService(authService);
+      const result = await presupuestosService.createPresupuesto(presupuestoData);
+      
+      if (result.success) {
+        alert('Presupuesto creado exitosamente');
+        onSave(result);
+        handleCerrar();
+      } else {
+        alert(`Error al crear presupuesto: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error al guardar presupuesto:', error);
+      alert('Error de conexión al guardar presupuesto');
+    }
   };
 
   // Cerrar modal

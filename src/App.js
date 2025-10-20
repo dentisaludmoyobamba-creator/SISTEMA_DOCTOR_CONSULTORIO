@@ -24,6 +24,7 @@ import NewPatientModal from './components/NewPatientModal';
 import CrearPresupuestoModal from './components/CrearPresupuestoModal';
 import citasService from './services/citasService';
 import patientsService from './services/patientsService';
+import presupuestosService from './services/presupuestosService';
 
 // Componente placeholder para páginas no implementadas (comentado temporalmente)
 // const PlaceholderPage = ({ title, icon }) => {
@@ -242,12 +243,11 @@ function AppContent() {
   // Handler para guardar presupuesto
   const handleSavePresupuesto = async (presupuestoData) => {
     try {
-      // Aquí implementarías la lógica para guardar el presupuesto
-      console.log('Guardando presupuesto:', presupuestoData);
+      presupuestosService.setAuthService(authService);
+      console.log('Presupuesto guardado:', presupuestoData);
       setShowCrearPresupuestoModal(false);
-      alert('Presupuesto creado exitosamente');
     } catch (e) {
-      alert('Error al crear presupuesto');
+      console.error('Error al procesar presupuesto:', e);
     }
   };
 
