@@ -1,106 +1,301 @@
-import authService from './authService';
+const API_BASE_URL = 'https://presupuestos-1090334808863.us-central1.run.app';
+const PACIENTES_API_URL = 'https://pacientes-1090334808863.us-central1.run.app';
+const USUARIOS_API_URL = 'https://usuarios-1090334808863.us-central1.run.app';
 
-class PresupuestosService {
-  constructor() {
-    this.baseURL = 'https://presupuestos-1090334808863.us-central1.run.app';
-    this.authService = null;
+// Modo debug (cambiar a false en producción)
+const DEBUG_MODE = true;
+
+// Función de debug
+const debugLog = (...args) => {
+  if (DEBUG_MODE) {
+    console.log('[PresupuestosService]', ...args);
   }
+};
 
-  setAuthService(authService) {
-    this.authService = authService;
+// Obtener token del localStorage
+const getAuthToken = () => {
+  // Intentar obtener el token de diferentes posibles ubicaciones
+  const token = localStorage.getItem('authToken') || 
+                localStorage.getItem('token') || 
+                sessionStorage.getItem('authToken') ||
+                sessionStorage.getItem('token');
+  
+  debugLog('Token encontrado:', token ? `${token.substring(0, 20)}...` : 'NO ENCONTRADO');
+  debugLog('localStorage.authToken:', localStorage.getItem('authToken') ? 'Existe' : 'No existe');
+  debugLog('localStorage.token:', localStorage.getItem('token') ? 'Existe' : 'No existe');
+  
+  return token;
+};
+
+// Verificar si el token es válido
+const isTokenValid = (token) => {
+  if (!token) {
+    debugLog('isTokenValid: Token no proporcionado');
+    return false;
   }
-
-  async getHeaders() {
-    const token = this.authService?.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  }
-
-  async getPresupuestos(params = {}) {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params.paciente_id) queryParams.append('paciente_id', params.paciente_id);
-      if (params.doctor_id) queryParams.append('doctor_id', params.doctor_id);
-      if (params.estado) queryParams.append('estado', params.estado);
-      if (params.limit) queryParams.append('limit', params.limit);
-      if (params.offset) queryParams.append('offset', params.offset);
-
-      const response = await fetch(`${this.baseURL}/presupuestos?${queryParams}`, {
-        method: 'GET',
-        headers: await this.getHeaders()
-      });
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error getting presupuestos:', error);
-      return { success: false, error: 'Error de conexión' };
+  
+  try {
+    // Decodificar el payload del JWT
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    
+    debugLog('Token payload:', payload);
+    debugLog('Token exp:', payload.exp ? new Date(payload.exp * 1000).toISOString() : 'No tiene exp');
+    debugLog('Current time:', new Date(currentTime * 1000).toISOString());
+    
+    // Verificar si el token ha expirado
+    if (payload.exp && payload.exp < currentTime) {
+      debugLog('❌ Token JWT ha expirado');
+      return false;
     }
+    
+    debugLog('✅ Token válido');
+    return true;
+  } catch (error) {
+    console.error('Error al validar token:', error);
+    debugLog('❌ Error al decodificar token');
+    return false;
   }
+};
 
-  async createPresupuesto(presupuestoData) {
-    try {
-      const response = await fetch(`${this.baseURL}/presupuestos`, {
-        method: 'POST',
-        headers: await this.getHeaders(),
-        body: JSON.stringify(presupuestoData)
-      });
+// Headers con autenticación
+const getHeaders = () => {
+  const token = getAuthToken();
+  
+  if (!token) {
+    console.error('No se encontró token de autenticación en localStorage');
+    throw new Error('Token de autenticación no disponible. Por favor, inicia sesión nuevamente.');
+  }
+  
+  if (!isTokenValid(token)) {
+    console.error('Token JWT inválido o expirado');
+    // Limpiar localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+  }
+  
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+};
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error creating presupuesto:', error);
-      return { success: false, error: 'Error de conexión' };
+// ===== PRESUPUESTOS =====
+
+export const listarPresupuestos = async (params = {}) => {
+  try {
+    const { page = 1, limit = 10, search = '', paciente_id = '', doctor_id = '', estado = '' } = params;
+    
+    const queryParams = new URLSearchParams({
+      action: 'list',
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(paciente_id && { paciente_id }),
+      ...(doctor_id && { doctor_id }),
+      ...(estado && { estado })
+    });
+
+    const response = await fetch(`${API_BASE_URL}?${queryParams}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al obtener presupuestos');
     }
+
+    return data;
+  } catch (error) {
+    console.error('Error en listarPresupuestos:', error);
+    throw error;
   }
+};
 
-  async updatePresupuesto(presupuestoData) {
-    try {
-      const response = await fetch(`${this.baseURL}/presupuestos`, {
-        method: 'PUT',
-        headers: await this.getHeaders(),
-        body: JSON.stringify(presupuestoData)
-      });
+export const crearPresupuesto = async (presupuestoData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}?action=create`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(presupuestoData)
+    });
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error updating presupuesto:', error);
-      return { success: false, error: 'Error de conexión' };
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al crear presupuesto');
     }
+
+    return data;
+  } catch (error) {
+    console.error('Error en crearPresupuesto:', error);
+    throw error;
   }
+};
 
-  async deletePresupuesto(presupuestoId) {
-    try {
-      const response = await fetch(`${this.baseURL}/presupuestos?id=${presupuestoId}`, {
-        method: 'DELETE',
-        headers: await this.getHeaders()
-      });
+export const actualizarPresupuesto = async (presupuestoData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}?action=update`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(presupuestoData)
+    });
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error deleting presupuesto:', error);
-      return { success: false, error: 'Error de conexión' };
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al actualizar presupuesto');
     }
+
+    return data;
+  } catch (error) {
+    console.error('Error en actualizarPresupuesto:', error);
+    throw error;
   }
+};
 
-  async buscarServicios(termino, tipo = 'Servicio') {
-    try {
-      const response = await fetch(`${this.baseURL}/buscar_servicios?q=${encodeURIComponent(termino)}&tipo=${tipo}`, {
-        method: 'GET',
-        headers: await this.getHeaders()
-      });
+export const eliminarPresupuesto = async (presupuestoId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}?action=delete&id=${presupuestoId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error searching servicios:', error);
-      return { success: false, error: 'Error de conexión' };
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al eliminar presupuesto');
     }
-  }
-}
 
-export default new PresupuestosService();
+    return data;
+  } catch (error) {
+    console.error('Error en eliminarPresupuesto:', error);
+    throw error;
+  }
+};
+
+// ===== BÚSQUEDA DE SERVICIOS/PRODUCTOS =====
+
+export const buscarServicios = async (termino, tipo = 'Servicio', limit = 20) => {
+  try {
+    const queryParams = new URLSearchParams({
+      action: 'buscar_servicios',
+      q: termino,
+      tipo: tipo,
+      limit: limit.toString()
+    });
+
+    const response = await fetch(`${API_BASE_URL}?${queryParams}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al buscar servicios');
+    }
+
+    return data.servicios || [];
+  } catch (error) {
+    console.error('Error en buscarServicios:', error);
+    throw error;
+  }
+};
+
+// ===== BÚSQUEDA DE PACIENTES (desde API de pacientes) =====
+
+export const buscarPacientes = async (search = '', limit = 10) => {
+  try {
+    const queryParams = new URLSearchParams({
+      action: 'list',
+      page: '1',
+      limit: limit.toString(),
+      ...(search && { search })
+    });
+
+    const response = await fetch(`${PACIENTES_API_URL}?${queryParams}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      // Si es error 401, significa que el token es inválido
+      if (response.status === 401) {
+        throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      }
+      throw new Error(data.error || 'Error al buscar pacientes');
+    }
+
+    return data.patients || [];
+  } catch (error) {
+    console.error('Error en buscarPacientes:', error);
+    
+    // Si el error es de autenticación, redirigir al login
+    if (error.message.includes('sesión') || error.message.includes('Token')) {
+      // Limpiar localStorage
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+    }
+    
+    throw error;
+  }
+};
+
+// ===== BÚSQUEDA DE DOCTORES (desde API de usuarios) =====
+
+export const buscarDoctores = async (search = '', limit = 50) => {
+  try {
+    const queryParams = new URLSearchParams({
+      action: 'users',
+      page: '1',
+      limit: limit.toString(),
+      role: 'Doctor',
+      ...(search && { search })
+    });
+
+    const response = await fetch(`${USUARIOS_API_URL}?${queryParams}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al buscar doctores');
+    }
+
+    // Filtrar solo doctores activos con información de doctor
+    const doctores = (data.users || [])
+      .filter(user => user.is_doctor && user.active && user.doctor_info)
+      .map(user => ({
+        id: user.doctor_info.id,
+        nombres: user.doctor_info.nombres,
+        apellidos: user.doctor_info.apellidos,
+        nombre_completo: `${user.doctor_info.nombres} ${user.doctor_info.apellidos}`,
+        dni: user.doctor_info.dni,
+        colegiatura: user.doctor_info.colegiatura,
+        telefono: user.doctor_info.telefono
+      }));
+
+    return doctores;
+  } catch (error) {
+    console.error('Error en buscarDoctores:', error);
+    throw error;
+  }
+};
+
+export default {
+  listarPresupuestos,
+  crearPresupuesto,
+  actualizarPresupuesto,
+  eliminarPresupuesto,
+  buscarServicios,
+  buscarPacientes,
+  buscarDoctores
+};

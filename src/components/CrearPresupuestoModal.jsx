@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import patientsService from '../services/patientsService';
-import authService from '../services/authService';
-import presupuestosService from '../services/presupuestosService';
-import doctorsService from '../services/doctorsService';
+import { buscarPacientes, buscarDoctores, buscarServicios, crearPresupuesto } from '../services/presupuestosService';
 
 const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   const [paciente, setPaciente] = useState(null);
@@ -10,7 +7,8 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   const [pacientesFiltrados, setPacientesFiltrados] = useState([]);
   const [mostrarListaPacientes, setMostrarListaPacientes] = useState(false);
   const [nombrePresupuesto, setNombrePresupuesto] = useState('');
-  const [doctorResponsable, setDoctorResponsable] = useState('');
+  const [doctorSeleccionado, setDoctorSeleccionado] = useState(null);
+  const [doctores, setDoctores] = useState([]);
   const [tipo, setTipo] = useState('Servicio');
   const [busquedaServicio, setBusquedaServicio] = useState('');
   const [servicios, setServicios] = useState([]);
@@ -23,46 +21,22 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   useEffect(() => {
     const cargarDoctores = async () => {
       try {
-        doctorsService.setAuthService(authService);
-        const result = await doctorsService.getDoctores();
-        if (result.success && result.doctores.length > 0) {
-          const primerDoctor = result.doctores[0];
-          setDoctorResponsable(`${primerDoctor.nombres} ${primerDoctor.apellidos}`);
+        const doctoresData = await buscarDoctores('', 50);
+        setDoctores(doctoresData);
+        if (doctoresData.length > 0) {
+          setDoctorSeleccionado(doctoresData[0]);
         }
       } catch (error) {
         console.error('Error al cargar doctores:', error);
-        setDoctorResponsable('Eduardo Carmin'); // Fallback
       }
     };
     cargarDoctores();
   }, []);
 
-  // Cargar servicios/productos disponibles
-  useEffect(() => {
-    const cargarServicios = async () => {
-      try {
-        presupuestosService.setAuthService(authService);
-        const result = await presupuestosService.buscarServicios('', 'Servicio');
-        if (result.success) {
-          setServicios(result.servicios);
-        }
-      } catch (error) {
-        console.error('Error al cargar servicios:', error);
-        // Fallback con datos mock
-        const serviciosMock = [
-          { id: 1, nombre: 'Ortodoncia cuota mensual', precio: 600, tipo: 'Servicio' },
-          { id: 2, nombre: 'Extracción', precio: 400, tipo: 'Servicio' },
-          { id: 3, nombre: 'Limpieza dental', precio: 150, tipo: 'Servicio' },
-          { id: 4, nombre: 'Empaste', precio: 200, tipo: 'Servicio' },
-        ];
-        setServicios(serviciosMock);
-      }
-    };
-    cargarServicios();
-  }, []);
-
-  // Buscar pacientes
-  const buscarPacientes = async (termino) => {
+  // Buscar pacientes en tiempo real
+  const handleBuscarPacientes = async (termino) => {
+    setBusquedaPaciente(termino);
+    
     if (termino.length < 2) {
       setPacientesFiltrados([]);
       setMostrarListaPacientes(false);
@@ -70,15 +44,23 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
     }
 
     try {
-      patientsService.setAuthService(authService);
-      const result = await patientsService.search(termino);
-      if (result.success) {
-        setPacientesFiltrados(result.pacientes || []);
-        setMostrarListaPacientes(true);
-      }
+      const pacientes = await buscarPacientes(termino, 10);
+      setPacientesFiltrados(pacientes);
+      setMostrarListaPacientes(true);
     } catch (error) {
       console.error('Error al buscar pacientes:', error);
       setPacientesFiltrados([]);
+      
+      // Mostrar mensaje de error al usuario
+      if (error.message.includes('sesión') || error.message.includes('Token')) {
+        alert(error.message + '\n\nSerás redirigido al login.');
+        // Redirigir al login después de un breve delay
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        alert('Error al buscar pacientes: ' + error.message);
+      }
     }
   };
 
@@ -89,30 +71,28 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
     setMostrarListaPacientes(false);
   };
 
-  // Buscar servicios en tiempo real
-  const buscarServicios = async (termino, tipoBusqueda) => {
-    if (termino.length < 2) {
-      return [];
-    }
-    
-    try {
-      presupuestosService.setAuthService(authService);
-      const result = await presupuestosService.buscarServicios(termino, tipoBusqueda);
-      if (result.success) {
-        return result.servicios;
+  // Buscar servicios/productos en tiempo real
+  const [serviciosFiltrados, setServiciosFiltrados] = useState([]);
+  
+  useEffect(() => {
+    const handleBuscarServicios = async () => {
+      if (busquedaServicio.length < 2) {
+        setServiciosFiltrados([]);
+        return;
       }
-      return [];
-    } catch (error) {
-      console.error('Error al buscar servicios:', error);
-      return [];
-    }
-  };
 
-  // Filtrar servicios localmente como fallback
-  const serviciosFiltrados = servicios.filter(servicio =>
-    servicio.nombre.toLowerCase().includes(busquedaServicio.toLowerCase()) &&
-    servicio.tipo === tipo
-  );
+      try {
+        const serviciosData = await buscarServicios(busquedaServicio, tipo, 20);
+        setServiciosFiltrados(serviciosData);
+      } catch (error) {
+        console.error('Error al buscar servicios:', error);
+        setServiciosFiltrados([]);
+      }
+    };
+
+    const timeoutId = setTimeout(handleBuscarServicios, 300);
+    return () => clearTimeout(timeoutId);
+  }, [busquedaServicio, tipo]);
 
   // Agregar servicio al presupuesto
   const agregarServicio = (servicio) => {
@@ -177,6 +157,11 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
       return;
     }
 
+    if (!doctorSeleccionado) {
+      alert('Por favor selecciona un doctor responsable');
+      return;
+    }
+
     if (serviciosAgregados.length === 0) {
       alert('Por favor agrega al menos un servicio o producto');
       return;
@@ -184,16 +169,16 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
 
     try {
       const presupuestoData = {
-        id_paciente: paciente.id_paciente,
-        id_doctor: 1, // Por ahora usar doctor por defecto
-        nombre_presupuesto: nombrePresupuesto,
+        id_paciente: paciente.id,
+        id_doctor: doctorSeleccionado.id,
+        nombre_presupuesto: nombrePresupuesto || `Presupuesto ${paciente.nombres} ${paciente.apellidos}`,
         estado: 'Borrador',
         nota_paciente: notaPaciente,
         nota_interna: notaInterna,
         items: serviciosAgregados.map(item => ({
           tipo_item: item.tipo,
-          id_tratamiento: item.tipo === 'Servicio' ? item.id : null,
-          id_producto: item.tipo === 'Producto' ? item.id : null,
+          id_tratamiento: item.tipo === 'Servicio' ? item.id_servicio : null,
+          id_producto: item.tipo === 'Producto' ? item.id_producto : null,
           nombre_item: item.nombre,
           descripcion: item.descripcion || '',
           cantidad: item.cantidad,
@@ -206,8 +191,7 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
         }))
       };
 
-      presupuestosService.setAuthService(authService);
-      const result = await presupuestosService.createPresupuesto(presupuestoData);
+      const result = await crearPresupuesto(presupuestoData);
       
       if (result.success) {
         alert('Presupuesto creado exitosamente');
@@ -262,10 +246,7 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
                 <input
                   type="text"
                   value={busquedaPaciente}
-                  onChange={(e) => {
-                    setBusquedaPaciente(e.target.value);
-                    buscarPacientes(e.target.value);
-                  }}
+                  onChange={(e) => handleBuscarPacientes(e.target.value)}
                   onFocus={() => setMostrarListaPacientes(pacientesFiltrados.length > 0)}
                   placeholder="Buscar paciente"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -308,12 +289,19 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Doctor responsable</label>
               <select
-                value={doctorResponsable}
-                onChange={(e) => setDoctorResponsable(e.target.value)}
+                value={doctorSeleccionado ? doctorSeleccionado.id : ''}
+                onChange={(e) => {
+                  const doctor = doctores.find(d => d.id === parseInt(e.target.value));
+                  setDoctorSeleccionado(doctor);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="Eduardo Carmin">Eduardo Carmin</option>
-                {/* Aquí podrías agregar más doctores */}
+                {doctores.length === 0 && <option value="">Cargando doctores...</option>}
+                {doctores.map((doctor) => (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.nombre_completo}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
