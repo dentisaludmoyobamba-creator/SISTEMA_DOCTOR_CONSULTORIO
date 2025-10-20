@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { buscarPacientes, buscarDoctores, buscarServicios, crearPresupuesto } from '../services/presupuestosService';
+import { buscarPacientes, buscarDoctores, buscarServicios, crearPresupuesto, verificarUsuarios } from '../services/presupuestosService';
 
 const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   const [paciente, setPaciente] = useState(null);
@@ -17,7 +17,7 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
   const [notaInterna, setNotaInterna] = useState('');
   const [total, setTotal] = useState(0);
 
-  // Cargar doctores disponibles
+  // Cargar doctores disponibles y verificar usuarios
   useEffect(() => {
     const cargarDoctores = async () => {
       try {
@@ -30,7 +30,19 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
         console.error('Error al cargar doctores:', error);
       }
     };
+
+    const verificarUsuariosDisponibles = async () => {
+      try {
+        console.log('=== VERIFICANDO USUARIOS DISPONIBLES ===');
+        const usuariosData = await verificarUsuarios();
+        console.log('Usuarios en la base de datos:', usuariosData);
+      } catch (error) {
+        console.error('Error al verificar usuarios:', error);
+      }
+    };
+
     cargarDoctores();
+    verificarUsuariosDisponibles();
   }, []);
 
   // Buscar pacientes en tiempo real
@@ -96,9 +108,13 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
 
   // Agregar servicio al presupuesto
   const agregarServicio = (servicio) => {
+    console.log('Agregando servicio:', servicio);
+    
     const nuevoServicio = {
-      id: Date.now(),
+      id: servicio.id, // ID del tratamiento o producto
       nombre: servicio.nombre,
+      descripcion: servicio.descripcion || '',
+      tipo: servicio.tipo || tipo, // 'Servicio' o 'Producto'
       cantidad: 1,
       precio: servicio.precio,
       descuento: 0,
@@ -106,6 +122,9 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
       diente: '',
       comentario: ''
     };
+    
+    console.log('Nuevo servicio agregado:', nuevoServicio);
+    
     setServiciosAgregados([...serviciosAgregados, nuevoServicio]);
     setBusquedaServicio('');
     calcularTotal();
@@ -152,6 +171,8 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
 
   // Guardar presupuesto
   const handleGuardar = async () => {
+    console.log('=== INTENTANDO GUARDAR PRESUPUESTO ===');
+    
     if (!paciente) {
       alert('Por favor selecciona un paciente');
       return;
@@ -167,42 +188,89 @@ const CrearPresupuestoModal = ({ isOpen, onClose, onSave }) => {
       return;
     }
 
+    console.log('Paciente:', paciente);
+    console.log('Doctor:', doctorSeleccionado);
+    console.log('Servicios agregados:', serviciosAgregados);
+
     try {
+      // Obtener el ID del usuario actual desde localStorage
+      let idUsuarioCreador = 1; // Usar 1 por defecto (debe existir en la BD)
+      
+      try {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const user = JSON.parse(userData);
+          idUsuarioCreador = user.id || 1;
+          console.log('Usuario encontrado:', user);
+          console.log('ID del usuario:', idUsuarioCreador);
+        } else {
+          console.warn('No se encontró userData, usando ID por defecto: 1');
+        }
+      } catch (e) {
+        console.error('Error al parsear userData:', e);
+        console.warn('Usando ID por defecto: 1');
+      }
+
+      console.log('ID de usuario creador que se usará:', idUsuarioCreador);
+
       const presupuestoData = {
         id_paciente: paciente.id,
         id_doctor: doctorSeleccionado.id,
         nombre_presupuesto: nombrePresupuesto || `Presupuesto ${paciente.nombres} ${paciente.apellidos}`,
         estado: 'Borrador',
-        nota_paciente: notaPaciente,
-        nota_interna: notaInterna,
+        nota_paciente: notaPaciente || '',
+        nota_interna: notaInterna || '',
+        id_usuario_creador: idUsuarioCreador,
         items: serviciosAgregados.map(item => ({
-          tipo_item: item.tipo,
-          id_tratamiento: item.tipo === 'Servicio' ? item.id_servicio : null,
-          id_producto: item.tipo === 'Producto' ? item.id_producto : null,
+          tipo_item: item.tipo || 'Servicio',
+          id_tratamiento: item.tipo === 'Servicio' ? item.id : null,
+          id_producto: item.tipo === 'Producto' ? item.id : null,
           nombre_item: item.nombre,
           descripcion: item.descripcion || '',
-          cantidad: item.cantidad,
-          precio_unitario: item.precio,
-          descuento_porcentaje: item.descuento,
-          descuento_monto: (item.precio * item.cantidad * item.descuento) / 100,
-          subtotal: item.subtotal,
+          cantidad: parseFloat(item.cantidad) || 1,
+          precio_unitario: parseFloat(item.precio) || 0,
+          descuento_porcentaje: parseFloat(item.descuento) || 0,
+          descuento_monto: (parseFloat(item.precio) * parseFloat(item.cantidad) * parseFloat(item.descuento)) / 100,
+          subtotal: parseFloat(item.subtotal) || 0,
           diente: item.diente || '',
           comentario: item.comentario || ''
         }))
       };
 
+      console.log('Datos del presupuesto a enviar:', JSON.stringify(presupuestoData, null, 2));
+
       const result = await crearPresupuesto(presupuestoData);
+      
+      console.log('Resultado de crear presupuesto:', result);
       
       if (result.success) {
         alert('Presupuesto creado exitosamente');
         onSave(result);
         handleCerrar();
       } else {
-        alert(`Error al crear presupuesto: ${result.error}`);
+        alert(`Error al crear presupuesto: ${result.error || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('Error al guardar presupuesto:', error);
-      alert('Error de conexión al guardar presupuesto');
+      console.error('❌ Error al guardar presupuesto:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      // Mostrar error más detallado
+      let errorMessage = 'Error al guardar presupuesto:\n\n';
+      
+      if (error.message.includes('sesión') || error.message.includes('Token')) {
+        errorMessage += error.message + '\n\nSerás redirigido al login.';
+        alert(errorMessage);
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+        errorMessage += 'Error de conexión con el servidor.\nPor favor verifica tu conexión a internet.';
+        alert(errorMessage);
+      } else {
+        errorMessage += error.message || 'Error desconocido';
+        alert(errorMessage);
+      }
     }
   };
 

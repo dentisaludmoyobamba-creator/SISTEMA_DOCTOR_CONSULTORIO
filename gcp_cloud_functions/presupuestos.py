@@ -181,6 +181,51 @@ def handle_create_presupuesto(request):
         conn = get_connection()
         cur = conn.cursor()
 
+        # Obtener el ID del usuario desde el token JWT
+        id_usuario_creador = payload.get('user_id', 1)  # Usar 1 como fallback
+        print(f"Token user_id: {payload.get('user_id')}")
+        print(f"Doctor ID: {id_doctor}")
+        
+        # Verificar si el doctor responsable tiene un usuario asociado
+        cur.execute("SELECT id_usuario FROM doctores WHERE id_doctor = %s", (id_doctor,))
+        doctor_usuario = cur.fetchone()
+        print(f"Doctor usuario encontrado: {doctor_usuario}")
+        
+        if doctor_usuario:
+            # Si el doctor tiene un usuario asociado, usar ese ID
+            id_usuario_creador = doctor_usuario['id_usuario']
+            print(f"✅ Usando ID del doctor como usuario creador: {id_usuario_creador}")
+        else:
+            print(f"❌ Doctor no tiene usuario asociado, usando token user_id: {id_usuario_creador}")
+            # Si no, verificar que el usuario del token existe
+            cur.execute("SELECT id_usuario FROM usuarios WHERE id_usuario = %s", (id_usuario_creador,))
+            if not cur.fetchone():
+                # Si el usuario no existe, usar el primer usuario disponible o crear uno por defecto
+                cur.execute("SELECT id_usuario FROM usuarios ORDER BY id_usuario LIMIT 1")
+                usuario_existente = cur.fetchone()
+                if usuario_existente:
+                    id_usuario_creador = usuario_existente['id_usuario']
+                else:
+                    # Crear usuario por defecto si no existe ninguno
+                    cur.execute("""
+                        INSERT INTO roles (nombre_rol, descripcion) 
+                        VALUES ('Administrador', 'Administrador del sistema')
+                        ON CONFLICT (nombre_rol) DO NOTHING
+                    """)
+                    
+                    cur.execute("""
+                        INSERT INTO usuarios (nombre_usuario, contrasena_hash, email, id_rol, activo) 
+                        VALUES ('admin', 'admin123', 'admin@consultorio.com', 1, true)
+                        ON CONFLICT (nombre_usuario) DO NOTHING
+                        RETURNING id_usuario
+                    """)
+                    resultado = cur.fetchone()
+                    if resultado:
+                        id_usuario_creador = resultado['id_usuario']
+                    else:
+                        # Si aún no se puede crear, usar 1
+                        id_usuario_creador = 1
+
         # Insertar presupuesto
         fecha_venc = None
         if fecha_vencimiento:
@@ -194,7 +239,7 @@ def handle_create_presupuesto(request):
                                     fecha_vencimiento, nota_paciente, nota_interna, id_usuario_creador)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id_presupuesto
-        """, (id_paciente, id_doctor, nombre_presupuesto, estado, fecha_venc, nota_paciente, nota_interna, 1))
+        """, (id_paciente, id_doctor, nombre_presupuesto, estado, fecha_venc, nota_paciente, nota_interna, id_usuario_creador))
 
         presupuesto_id = cur.fetchone()['id_presupuesto']
 

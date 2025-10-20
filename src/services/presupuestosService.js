@@ -117,21 +117,39 @@ export const listarPresupuestos = async (params = {}) => {
 
 export const crearPresupuesto = async (presupuestoData) => {
   try {
+    debugLog('=== CREAR PRESUPUESTO ===');
+    debugLog('URL:', `${API_BASE_URL}?action=create`);
+    debugLog('Datos a enviar:', presupuestoData);
+    
+    const headers = getHeaders();
+    debugLog('Headers:', headers);
+    
     const response = await fetch(`${API_BASE_URL}?action=create`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: headers,
       body: JSON.stringify(presupuestoData)
     });
 
+    debugLog('Response status:', response.status);
+    debugLog('Response ok:', response.ok);
+
     const data = await response.json();
+    debugLog('Response data:', data);
     
     if (!response.ok) {
+      debugLog('❌ Error en la respuesta:', data.error);
       throw new Error(data.error || 'Error al crear presupuesto');
     }
 
+    debugLog('✅ Presupuesto creado exitosamente');
     return data;
   } catch (error) {
-    console.error('Error en crearPresupuesto:', error);
+    console.error('❌ Error en crearPresupuesto:', error);
+    debugLog('Error completo:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     throw error;
   }
 };
@@ -290,6 +308,70 @@ export const buscarDoctores = async (search = '', limit = 50) => {
   }
 };
 
+// Función de debugging para verificar usuarios
+export const verificarUsuarios = async () => {
+  try {
+    debugLog('=== VERIFICANDO USUARIOS ===');
+    
+    const response = await fetch(`${USUARIOS_API_URL}?action=users&limit=10`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    const data = await response.json();
+    debugLog('Usuarios encontrados:', data);
+    
+    return data;
+  } catch (error) {
+    console.error('Error al verificar usuarios:', error);
+    throw error;
+  }
+};
+
+export const list = async (params = {}) => {
+  try {
+    debugLog('=== LISTAR PRESUPUESTOS ===');
+    
+    const queryParams = new URLSearchParams();
+    if (params.paciente_id) queryParams.append('paciente_id', params.paciente_id);
+    if (params.doctor_id) queryParams.append('doctor_id', params.doctor_id);
+    if (params.estado) queryParams.append('estado', params.estado);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    
+    const url = `${API_BASE_URL}?action=list&${queryParams.toString()}`;
+    debugLog('URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+
+    debugLog('Response status:', response.status);
+    debugLog('Response ok:', response.ok);
+
+    const data = await response.json();
+    debugLog('Response data:', data);
+    
+    if (!response.ok) {
+      debugLog('❌ Error en la respuesta:', data.error);
+      throw new Error(data.error || 'Error al listar presupuestos');
+    }
+
+    debugLog('✅ Presupuestos listados exitosamente');
+    return data;
+  } catch (error) {
+    console.error('❌ Error en list:', error);
+    debugLog('Error completo:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    throw error;
+  }
+};
+
 export default {
   listarPresupuestos,
   crearPresupuesto,
@@ -297,5 +379,7 @@ export default {
   eliminarPresupuesto,
   buscarServicios,
   buscarPacientes,
-  buscarDoctores
+  buscarDoctores,
+  verificarUsuarios,
+  list
 };
