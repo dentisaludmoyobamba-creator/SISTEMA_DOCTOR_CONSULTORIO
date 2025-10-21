@@ -1,6 +1,7 @@
 const API_BASE_URL = 'https://presupuestos-1090334808863.us-central1.run.app';
 const PACIENTES_API_URL = 'https://pacientes-1090334808863.us-central1.run.app';
 const USUARIOS_API_URL = 'https://usuarios-1090334808863.us-central1.run.app';
+const TRATAMIENTOS_API_URL = 'https://tratamientos-1090334808863.us-central1.run.app';
 
 // Modo debug (cambiar a false en producción)
 const DEBUG_MODE = true;
@@ -197,29 +198,74 @@ export const eliminarPresupuesto = async (presupuestoId) => {
 
 // ===== BÚSQUEDA DE SERVICIOS/PRODUCTOS =====
 
-export const buscarServicios = async (termino, tipo = 'Servicio', limit = 20) => {
+export const buscarServicios = async (termino = '', tipo = 'Servicio', limit = 20) => {
   try {
-    const queryParams = new URLSearchParams({
-      action: 'buscar_servicios',
-      q: termino,
-      tipo: tipo,
-      limit: limit.toString()
-    });
-
-    const response = await fetch(`${API_BASE_URL}?${queryParams}`, {
-      method: 'GET',
-      headers: getHeaders()
-    });
-
-    const data = await response.json();
+    debugLog('=== BUSCAR SERVICIOS (TRATAMIENTOS) ===');
+    debugLog('Término de búsqueda:', termino);
+    debugLog('Tipo:', tipo);
+    debugLog('Límite:', limit);
     
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al buscar servicios');
-    }
+    // Ahora usa la API dedicada de tratamientos para servicios
+    if (tipo === 'Servicio') {
+      const queryParams = new URLSearchParams({
+        action: 'list',
+        search: termino,
+        limit: limit.toString()
+      });
 
-    return data.servicios || [];
+      const response = await fetch(`${TRATAMIENTOS_API_URL}?${queryParams}`, {
+        method: 'GET',
+        headers: getHeaders()
+      });
+
+      const data = await response.json();
+      debugLog('Respuesta de tratamientos:', data);
+      
+      if (!response.ok) {
+        debugLog('❌ Error al buscar servicios:', data.error);
+        throw new Error(data.error || 'Error al buscar servicios');
+      }
+
+      // Transformar la respuesta al formato esperado
+      const servicios = (data.tratamientos || []).map(t => ({
+        id: t.id,
+        nombre: t.nombre,
+        descripcion: t.descripcion,
+        precio: t.costo_base,
+        tipo: 'Servicio'
+      }));
+
+      debugLog('✅ Servicios transformados exitosamente:', servicios);
+      return servicios;
+    } else {
+      // Para productos, usar la API de presupuestos (por ahora)
+      const queryParams = new URLSearchParams({
+        action: 'buscar_servicios',
+        q: termino,
+        tipo: tipo,
+        limit: limit.toString()
+      });
+
+      const response = await fetch(`${API_BASE_URL}?${queryParams}`, {
+        method: 'GET',
+        headers: getHeaders()
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al buscar productos');
+      }
+
+      return data.servicios || [];
+    }
   } catch (error) {
     console.error('Error en buscarServicios:', error);
+    debugLog('Error completo:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     throw error;
   }
 };

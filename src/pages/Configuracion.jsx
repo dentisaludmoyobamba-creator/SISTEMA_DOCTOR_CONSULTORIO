@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
 import usersService from '../services/usersService';
+import tratamientosService from '../services/tratamientosService';
 import UserModal from '../components/UserModal';
 import AddDoctorModal from '../components/AddDoctorModal';
 import EditDoctorModal from '../components/EditDoctorModal';
+import ServicioModal from '../components/ServicioModal';
 
 const Configuracion = () => {
   const [activeSection, setActiveSection] = useState('mi-perfil');
@@ -900,143 +902,258 @@ const Administracion = () => {
 
 // Componente Servicios
 const Servicios = () => {
-  const servicios = [
-    { id: 1, nombre: 'Blanqueamiento', categoria: 'Odontología general', monto: '200.00', insumos: '0' },
-    { id: 2, nombre: 'Corona sobre implante', categoria: 'Odontología general', monto: '300.00', insumos: '0' },
-    { id: 3, nombre: 'Endodoncia', categoria: 'Odontología general', monto: '100.00', insumos: '0' },
-    { id: 4, nombre: 'Extracción', categoria: 'Odontología general', monto: '400.00', insumos: '0' },
-    { id: 5, nombre: 'Ortodoncia cuota inicial', categoria: 'Odontología general', monto: '500.00', insumos: '0' },
-    { id: 6, nombre: 'Ortodoncia cuota mensual', categoria: 'Odontología general', monto: '600.00', insumos: '0' }
-  ];
+  const [servicios, setServicios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedServicio, setSelectedServicio] = useState(null);
+
+  // Cargar servicios
+  const cargarServicios = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const result = await tratamientosService.listarTratamientos({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm
+      });
+      if (result.success) {
+        setServicios(result.tratamientos || []);
+        setPagination(result.pagination);
+      } else {
+        setError(result.error || 'Error al cargar servicios');
+      }
+    } catch (err) {
+      setError(err.message || 'Error de conexión con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarServicios();
+  }, [pagination.page, pagination.limit, searchTerm]);
+
+  const handleNuevoServicio = () => {
+    setSelectedServicio(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditarServicio = (servicio) => {
+    setSelectedServicio(servicio);
+    setIsModalOpen(true);
+  };
+
+  const handleGuardarServicio = async (data) => {
+    try {
+      if (selectedServicio) {
+        await tratamientosService.actualizarTratamiento(data);
+      } else {
+        await tratamientosService.crearTratamiento(data);
+      }
+      await cargarServicios();
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleEliminarServicio = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este servicio? Esta acción no se puede deshacer.')) {
+      try {
+        await tratamientosService.eliminarTratamiento(id);
+        await cargarServicios();
+      } catch (err) {
+        alert(err.message || 'Error al eliminar el servicio');
+      }
+    }
+  };
 
   return (
+    <>
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Error message */}
+      {error && (
+        <div className="p-4 bg-red-50 border-b border-red-200 text-red-700">
+          {error}
+        </div>
+      )}
+
       {/* Filtros y acciones */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Categoría:</label>
-              <select className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Ver todos</option>
-                <option>Odontología general</option>
-                <option>Ortodoncia</option>
-                <option>Endodoncia</option>
-              </select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Sub-categoría:</label>
-              <select className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Ver todos</option>
-              </select>
-            </div>
-          </div>
-          
           <div className="flex items-center space-x-3">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Buscar servicios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
               />
               <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">
-              Nuevo Servicio
-            </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
           </div>
+          
+          <button 
+            onClick={handleNuevoServicio}
+            className="px-4 py-2 bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white rounded-md hover:from-[#3A2C6B] hover:to-[#1D0B59] text-sm font-medium flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Nuevo Servicio</span>
+          </button>
         </div>
       </div>
 
       {/* Tabla de servicios */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Servicio
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Categoría
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Monto
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Insumos
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {servicios.map((servicio) => (
-              <tr key={servicio.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex space-x-2">
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <svg className="animate-spin h-8 w-8 text-[#4A3C7B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="ml-2 text-gray-600">Cargando servicios...</span>
+        </div>
+      ) : servicios.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">No se encontraron servicios</h3>
+          <p className="text-gray-500 mb-4">Comienza agregando un nuevo servicio</p>
+          <button 
+            onClick={handleNuevoServicio}
+            className="px-4 py-2 bg-gradient-to-r from-[#4A3C7B] to-[#2D1B69] text-white rounded-md hover:from-[#3A2C6B] hover:to-[#1D0B59] text-sm font-medium"
+          >
+            Nuevo Servicio
+          </button>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Servicio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Descripción
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Costo Base
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {servicios.map((servicio) => (
+                <tr key={servicio.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900">{servicio.nombre}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-500 max-w-xs truncate">
+                      {servicio.descripcion || '--'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-[#4A3C7B]">
+                      S/ {parseFloat(servicio.costo_base).toFixed(2)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => handleEditarServicio(servicio)}
+                        className="text-gray-400 hover:text-[#30B0B0] transition-colors"
+                        title="Editar servicio"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button className="text-gray-400 hover:text-red-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <button 
+                        onClick={() => handleEliminarServicio(servicio.id)}
+                        className="text-gray-400 hover:text-red-600 transition-colors"
+                        title="Eliminar servicio"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">{servicio.nombre}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {servicio.categoria}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  S/ {servicio.monto}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {servicio.insumos}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Paginación */}
-      <div className="px-6 py-4 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-700">Mostrar</span>
-            <select className="px-2 py-1 border border-gray-300 rounded text-sm">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
-            </select>
-            <span className="text-sm text-gray-700">6 resultados</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button className="p-2 text-gray-400 hover:text-gray-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+      {!loading && servicios.length > 0 && (
+        <div className="px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-700">Mostrar</span>
+              <select 
+                value={pagination.limit}
+                onChange={(e) => setPagination(p => ({ ...p, limit: Number(e.target.value), page: 1 }))}
+                className="px-2 py-1 border border-gray-300 rounded text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-sm text-gray-700">{pagination.total} resultados</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button 
+                disabled={pagination.page <= 1}
+                onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
+                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="text-sm text-gray-700">Página {pagination.page} de {pagination.pages}</span>
+              <button 
+                disabled={pagination.page >= pagination.pages}
+                onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
+                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
+
+    {/* Modal de servicio */}
+    <ServicioModal
+      isOpen={isModalOpen}
+      onClose={() => {
+        setIsModalOpen(false);
+        setSelectedServicio(null);
+      }}
+      onSave={handleGuardarServicio}
+      servicio={selectedServicio}
+    />
+    </>
   );
 };
 
