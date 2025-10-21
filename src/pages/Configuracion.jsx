@@ -8,13 +8,13 @@ import EditDoctorModal from '../components/EditDoctorModal';
 import ServicioModal from '../components/ServicioModal';
 
 const Configuracion = () => {
-  const [activeSection, setActiveSection] = useState('mi-perfil');
+  const [activeSection, setActiveSection] = useState('usuarios');
   
   // Verificar si hay un parámetro en la URL para activar una sección específica
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const section = urlParams.get('section');
-    if (section && ['mi-perfil', 'usuarios', 'historia-clinica', 'administracion'].includes(section)) {
+    if (section && ['usuarios', 'administracion'].includes(section)) {
       setActiveSection(section);
     }
   }, []);
@@ -23,7 +23,7 @@ const Configuracion = () => {
   useEffect(() => {
     const handleSectionChange = (event) => {
       const { section } = event.detail;
-      if (['mi-perfil', 'usuarios', 'historia-clinica', 'administracion'].includes(section)) {
+      if (['usuarios', 'administracion'].includes(section)) {
         setActiveSection(section);
       }
     };
@@ -35,24 +35,18 @@ const Configuracion = () => {
   }, []);
 
   const sections = [
-    { id: 'mi-perfil', name: 'Mi perfil' },
     { id: 'usuarios', name: 'Usuarios' },
-    { id: 'historia-clinica', name: 'Historia clínica' },
     { id: 'administracion', name: 'Administración' }
   ];
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'mi-perfil':
-        return <MiPerfil />;
       case 'usuarios':
         return <Usuarios />;
-      case 'historia-clinica':
-        return <HistoriaClinica />;
       case 'administracion':
         return <Administracion />;
       default:
-        return <MiPerfil />;
+        return <Usuarios />;
     }
   };
 
@@ -841,9 +835,7 @@ const Administracion = () => {
 
   const adminSections = [
     { id: 'servicios', name: 'Servicios', icon: '🦷' },
-    { id: 'etiquetas', name: 'Etiquetas', icon: '🏷️' },
     { id: 'propiedades', name: 'Propiedades', icon: '⚙️' },
-    { id: 'caja', name: 'Caja', icon: '💰' },
     { id: 'proveedores', name: 'Proveedores', icon: '🚚' }
   ];
 
@@ -851,12 +843,8 @@ const Administracion = () => {
     switch (activeAdminSection) {
       case 'servicios':
         return <Servicios />;
-      case 'etiquetas':
-        return <Etiquetas />;
       case 'propiedades':
         return <Propiedades />;
-      case 'caja':
-        return <CajaAdmin />;
       case 'proveedores':
         return <Proveedores />;
       default:
