@@ -1881,6 +1881,54 @@ const Inventario = () => {
             </div>
           )}
         </div>
+        
+        {/* Paginación para consumos */}
+        {consumos.length > 0 && (
+          <div className="bg-white border-t px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-700">
+                  Mostrando {((paginationConsumos.page - 1) * paginationConsumos.limit) + 1} a {Math.min(paginationConsumos.page * paginationConsumos.limit, paginationConsumos.total)} de {paginationConsumos.total} consumos
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-700">Mostrar</span>
+                <select 
+                  value={paginationConsumos.limit} 
+                  onChange={handleLimitChangeConsumos}
+                  className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-cyan-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-700">por página</span>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handlePageChangeConsumos(paginationConsumos.page - 1)}
+                    disabled={paginationConsumos.page <= 1}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Página {paginationConsumos.page} de {paginationConsumos.totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChangeConsumos(paginationConsumos.page + 1)}
+                    disabled={paginationConsumos.page >= paginationConsumos.totalPages}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2383,53 +2431,6 @@ const Inventario = () => {
         </div>
       </div>
 
-      {/* Controles de paginación para consumos */}
-      {consumos.length > 0 && (
-        <div className="bg-white border-t px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                Mostrando {((paginationConsumos.page - 1) * paginationConsumos.limit) + 1} a {Math.min(paginationConsumos.page * paginationConsumos.limit, paginationConsumos.total)} de {paginationConsumos.total} consumos
-              </span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Mostrar</span>
-              <select 
-                value={paginationConsumos.limit} 
-                onChange={handleLimitChangeConsumos}
-                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-cyan-500"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-              <span className="text-sm text-gray-700">por página</span>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handlePageChangeConsumos(paginationConsumos.page - 1)}
-                  disabled={paginationConsumos.page <= 1}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Anterior
-                </button>
-                <span className="text-sm text-gray-700">
-                  Página {paginationConsumos.page} de {paginationConsumos.totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChangeConsumos(paginationConsumos.page + 1)}
-                  disabled={paginationConsumos.page >= paginationConsumos.totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
