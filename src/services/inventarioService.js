@@ -207,6 +207,49 @@ class InventarioService {
     }
   }
 
+  async updateConsumo(consumoData) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=consumo`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(consumoData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || 'Error al actualizar consumo' };
+      }
+    } catch (error) {
+      console.error('Error al actualizar consumo:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
+  async deleteConsumo(consumoId) {
+    try {
+      const headers = this.getHeaders();
+      const response = await fetch(`${API_URL}?section=consumo&id=${consumoId}`, {
+        method: 'DELETE',
+        headers: headers
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || 'Error al eliminar consumo' };
+      }
+    } catch (error) {
+      console.error('Error al eliminar consumo:', error);
+      return { success: false, error: 'Error de conexión con el servidor: ' + error.message };
+    }
+  }
+
   // ===== TIPOS DE PRODUCTO =====
   async getTipos() {
     try {

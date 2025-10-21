@@ -12,10 +12,25 @@ class PatientsService {
 
   getHeaders() {
     const headers = { 'Content-Type': 'application/json' };
+    
+    // Intentar obtener token del authService primero
+    let token = null;
     if (this.authService) {
-      const token = this.authService.getToken?.() || null;
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      token = this.authService.getToken?.() || null;
     }
+    
+    // Si no hay token, intentar obtenerlo directamente de localStorage
+    if (!token) {
+      token = localStorage.getItem('authToken') || 
+              localStorage.getItem('token') || 
+              sessionStorage.getItem('authToken') ||
+              sessionStorage.getItem('token');
+    }
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     return headers;
   }
 

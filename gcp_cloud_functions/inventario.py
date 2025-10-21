@@ -515,8 +515,9 @@ def obtener_consumos(request):
 
         # Query base para consumos
         base_query = """
-            SELECT c.id_consumo, c.fecha_consumo, p.nombre_producto, c.fuente, c.tipo,
-                   c.lote, c.cantidad, c.paciente, c.servicio, c.comentario, c.estado
+            SELECT c.id_consumo, c.fecha_consumo, c.id_producto, p.nombre_producto, 
+                   c.fuente, c.tipo, c.lote, c.cantidad, c.almacen, c.paciente, 
+                   c.servicio, c.comentario, c.estado
             FROM consumos c
             LEFT JOIN productos p ON c.id_producto = p.id_producto
             WHERE 1=1
@@ -548,12 +549,14 @@ def obtener_consumos(request):
         for row in rows:
             consumos.append({
                 "id": row['id_consumo'],
+                "id_producto": row['id_producto'],
                 "fecha_consumo": row['fecha_consumo'].isoformat() if row['fecha_consumo'] else None,
                 "producto": row['nombre_producto'],
                 "fuente": row['fuente'],
                 "tipo": row['tipo'],
                 "lote": row['lote'],
                 "cantidad": float(row['cantidad']) if row['cantidad'] else 0,
+                "almacen": row['almacen'],
                 "paciente": row['paciente'],
                 "servicio": row['servicio'],
                 "comentario": row['comentario'],
@@ -643,6 +646,135 @@ def crear_consumo(request):
         except Exception:
             pass
         return json_response({"error": f"Error al crear consumo: {str(e)}"}, 500)
+
+def actualizar_consumo(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        
+        id_consumo = data.get('id_consumo')
+        if not id_consumo:
+            return json_response({"error": "El ID del consumo es requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener consumo actual para calcular diferencia de stock
+        cur.execute("""
+            SELECT id_producto, cantidad 
+            FROM consumos 
+            WHERE id_consumo = %s
+        """, (id_consumo,))
+        consumo_actual = cur.fetchone()
+
+        if not consumo_actual:
+            cur.close()
+            conn.close()
+            return json_response({"error": "Consumo no encontrado"}, 404)
+
+        # Calcular nueva cantidad y diferencia
+        cantidad_anterior = float(consumo_actual['cantidad'])
+        cantidad_nueva = float(data.get('cantidad', cantidad_anterior))
+        diferencia = cantidad_nueva - cantidad_anterior
+
+        # Actualizar consumo
+        cur.execute("""
+            UPDATE consumos 
+            SET fuente = %s, tipo = %s, lote = %s, cantidad = %s, 
+                paciente = %s, servicio = %s, comentario = %s, estado = %s
+            WHERE id_consumo = %s
+        """, (
+            data.get('fuente', '').strip(),
+            data.get('tipo', '').strip(),
+            data.get('lote', '').strip(),
+            cantidad_nueva,
+            data.get('paciente', '').strip(),
+            data.get('servicio', '').strip(),
+            data.get('comentario', '').strip(),
+            data.get('estado', 'Confirmada'),
+            id_consumo
+        ))
+
+        # Ajustar stock del producto si cambió la cantidad
+        if diferencia != 0:
+            cur.execute("""
+                UPDATE productos 
+                SET stock = stock - %s 
+                WHERE id_producto = %s
+            """, (diferencia, consumo_actual['id_producto']))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Consumo actualizado exitosamente"
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al actualizar consumo: {str(e)}"}, 500)
+
+def eliminar_consumo(request):
+    payload = require_auth(request)
+    if not payload:
+        return json_response({"error": "Token inválido o faltante"}, 401)
+
+    try:
+        id_consumo = request.args.get('id')
+        if not id_consumo:
+            return json_response({"error": "El ID del consumo es requerido"}, 400)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Obtener datos del consumo antes de eliminar
+        cur.execute("""
+            SELECT id_producto, cantidad 
+            FROM consumos 
+            WHERE id_consumo = %s
+        """, (id_consumo,))
+        consumo = cur.fetchone()
+
+        if not consumo:
+            cur.close()
+            conn.close()
+            return json_response({"error": "Consumo no encontrado"}, 404)
+
+        # Devolver stock al producto
+        cur.execute("""
+            UPDATE productos 
+            SET stock = stock + %s 
+            WHERE id_producto = %s
+        """, (consumo['cantidad'], consumo['id_producto']))
+
+        # Eliminar consumo
+        cur.execute("DELETE FROM consumos WHERE id_consumo = %s", (id_consumo,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return json_response({
+            "success": True,
+            "message": "Consumo eliminado exitosamente"
+        })
+
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return json_response({"error": f"Error al eliminar consumo: {str(e)}"}, 500)
 
 # ===== TIPOS DE PRODUCTO =====
 def obtener_tipos(request):
@@ -955,13 +1087,21 @@ def hello_http(request):
             else:
                 return json_response({"error": "Sección no válida para POST. Use section=productos, compras, consumo, categorias o tipos"}, 400)
 
+        elif request.method == 'PUT':
+            if section == 'consumo' or action == 'consumo':
+                return actualizar_consumo(request)
+            else:
+                return json_response({"error": "Sección no válida para PUT. Use section=consumo"}, 400)
+
         elif request.method == 'DELETE':
             if section == 'categorias' or action == 'categorias':
                 return eliminar_categoria(request)
             elif section == 'tipos' or action == 'tipos':
                 return eliminar_tipo(request)
+            elif section == 'consumo' or action == 'consumo':
+                return eliminar_consumo(request)
             else:
-                return json_response({"error": "Sección no válida para DELETE. Use section=categorias o tipos"}, 400)
+                return json_response({"error": "Sección no válida para DELETE. Use section=categorias, tipos o consumo"}, 400)
 
         else:
             return json_response({"error": "Método no soportado"}, 405)

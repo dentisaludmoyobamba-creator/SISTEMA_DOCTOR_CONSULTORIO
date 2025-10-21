@@ -5,6 +5,8 @@ import DeleteTipoModal from '../components/DeleteTipoModal';
 import DetallesOrdenModal from '../components/DetallesOrdenModal';
 import inventarioService from '../services/inventarioService';
 import authService from '../services/authService';
+import patientsService from '../services/patientsService';
+import tratamientosService from '../services/tratamientosService';
 
 const Inventario = () => {
   const [activeTab, setActiveTab] = useState('productos');
@@ -86,6 +88,18 @@ const Inventario = () => {
   const [searchProducto, setSearchProducto] = useState('');
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [showProductosList, setShowProductosList] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  
+  // Estados para búsqueda de pacientes y servicios en consumo
+  const [searchPacienteConsumo, setSearchPacienteConsumo] = useState('');
+  const [pacientesDisponibles, setPacientesDisponibles] = useState([]);
+  const [showPacientesList, setShowPacientesList] = useState(false);
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
+  
+  const [searchServicioConsumo, setSearchServicioConsumo] = useState('');
+  const [serviciosDisponibles, setServiciosDisponibles] = useState([]);
+  const [showServiciosList, setShowServiciosList] = useState(false);
+  const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
 
   // Estado para datos de Consumo
   const [consumos, setConsumos] = useState([]);
@@ -105,7 +119,6 @@ const Inventario = () => {
     tipo: '',
     lote: '',
     cantidad: 0,
-    almacen: 'Principal',
     paciente: '',
     servicio: '',
     comentario: '',
@@ -133,6 +146,8 @@ const Inventario = () => {
   // Estado para modal de Nuevo Consumo (Consumo)
   const [isNuevoConsumoOpen, setIsNuevoConsumoOpen] = useState(false);
   const [isConsumoOptionsOpen, setIsConsumoOptionsOpen] = useState(false);
+  const [isEditarConsumoOpen, setIsEditarConsumoOpen] = useState(false);
+  const [consumoEditando, setConsumoEditando] = useState(null);
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
@@ -489,8 +504,7 @@ const Inventario = () => {
       const result = await inventarioService.getConsumos({
         page: paginationConsumos.page,
         limit: paginationConsumos.limit,
-        search: searchTerm,
-        almacen: filters.almacen !== 'Ver todos' ? filters.almacen : ''
+        search: searchTerm
       });
 
       if (result.success) {
@@ -513,8 +527,111 @@ const Inventario = () => {
   }, [paginationConsumos.page, paginationConsumos.limit, searchTerm, filters.almacen]);
 
   // Manejar guardado de nuevo consumo
+  const buscarProductosParaConsumo = async (termino) => {
+    if (termino.length < 2) {
+      setProductosDisponibles([]);
+      setShowProductosList(false);
+      return;
+    }
+
+    try {
+      inventarioService.setAuthService(authService);
+      const result = await inventarioService.getProductos({
+        search: termino,
+        limit: 10
+      });
+
+      if (result.success) {
+        setProductosDisponibles(result.productos || []);
+        setShowProductosList(true);
+      }
+    } catch (err) {
+      console.error('Error al buscar productos:', err);
+    }
+  };
+
+  const seleccionarProductoParaConsumo = (producto) => {
+    setProductoSeleccionado(producto);
+    setNuevoConsumo(prev => ({ 
+      ...prev, 
+      id_producto: producto.id 
+    }));
+    setSearchProducto(producto.nombre);
+    setShowProductosList(false);
+  };
+
+  const buscarPacientesParaConsumo = async (termino) => {
+    if (termino.length < 2) {
+      setPacientesDisponibles([]);
+      setShowPacientesList(false);
+      return;
+    }
+
+    try {
+      patientsService.setAuthService(authService);
+      const result = await patientsService.list({
+        search: termino,
+        limit: 10
+      });
+
+      if (result.success) {
+        setPacientesDisponibles(result.patients || []);
+        setShowPacientesList(true);
+      }
+    } catch (err) {
+      console.error('Error al buscar pacientes:', err);
+    }
+  };
+
+  const seleccionarPacienteParaConsumo = (paciente) => {
+    setPacienteSeleccionado(paciente);
+    setNuevoConsumo(prev => ({ 
+      ...prev, 
+      paciente: `${paciente.nombres} ${paciente.apellidos}` 
+    }));
+    setSearchPacienteConsumo(`${paciente.nombres} ${paciente.apellidos}`);
+    setShowPacientesList(false);
+  };
+
+  const buscarServiciosParaConsumo = async (termino) => {
+    if (termino.length < 2) {
+      setServiciosDisponibles([]);
+      setShowServiciosList(false);
+      return;
+    }
+
+    try {
+      const result = await tratamientosService.listarTratamientos({
+        search: termino,
+        limit: 10
+      });
+
+      if (result.success) {
+        setServiciosDisponibles(result.tratamientos || []);
+        setShowServiciosList(true);
+      }
+    } catch (err) {
+      console.error('Error al buscar servicios:', err);
+    }
+  };
+
+  const seleccionarServicioParaConsumo = (servicio) => {
+    setServicioSeleccionado(servicio);
+    setNuevoConsumo(prev => ({ 
+      ...prev, 
+      servicio: servicio.nombre 
+    }));
+    setSearchServicioConsumo(servicio.nombre);
+    setShowServiciosList(false);
+  };
+
   const handleSaveConsumo = async () => {
     try {
+      if (!nuevoConsumo.id_producto || nuevoConsumo.cantidad <= 0) {
+        alert('Por favor, selecciona un producto y especifica una cantidad válida.');
+        return;
+      }
+
       const result = await inventarioService.createConsumo(nuevoConsumo);
       if (result.success) {
         setIsNuevoConsumoOpen(false);
@@ -524,18 +641,73 @@ const Inventario = () => {
           tipo: '',
           lote: '',
           cantidad: 0,
-          almacen: 'Principal',
           paciente: '',
           servicio: '',
           comentario: '',
           estado: 'Confirmada'
         });
+        // Limpiar búsquedas
+        setSearchProducto('');
+        setProductoSeleccionado(null);
+        setProductosDisponibles([]);
+        setSearchPacienteConsumo('');
+        setPacienteSeleccionado(null);
+        setPacientesDisponibles([]);
+        setSearchServicioConsumo('');
+        setServicioSeleccionado(null);
+        setServiciosDisponibles([]);
         loadConsumos();
       } else {
         alert(`Error al crear consumo: ${result.error}`);
       }
     } catch (err) {
       alert('Error de conexión al crear consumo.');
+    }
+  };
+
+  const handleEditarConsumo = (consumo) => {
+    setConsumoEditando({
+      id_consumo: consumo.id,
+      id_producto: consumo.id_producto || '',
+      fuente: consumo.fuente || '',
+      tipo: consumo.tipo || '',
+      lote: consumo.lote || '',
+      cantidad: consumo.cantidad || 0,
+      paciente: consumo.paciente || '',
+      servicio: consumo.servicio || '',
+      comentario: consumo.comentario || '',
+      estado: consumo.estado || 'Confirmada'
+    });
+    setIsEditarConsumoOpen(true);
+  };
+
+  const handleUpdateConsumo = async () => {
+    try {
+      const result = await inventarioService.updateConsumo(consumoEditando);
+      if (result.success) {
+        setIsEditarConsumoOpen(false);
+        setConsumoEditando(null);
+        loadConsumos();
+      } else {
+        alert(`Error al actualizar consumo: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Error de conexión al actualizar consumo.');
+    }
+  };
+
+  const handleEliminarConsumo = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este consumo? El stock del producto será revertido.')) {
+      try {
+        const result = await inventarioService.deleteConsumo(id);
+        if (result.success) {
+          loadConsumos();
+        } else {
+          alert(`Error al eliminar consumo: ${result.error}`);
+        }
+      } catch (err) {
+        alert('Error de conexión al eliminar consumo.');
+      }
     }
   };
 
@@ -1565,39 +1737,6 @@ const Inventario = () => {
     <div className="p-6">
       {/* Filtros y acciones */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-600 mb-1">Almacén</label>
-          <select 
-            value={filters.almacen}
-            onChange={(e) => handleFilterChange('almacen', e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-          >
-            <option>Ver todos</option>
-            <option>Principal</option>
-            <option>Secundario</option>
-            <option>Emergencia</option>
-          </select>
-        </div>
-
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-600 mb-1">Mes</label>
-          <select className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-            <option>Todos</option>
-            <option>Enero</option>
-            <option>Febrero</option>
-            <option>Marzo</option>
-            <option>Abril</option>
-            <option>Mayo</option>
-            <option>Junio</option>
-            <option>Julio</option>
-            <option>Agosto</option>
-            <option>Septiembre</option>
-            <option>Octubre</option>
-            <option>Noviembre</option>
-            <option>Diciembre</option>
-          </select>
-        </div>
-
         <div className="flex-1 max-w-md">
           <div className="relative">
             <input
@@ -1652,7 +1791,7 @@ const Inventario = () => {
       <div className="bg-white rounded-lg shadow-sm">
         <div className="overflow-hidden">
           <div className="bg-slate-700 text-white">
-            <div className="grid grid-cols-10 gap-4 px-6 py-4 text-sm font-medium">
+            <div className="grid grid-cols-11 gap-4 px-6 py-4 text-sm font-medium">
               <div>Fecha de Consumo</div>
               <div>Producto</div>
               <div>Fuente</div>
@@ -1663,6 +1802,7 @@ const Inventario = () => {
               <div>Servicio</div>
               <div>Comentario</div>
               <div>Estado</div>
+              <div className="text-center">Acciones</div>
             </div>
           </div>
 
@@ -1681,7 +1821,7 @@ const Inventario = () => {
             <div className="divide-y divide-gray-200">
               {consumos.map((consumo, index) => (
                 <div key={consumo.id} className={`p-4 hover:bg-gray-50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <div className="grid grid-cols-10 gap-4 items-center">
+                  <div className="grid grid-cols-11 gap-4 items-center">
                     <div className="text-sm text-gray-700">
                       {consumo.fecha_consumo ? new Date(consumo.fecha_consumo).toLocaleDateString('es-PE') : '-'}
                     </div>
@@ -1692,7 +1832,9 @@ const Inventario = () => {
                     <div className="text-sm text-gray-700">{consumo.cantidad}</div>
                     <div className="text-sm text-gray-700">{consumo.paciente || '-'}</div>
                     <div className="text-sm text-gray-700">{consumo.servicio || '-'}</div>
-                    <div className="text-sm text-gray-700">{consumo.comentario || '-'}</div>
+                    <div className="text-sm text-gray-700 truncate max-w-[100px]" title={consumo.comentario}>
+                      {consumo.comentario || '-'}
+                    </div>
                     <div className="text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         consumo.estado === 'Confirmada' 
@@ -1703,6 +1845,26 @@ const Inventario = () => {
                       }`}>
                         {consumo.estado}
                       </span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <button
+                        onClick={() => handleEditarConsumo(consumo)}
+                        className="text-gray-400 hover:text-cyan-600 transition-colors"
+                        title="Editar consumo"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleEliminarConsumo(consumo.id)}
+                        className="text-gray-400 hover:text-red-600 transition-colors"
+                        title="Eliminar consumo"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1773,15 +1935,65 @@ const Inventario = () => {
                         <div className="relative">
                           <input 
                             type="text" 
-                            value={nuevoConsumo.id_producto}
-                            onChange={(e) => setNuevoConsumo(prev => ({ ...prev, id_producto: e.target.value }))}
-                            placeholder="ID del producto" 
+                            value={searchProducto}
+                            onChange={(e) => {
+                              setSearchProducto(e.target.value);
+                              buscarProductosParaConsumo(e.target.value);
+                            }}
+                            onFocus={() => {
+                              if (searchProducto.length >= 2) {
+                                buscarProductosParaConsumo(searchProducto);
+                              }
+                            }}
+                            placeholder="Buscar producto..." 
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                           />
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                           </div>
+                          
+                          {/* Lista de productos */}
+                          {showProductosList && productosDisponibles.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {productosDisponibles.map((producto) => (
+                                <button
+                                  key={producto.id}
+                                  onClick={() => seleccionarProductoParaConsumo(producto)}
+                                  className="w-full text-left px-4 py-2 hover:bg-cyan-50 border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="font-medium text-gray-900">{producto.nombre}</div>
+                                  <div className="text-xs text-gray-500">
+                                    Stock: {producto.stock} | Costo: S/ {producto.costo_unitario}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
+                        {productoSeleccionado && (
+                          <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 rounded-md">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-cyan-900">{productoSeleccionado.nombre}</div>
+                                <div className="text-xs text-cyan-700">
+                                  Stock disponible: {productoSeleccionado.stock} unidades
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setProductoSeleccionado(null);
+                                  setSearchProducto('');
+                                  setNuevoConsumo(prev => ({ ...prev, id_producto: '' }));
+                                }}
+                                className="text-cyan-600 hover:text-cyan-800"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Fuente:</label>
@@ -1836,36 +2048,140 @@ const Inventario = () => {
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Almacén:*</label>
-                        <select 
-                          value={nuevoConsumo.almacen}
-                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, almacen: e.target.value }))}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        >
-                          <option value="Principal">Principal</option>
-                          <option value="Secundario">Secundario</option>
-                          <option value="Emergencia">Emergencia</option>
-                        </select>
-                      </div>
-                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Servicio:</label>
-                        <input 
-                          type="text" 
-                          value={nuevoConsumo.servicio}
-                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, servicio: e.target.value }))}
-                          placeholder="Nombre del servicio" 
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
-                        />
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            value={searchServicioConsumo}
+                            onChange={(e) => {
+                              setSearchServicioConsumo(e.target.value);
+                              buscarServiciosParaConsumo(e.target.value);
+                            }}
+                            onFocus={() => {
+                              if (searchServicioConsumo.length >= 2) {
+                                buscarServiciosParaConsumo(searchServicioConsumo);
+                              }
+                            }}
+                            placeholder="Buscar servicio..." 
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                          />
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                          
+                          {/* Lista de servicios */}
+                          {showServiciosList && serviciosDisponibles.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {serviciosDisponibles.map((servicio) => (
+                                <button
+                                  key={servicio.id}
+                                  onClick={() => seleccionarServicioParaConsumo(servicio)}
+                                  className="w-full text-left px-4 py-2 hover:bg-cyan-50 border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="font-medium text-gray-900">{servicio.nombre}</div>
+                                  <div className="text-xs text-gray-500">
+                                    Costo: S/ {servicio.costo_base}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {servicioSeleccionado && (
+                          <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 rounded-md">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-cyan-900">{servicioSeleccionado.nombre}</div>
+                                <div className="text-xs text-cyan-700">
+                                  Costo: S/ {servicioSeleccionado.costo_base}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setServicioSeleccionado(null);
+                                  setSearchServicioConsumo('');
+                                  setNuevoConsumo(prev => ({ ...prev, servicio: '' }));
+                                }}
+                                className="text-cyan-600 hover:text-cyan-800"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Paciente:</label>
-                        <input 
-                          type="text" 
-                          value={nuevoConsumo.paciente}
-                          onChange={(e) => setNuevoConsumo(prev => ({ ...prev, paciente: e.target.value }))}
-                          placeholder="Nombre del paciente" 
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
-                        />
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            value={searchPacienteConsumo}
+                            onChange={(e) => {
+                              setSearchPacienteConsumo(e.target.value);
+                              buscarPacientesParaConsumo(e.target.value);
+                            }}
+                            onFocus={() => {
+                              if (searchPacienteConsumo.length >= 2) {
+                                buscarPacientesParaConsumo(searchPacienteConsumo);
+                              }
+                            }}
+                            placeholder="Buscar paciente..." 
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                          />
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                          
+                          {/* Lista de pacientes */}
+                          {showPacientesList && pacientesDisponibles.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {pacientesDisponibles.map((paciente) => (
+                                <button
+                                  key={paciente.id}
+                                  onClick={() => seleccionarPacienteParaConsumo(paciente)}
+                                  className="w-full text-left px-4 py-2 hover:bg-cyan-50 border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="font-medium text-gray-900">{paciente.nombres} {paciente.apellidos}</div>
+                                  <div className="text-xs text-gray-500">
+                                    DNI: {paciente.documento || 'No disponible'}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {pacienteSeleccionado && (
+                          <div className="mt-2 p-3 bg-cyan-50 border border-cyan-200 rounded-md">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-cyan-900">
+                                  {pacienteSeleccionado.nombres} {pacienteSeleccionado.apellidos}
+                                </div>
+                                <div className="text-xs text-cyan-700">
+                                  DNI: {pacienteSeleccionado.documento || 'No disponible'}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setPacienteSeleccionado(null);
+                                  setSearchPacienteConsumo('');
+                                  setNuevoConsumo(prev => ({ ...prev, paciente: '' }));
+                                }}
+                                className="text-cyan-600 hover:text-cyan-800"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Estado:</label>
@@ -1899,13 +2215,166 @@ const Inventario = () => {
                 </div>
 
                 <div className="sticky bottom-0 z-10 bg-white px-6 py-4 border-t flex justify-end space-x-3">
-                  <button onClick={() => setIsNuevoConsumoOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
+                  <button 
+                    onClick={() => {
+                      setIsNuevoConsumoOpen(false);
+                      setSearchProducto('');
+                      setProductoSeleccionado(null);
+                      setProductosDisponibles([]);
+                    }} 
+                    className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
                   <button 
                     onClick={handleSaveConsumo}
-                    disabled={!nuevoConsumo.id_producto.trim() || nuevoConsumo.cantidad <= 0}
+                    disabled={!productoSeleccionado || nuevoConsumo.cantidad <= 0}
+                    className="px-4 py-2 rounded-md bg-cyan-500 text-white hover:bg-cyan-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Confirmar</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Editar Consumo */}
+          {isEditarConsumoOpen && consumoEditando && (
+            <div className="fixed inset-0 z-[100]">
+              <div className="absolute inset-0 bg-black/30" onClick={() => setIsEditarConsumoOpen(false)} />
+              <div className="absolute right-0 top-0 h-full w-full sm:w-[600px] bg-white shadow-2xl overflow-y-auto">
+                <div className="sticky top-0 z-10 bg-white border-b">
+                  <div className="px-6 py-4 flex items-center justify-between">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-wide">EDITAR CONSUMO</h3>
+                    <button onClick={() => setIsEditarConsumoOpen(false)} className="p-2 text-gray-500 hover:text-gray-700">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Producto:*</label>
+                        <div className="p-3 bg-gray-100 rounded-md text-sm text-gray-700">
+                          ID: {consumoEditando.id_producto}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Fuente:</label>
+                        <select 
+                          value={consumoEditando.fuente}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, fuente: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                          <option value="">Seleccionar fuente</option>
+                          <option value="Compra directa">Compra directa</option>
+                          <option value="Orden de compra">Orden de compra</option>
+                          <option value="Inventario existente">Inventario existente</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo:</label>
+                        <input 
+                          type="text" 
+                          value={consumoEditando.tipo}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, tipo: e.target.value }))}
+                          placeholder="Tipo de consumo" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Lote:</label>
+                        <input 
+                          type="text" 
+                          value={consumoEditando.lote}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, lote: e.target.value }))}
+                          placeholder="Número de lote" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad:*</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={consumoEditando.cantidad}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, cantidad: parseFloat(e.target.value) || 0 }))}
+                          placeholder="Cantidad consumida" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Servicio:</label>
+                        <input 
+                          type="text" 
+                          value={consumoEditando.servicio}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, servicio: e.target.value }))}
+                          placeholder="Nombre del servicio (opcional)" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Puedes escribir manualmente el nombre del servicio</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Paciente:</label>
+                        <input 
+                          type="text" 
+                          value={consumoEditando.paciente}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, paciente: e.target.value }))}
+                          placeholder="Nombre del paciente (opcional)" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Puedes escribir manualmente el nombre del paciente</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Estado:</label>
+                        <select 
+                          value={consumoEditando.estado}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, estado: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                          <option value="Confirmada">Confirmada</option>
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Cancelada">Cancelada</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Comentario:</label>
+                        <textarea 
+                          rows={4}
+                          value={consumoEditando.comentario}
+                          onChange={(e) => setConsumoEditando(prev => ({ ...prev, comentario: e.target.value }))}
+                          placeholder="Comentario adicional" 
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 bg-yellow-50 text-yellow-700 border border-yellow-200 px-4 py-3 rounded">
+                    <span className="mt-0.5">⚠️</span>
+                    <p className="text-sm">Al modificar la cantidad, el stock del producto se ajustará automáticamente.</p>
+                  </div>
+                </div>
+
+                <div className="sticky bottom-0 z-10 bg-white px-6 py-4 border-t flex justify-end space-x-3">
+                  <button onClick={() => setIsEditarConsumoOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
+                  <button 
+                    onClick={handleUpdateConsumo}
+                    disabled={consumoEditando.cantidad <= 0}
                     className="px-4 py-2 rounded-md bg-cyan-500 text-white hover:bg-cyan-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    Confirmar
+                    Actualizar
                   </button>
                 </div>
               </div>
